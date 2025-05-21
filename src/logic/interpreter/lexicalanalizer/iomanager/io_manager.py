@@ -1,24 +1,29 @@
+import os
 class IOManager:
     EOF = ''
     END_OF_LINE = '\n'
 
     def __init__(self, file_path):
-        self.current_char =''
+        self.current_char =' '
         self.line_number= 0
         self.line_char_index= 0
         self.line = ""
-        self.file_reader = open(file_path, "r", encoding="utf-8")
+        relative_path = os.path.join(os.path.dirname(__file__), file_path)
+
+        self.file_reader = open(relative_path, "r", encoding="utf-8")
 
     def get_next_char(self):
-        self.current_char= self.file_reader.read(1)
-        
-        if (self.current_char == self.EOF):
-            self.file_reader.close()
-        elif (self.current_char == self.END_OF_LINE):
+        if (self.current_char == self.END_OF_LINE):
             self.line_number+= 1
             self.line_char_index = 0
             self.line = ""
-        else:
+            
+        if (self.current_char != self.EOF):
+            self.current_char= self.file_reader.read(1)                    
+        
+        if (self.current_char == self.EOF):            
+            self.file_reader.close()
+        elif (self.current_char != self.END_OF_LINE):                                
             self.line += self.current_char
             self.line_char_index += 1
 
