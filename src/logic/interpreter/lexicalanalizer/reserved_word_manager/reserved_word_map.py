@@ -18,10 +18,10 @@ class ReservedWordMap:
                     self.reserved_word_map[row[0]] = row[1]
     
     def get_reserved_word_id(self, word):
-        return self.reserved_word_map.get(word)
+        return self.reserved_word_map.get(word.lower())
     
     def is_reserved_word(self, word):
-        return word in self.reserved_word_map
+        return word.lower() in self.reserved_word_map
     
     def show_map(self):
         for key, value in self.reserved_word_map.items():

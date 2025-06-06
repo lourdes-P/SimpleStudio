@@ -1,11 +1,11 @@
 import eel
 import json
-from logic.interpreter.lexicalanalizer.token import Token
+import logic.interpreter.lexicalanalizer.token
 from logic.interpreter.lexicalanalizer.reserved_word_manager.reserved_word_map import ReservedWordMap
 
 reserved_words = ReservedWordMap()
 
-eel.init("./gui")
+eel.init("./src/gui")
 
 # functions between the init and start
 def read_data():

@@ -5,8 +5,8 @@ class IOManager:
 
     def __init__(self, file_path):
         self.current_char =' '
-        self.line_number= 0
-        self.line_char_index= 0
+        self.line_number= 1
+        self.line_char_index= 1
         self.line = ""
         relative_path = os.path.join(os.path.dirname(__file__), file_path)
 
@@ -15,7 +15,7 @@ class IOManager:
     def get_next_char(self):
         if (self.current_char == self.END_OF_LINE):
             self.line_number+= 1
-            self.line_char_index = 0
+            self.line_char_index = 1
             self.line = ""
             
         if (self.current_char != self.EOF):

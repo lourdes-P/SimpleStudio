@@ -1,0 +1,442 @@
+%-----------------------------------------------------------------------------
+
+% VTs
+
+% A class VT
+    SetLabel VTA, Libre             @VT_A: A class
+    SetD Libre, initA               @VT_A: constructorA
+    SetD Libre+1, m1A               @VT_A: m1A
+    SetD Libre+2, m1PA              @VT_A: m1PA
+    SetLibre Libre+3
+    SetActual Libre
+
+% B class VT
+    SetLabel VTB, Libre             @VT_A: B class
+    SetD Libre, initB               @VT_B: constructorB
+    SetD Libre+1, m1B               @VT_B: m1B
+    SetD Libre+2, m1PA              @VT_B: m1PA
+    SetD Libre+3, m2B               @VT_B: m2B
+    SetD Libre+4, VTA               @VT_B: VTA
+    SetLibre Libre+5
+    SetActual Libre
+
+% C class VT
+    SetLabel VTC, Libre             @VT_A: C class
+    SetD Libre, initC               @VT_C: constructorC
+    SetD Libre+1, m1B               @VT_C: m1B
+    SetD Libre+2, m1PC              @VT_C: m1PC
+    SetD Libre+3, m2B               @VT_C: m2B
+    SetD Libre+4, m2PC              @VT_C: m2PC
+    SetD Libre+5, m3C               @VT_C: m3C
+    SetD Libre+6, VTB               @VT_C: VTB
+    SetLibre Libre+7
+    SetActual Libre
+
+% Principal class VT
+    SetLabel VTPrincipal, Libre
+    SetLibre Libre+1                @VT_Principal
+    SetActual Libre
+%-----------------------------------------------------------------------------
+
+% main code invocation
+        SetD Libre, PC+5            @PTR a halt
+        SetD Libre+1, actual        @ED
+        SetActual Libre
+        SetLibre Actual+5           % Dejo los espacios suficientes para las variables locales
+        Jump Main
+        Halt
+
+%-----------------------------------------------------------------------------
+% calls to class A: a(), m1(), m1(int x)
+
+% Class A --> method A (init)
+initA   SetH D[Actual+2]+1, 1                                       @v1 = 1
+        SetH D[Actual+2]+2, 20                                      @v2 = 20
+
+        SetLibre Actual
+        SetActual D[Libre+1]
+        Jump D[Libre]
+%%%-----------------------------------------------------------------------------
+
+% Class A --> method m1A
+m1A     SetD Actual+3, 0                                            @i=0
+for     JumpT endfor, !(D[Actual + 3] < (H[D[Actual+2]+1] + H[D[Actual+2]+2]))       % salto al final del for si...
+        SetH D[Actual+2]+1, H[D[Actual+2]+1] + D[Actual + 3]         @v1=v1+i
+        SetH D[Actual+2]+2, H[D[Actual+2]+2] - D[Actual + 3]         @v2=v2-i
+        SetD Actual+3, D[Actual+3] +1                               @i+=1
+        JumpT endfor, (H[D[Actual+2]+1] + H[D[Actual+2]+2]) >= 100  @break
+        Jump for                                                    @for
+endfor  SetD  CRA, D[CRA] + 1                                       @a1=a1+1
+
+        SetD Actual-1, H[D[Actual + 2] + 1] + H[D[Actual + 2] + 2]  @Lugar_retorno=v1+v2
+
+        SetLibre Actual
+        SetActual D[Libre + 1]
+        Jump D[Libre]
+
+%-----------------------------------------------------------------------------
+
+% Class A --> method m1PA
+m1PA    SetD CRA, D[CRA]+1                                          @a1=a1+1
+        SetD Actual-1, D[CRA]                                       @return a1
+        SetLibre Actual
+        SetActual D[Libre+1]
+        Jump D[Libre]
+
+%%%-----------------------------------------------------------------------------
+%-----------------------------------------------------------------------------
+% calls to class B: m2(), m1()
+
+% Class B --> method initB
+% super: A class
+% RA de initA
+initB   SetD Libre, PC + 6                                          @PTR
+        SetD Libre + 1, Actual                                      @ED
+        SetD Libre + 2, D[Actual+2]                                 @this
+        SetActual Libre
+        SetLibre Actual+3
+        Jump D[VTA]                                                 @super()
+
+        SetH D[Actual+2]+3, D[CRA]*3                                @v3=a1*3
+% return
+        SetLibre Actual
+        SetActual D[Libre+1]
+        Jump D[Libre]
+
+%-----------------------------------------------------------------------------
+
+% Class B --> method m1B
+m1B         SetD Actual+3, 0                        @j=0
+            JumpT bloque3, D[CRA] == 1              @case1
+            JumpT bloque3, D[CRA] == 2              @case2
+            JumpT bloque3, D[CRA] == 3              @case3
+            JumpT bloque6, D[CRA] == 4              @case4
+            JumpT bloque6, D[CRA] == 5              @case5
+            JumpT bloque6, D[CRA] == 6              @case6
+            Jump bloqueDef                          @caseDef
+
+bloque3     SetD Actual+3, 3 * D[CRA]+1             @j=3*a1+1
+            Jump break
+bloque6     SetD Actual+3, H[D[Actual+2]+1] + 12    @j=v1+12
+            Jump break
+bloqueDef   SetD Actual+3, 1                        @j=1
+            Jump break
+% RA m1(int x) en A
+break       SetLibre Libre + 1                      @lugar_retorno_m1PA
+            SetD Libre, PC + 7                      @PTR
+            SetD Libre + 1, Actual                  @ED
+            SetD Libre + 2, D[Actual+2]             @this
+            SetD Libre + 3, D[Actual+3]             @x
+            SetActual Libre
+            SetLibre Actual+4
+            Jump D[VTA+2]                           @super.m1(j)
+
+            SetD Actual-1, D[Libre-1]               @lugar_retorno=super.m1(j)
+            SetLibre Libre-1
+
+            SetLibre Actual
+            SetActual D[Libre+1]
+            Jump D[Libre]
+
+%-----------------------------------------------------------------------------
+
+% Class B --> method m2B
+m2B     SetD CRA, D[CRA]+1                              @a1=a1+1
+        SetD Actual-1, H[D[Actual+2]+3] + D[CRA]        @lugar_retorno=(v3+a1)
+% RA m1() en A
+        SetLibre Libre + 1                              @Lugar_retorno
+        SetD Libre, PC + 6                              @PTR
+        SetD Libre + 1, Actual                          @ED
+        SetD Libre + 2, D[Actual + 2]                   @this
+        SetActual Libre
+        SetLibre Actual+4                               @dejo un espacio para las variables
+
+        Jump D[VTA+1]                                   @super.m1()
+        SetD Actual-1, D[Actual-1] + D[Libre-1]         @lugar_retorno=(v3+a1)+super.m1() % el resultado estará en el siguiente libre
+        SetLibre Libre-1                                % para que no haya un espacio sin usar, del lugar de retorno anterior
+% RA m1() en B
+        SetLibre Libre+1                                @lugar_retorno
+        SetD Libre, PC + 6                              @PTR
+        SetD Libre + 1, Actual                          @ED
+        SetD Libre + 2, D[Actual + 2]                   @this
+        SetActual Libre
+        SetLibre Actual + 4                             @dejo un espacio para las variables
+
+        Jump D[H[D[Actual+2] ]+1]                       @m1B
+        SetD Actual-1, D[Actual-1] + D[Libre-1]         @lugar_retorno=(v3+a1)+super.m1()+this.m1()
+        SetLibre Libre-1
+
+        SetLibre Actual
+        SetActual D[Libre+1]
+        Jump D[Libre]
+
+%-----------------------------------------------------------------------------
+%-----------------------------------Class C-----------------------------------
+
+% Class C --> method initC
+% translation
+% RA de initB
+initC   SetD Libre, PC + 6                                          @PTR
+        SetD Libre + 1, Actual                                      @ED
+        SetD Libre + 2, D[Actual+2]                                 @this
+        SetActual Libre
+        SetLibre Actual+3
+        Jump D[VTB]                                                 @super()
+
+        SetH D[Actual+2]+4, D[Actual + 3] + 1                       @v4=x+1
+        SetH D[Actual+2]+5, (H[D[Actual +2] +1] + H[D[Actual +2] +2]) * 3   @v5=(v1+v2)*3
+
+        SetH D[Actual+2]+6, PO                                      @o1=new
+        SetH PO, VTA
+        SetPO PO + 3
+% RA de initA
+        SetD Libre, PC + 6                                          @PTR
+        SetD Libre + 1, Actual                                      @ED
+        SetD Libre + 2, D[Actual+2]+7                               @this   % +7 porque ahí empieza el nuevo objeto
+        SetActual Libre
+        SetLibre Actual+3
+        Jump initA
+% return
+        SetLibre Actual
+        SetActual D[Libre + 1]
+        Jump D[Libre]
+
+%-----------------------------------------------------------------------------
+
+% Class C --> method m1PC
+m1PC        SetD Actual + 4, 5                                  @t=5
+
+if1cond1    JumpT if1body,  D[Actual + 3] < 100                 @x<100
+
+if1cond2    JumpT if2, !(D[Actual + 3] <= (D[Actual + 4]+1))    @x<=(t+1)
+% RA m3() en C
+if1body     SetD Libre, PC + 6                                  @PTR
+            SetD Libre + 1, Actual                              @ED
+            SetD Libre + 2, D[Actual + 2]                       @this
+            SetActual Libre
+            SetLibre Actual + 3
+            Jump D[H[D[Actual+2]+0]+5]                          @this.m3()
+
+            SetD Actual-1, D[Actual+4]-D[Actual+3]              @lugar_return=t-x
+            Jump out
+
+if2     JumpT ret, !((D[Actual + 3] > 100) & (D[Actual + 3] > D[Actual + 4]))   @if((x > 100) & (x > t))
+
+        SetD Actual-1, D[Actual+4]-D[Actual+3]-1    @lugar_return=t-x-1
+        Jump out
+
+ret     SetD Actual-1, D[Actual+4]*5            @lugar_return=t*5
+
+out     SetLibre Actual
+        SetActual D[Libre+1]
+        Jump D[Libre]
+
+%-----------------------------------------------------------------------------
+
+% Class C --> method m2PC
+m2PC    SetD Actual + 4, 0                       @aux1=0
+        SetD Actual + 5, 0                       @aux2=0
+        SetD Actual + 6, 0                       @j=0
+        SetD Actual + 7, D[Actual+4]             @out=aux1
+
+while   JumpT outw, !(D[Actual+6]<30)           @while(j<30)
+
+        SetD Actual+4, D[Actual+4]+D[Actual+3]  @aux1+=x
+        SetD Actual+5, D[Actual+5]+3            @aux2+=3
+
+ifw     JumpT ifwelse, !(D[Actual+4]>50)        @if(aux1>50)
+
+        Jump outw                               @break
+
+ifwelse SetD Actual+5, D[Actual+5]+1            @aux2=aux2+1
+
+        SetD Actual+6, D[Actual+6]+1            @j=j+1
+        Jump while
+
+outw    JumpT retw, !(D[Actual+4]>D[Actual+5])  @if(aux1>aux2)
+
+        SetD Actual+7, D[Actual+5]              @out=aux2
+
+retw    SetD Actual-1, D[Actual+7]              @lugar_retorno=out
+
+        SetLibre Actual
+        SetActual D[Libre+1]
+        Jump D[Libre]
+
+%-----------------------------------------------------------------------------
+
+% Class C --> method m3C
+m3C     SetH D[Actual+2]+6, PO                                      @o1=new
+        SetH PO, VTA
+        SetPO PO + 3
+% RA initA
+        SetD Libre, PC + 6                                          @PTR
+        SetD Libre + 1, Actual                                      @ED
+        SetD Libre + 2, H[D[Actual+2]+6]                            @this
+        SetActual Libre
+        SetLibre Actual+3
+        Jump initA                                                  @A()
+
+        SetLibre Actual
+        SetActual D[Libre+1]
+        Jump D[Libre]
+
+%-----------------------------------------------------------------------------
+%-------------------------------------MAIN-------------------------------------
+% main calls: init(int x) (class C), m1(int x) (class C), m2() (class B), m2(int x) (class C)
+    % m1(int x) (class C) calls: m3() (class C)
+        % m3() (class C) calls: init (class A)
+    % m2() (class B) calls: m1() (class A), m1() (class B)
+        % m1() (class B) calls: m1(int x) (class A)
+
+% main method code
+main    SetIn Actual + 2                                            @x1
+        SetIn Actual + 3                                            @x2
+        SetD Actual + 4, PO                                         @oA=new
+        SetH PO, VTC
+        SetPO PO + 7
+% RA initC
+        SetD Libre, PC + 7                                          @PTR
+        SetD Libre + 1, Actual                                      @ED
+        SetD Libre + 2, D[Actual + 4]                               @this
+        SetD Libre + 3, D[Actual + 2] + D[Actual + 3]               @x=x1+x2
+
+        SetActual Libre
+        SetLibre Actual + 4
+
+        Jump initC
+% RA m1(int x) en C
+        SetLibre Libre + 1                                          @lugar_retorno
+        SetD Libre, PC + 7                                          @PTR
+        SetD Libre + 1, Actual                                      @ED
+        SetD Libre + 2, D[Actual + 4]                               @this
+        SetD Libre + 3, D[Actual + 2] * D[Actual + 3]               @x=x1*x2
+
+        SetActual Libre
+        SetLibre Actual + 5
+
+        Jump D[H[D[Actual+2] ]+2]                                   @m1(int x)
+
+        SetOut D[Libre - 1]
+        SetLibre Libre - 1
+% RA m2() en B
+        SetLibre Libre + 1                                          @Lugar_retorno
+        SetD Libre, PC + 6                                          @PTR
+        SetD Libre + 1, Actual                                      @ED
+        SetD Libre + 2, D[Actual + 4]                               @this
+
+        SetActual Libre
+        SetLibre Actual+3
+
+        Jump D[H[D[Actual+2] ]+3]                                   @m2()
+% RA m2(int x) en C
+        SetLibre Libre+1                                            @lugar_retorno
+        SetD Libre, PC + 7                                          @PTR
+        SetD Libre + 1, Actual                                      @ED
+        SetD Libre + 2, D[Actual + 4]                               @this
+        SetD Libre + 3, D[Actual + 3]                               @x
+
+        SetActual Libre
+        SetLibre Actual + 8
+
+        Jump D[H[D[Actual+2] ]+4]                                   @m2(int x)
+
+        SetOut D[Libre - 2] + D[Libre - 1]                          @m2()+m2(int x)     % respectivamente
+        SetLibre Libre - 2
+
+        SetLibre Actual
+        SetActual D[Libre+1]
+        Jump D[Libre]
+
+%-----------------------------------------------------------------------------
+%-----------------------------------------------------------------------------
+%------------------------------------RAs--------------------------------------
+% RA --> initA
+%        SetD Libre, PC + 6                 @PTR
+%        SetD Libre + 1, Actual             @ED
+%        SetD Libre + 2, D[Actual+2]        @this
+%        SetActual Libre
+%        SetLibre Actual+3
+
+% RA --> m1A
+%        SetLibre Libre + 1                 @Lugar_retorno
+%        SetD Libre, PC + 7                 @PTR
+%        SetD Libre + 1, Actual             @ED
+%        SetD Libre + 2, D[Actual + 2]      @this
+%        @Variable i
+%        SetActual Libre
+%        SetLibre Actual+4
+
+% RA --> m1PA
+%        SetLibre Libre + 1                 @lugar_retorno
+%        SetD Libre, PC + 7                 @PTR
+%        SetD Libre + 1, Actual             @ED
+%        SetD Libre + 2, D[Actual+2]        @this
+%        SetD Libre + 3, VALOR_X            @x
+%        SetActual Libre
+%        SetLibre Actual+4
+
+% RA --> initB
+%        SetD Libre, PC + 6                 @PTR
+%        SetD Libre + 1, Actual             @ED
+%        SetD Libre + 2, D[Actual+2]        @this
+%        SetActual Libre
+%        SetLibre Actual+3
+
+% RA --> m1B
+%        SetLibre Libre+1                   @lugar_retorno
+%        SetD Libre, PC + 7                 @PTR
+%        SetD Libre + 1, Actual             @ED
+%        SetD Libre + 2, D[Actual + 2]      @this
+%        @Variable j
+%        SetActual Libre
+%        SetLibre Actual + 4
+
+% RA --> m2B
+%        SetLibre Libre + 1                 @Lugar_retorno
+%        SetD Libre, PC + 6                 @PTR
+%        SetD Libre + 1, Actual             @ED
+%        SetD Libre + 2, D[Actual + 2]      @this
+%        SetActual Libre
+%        SetLibre Actual+3
+
+% RA --> initC
+%        SetD Libre, PC + 7                                 @PTR
+%        SetD Libre + 1, Actual                             @ED
+%        SetD Libre + 2, D[Actual + 2]                      @this
+%        SetD Libre + 3, D[Actual + 3] + VALOR_X            @x
+%        SetActual Libre
+%        SetLibre Actual + 4
+
+% RA --> m1PC
+%        SetLibre Libre+1                   @lugar_return
+%        SetD Libre, PC + 8                 @PTR
+%        SetD Libre + 1, Actual             @ED
+%        SetD Libre + 2, D[Actual + 2]      @this
+%        SetD Libre + 3, VALOR_X            @x
+%        SetD Libre + 4, VALOR_T            @t
+%        SetActual Libre
+%        SetLibre Actual + 5
+
+% RA --> m2PC
+%        SetLibre Libre+1                   @lugar_retorno
+%        SetD Libre, PC + 11                @PTR
+%        SetD Libre + 1, Actual             @ED
+%        SetD Libre + 2, D[Actual + 2]      @this
+%        SetD Libre + 3, VALOR_X            @x
+%        @Variable aux1
+%        @Variable aux2
+%        @Variable j
+%        @Variable out
+%        SetActual Libre
+%        SetLibre Actual + 8
+
+% RA --> m3C
+%        SetD Libre, PC + 6                                          @PTR
+%        SetD Libre + 1, Actual                                      @ED
+%        SetD Libre + 2, D[Actual + 2]                               @this
+%        SetActual Libre
+%        SetLibre Actual + 3
+
+%-----------------------------------------------------------------------------
+%-----------------------------------------------------------------------------

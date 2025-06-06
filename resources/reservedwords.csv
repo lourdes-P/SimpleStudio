@@ -3,6 +3,8 @@ seth,pr_seth
 setactual,pr_setactual
 setlibre,pr_setlibre
 setin,pr_setin
+setout,pr_setout
+setpo,pr_setpo
 setlabel,pr_setlabel
 jumpt,pr_jumpt
 jump,pr_jump
@@ -10,5 +12,6 @@ halt,pr_halt
 actual,pr_actual
 libre,pr_libre
 pc,pr_pc
+po,pr_po
 d,pr_d
 h,pr_h

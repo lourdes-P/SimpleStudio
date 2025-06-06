@@ -7,7 +7,9 @@
       "request": "launch",
       "program": "${workspaceFolder}/src/logic/interpreter/lexicalanalizer/lexical_main.py",
       "console": "integratedTerminal",
-      "envFile": "${workspaceFolder}/.env"
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      }
     }
   ]
 }
