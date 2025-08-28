@@ -176,6 +176,7 @@ m2B     SetD CRA, D[CRA]+1                              @a1=a1+1
 % Class C --> method initC
 % translation
 % RA de initB
+
 initC   SetD Libre, PC + 6                                          @PTR
         SetD Libre + 1, Actual                                      @ED
         SetD Libre + 2, D[Actual+2]                                 @this

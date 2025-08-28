@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "ES2020",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./src/gui/static/js",
+    "rootDir": "./src/gui",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "allowJs": true,
+    "checkJs": false,
+  },
+  "include": [
+    "src/gui/**/*.ts",
+    "src/gui/components/*.ts",
+    "src/gui/types/*.ts", "src/gui/main.ts",
+  ],
+  "exclude": [
+    "node_modules",
+  ],
+}

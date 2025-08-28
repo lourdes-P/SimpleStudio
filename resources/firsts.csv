@@ -1,6 +1,8 @@
 Start,InstructionList
 Instruction,identifier
 Instruction,Signature
+Enter,enter
+Enter,empty
 InstructionList,Instruction
 InstructionList,empty
 Signature,pr_setd
@@ -14,6 +16,8 @@ Signature,pr_setlabel
 Signature,pr_jumpt
 Signature,pr_jump
 Signature,pr_halt
+Annotation,annotation
+Annotation,empty
 Expression,UnaryOp
 Expression,Operand
 UnaryOp,plus
