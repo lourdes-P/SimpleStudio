@@ -30,6 +30,11 @@ class CodeMemory:
     def get_instruction(self, address):
         return self._codecell_list[address].instruction
 
+    # debug function
+    def print_memory(self):
+        for codecell in self._codecell_list:
+            codecell.print_codecell()
+
     @property
     def codecell_list(self):
         return self._codecell_list

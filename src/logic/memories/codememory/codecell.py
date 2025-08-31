@@ -21,8 +21,14 @@ class CodeCell:
         self._annotation = annotation
 
     def print_codecell(self):
-        print(f"label: {self._label_token}, address: {self._address}, instruction: {self.str_instruction()}, annotation: {self._annotation}.")
+        print(f"label: {self.label_string()}, address: {self.address}, instruction: {self.instruction.generate_string()}, annotation: {self.annotation_string()}.")
 
+    def label_string(self):
+        return self._label_token.lexeme if self._label_token else ""
+    
+    def annotation_string(self):
+        return self._annotation.lexeme if self._annotation else ""
+    
     def str_instruction(self):
         instruction = ""
         for token in self._instruction:

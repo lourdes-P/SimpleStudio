@@ -12,3 +12,6 @@ class InstructionSimpleArg(Instruction):
     @property
     def argument1(self):
         return self._argument1
+    
+    def generate_string(self):
+        return f"{self.name} {self.argument1.generate_string()}"

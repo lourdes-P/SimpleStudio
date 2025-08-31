@@ -1,3 +1,4 @@
+from logic.expression_ast.expression_node import ExpressionNode
 from logic.interpreter.utils.mapmanager import MapManager
 from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception import SyntacticException
 from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_nomatch import SyntacticExceptionNoMatch
@@ -97,70 +98,70 @@ class SyntacticAnalyzer:
         instruction = None
         match instruction_token.token_name:
             case "pr_setd":
-                instruction = SetDInstruction(instruction_token, self.address)
+                instruction = SetDInstruction(instruction_token, self._address)
                 self.match("pr_setd")
                 argument1 = self.expression()
                 self.match("comma")
                 argument2 = self.expression()
-                instruction.set_argument1(argument1)
-                instruction.set_argument2(argument2)
+                instruction.set_argument1(ExpressionNode(argument1))
+                instruction.set_argument2(ExpressionNode(argument2))
             case "pr_seth":
-                instruction = SetHInstruction(instruction_token, self.address)
+                instruction = SetHInstruction(instruction_token, self._address)
                 self.match("pr_seth")
                 argument1 = self.expression()
                 self.match("comma")
                 argument2 = self.expression()
-                instruction.set_argument1(argument1)
-                instruction.set_argument2(argument2)
+                instruction.set_argument1(ExpressionNode(argument1))
+                instruction.set_argument2(ExpressionNode(argument2))
             case "pr_setactual":
-                instruction = SetActualInstruction(instruction_token, self.address)
+                instruction = SetActualInstruction(instruction_token, self._address)
                 self.match("pr_setactual")
                 argument1 = self.expression()
-                instruction.set_argument1(argument1)
+                instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setlibre":
-                instruction = SetLibreInstruction(instruction_token, self.address)
+                instruction = SetLibreInstruction(instruction_token, self._address)
                 self.match("pr_setlibre")
                 argument1 = self.expression()
-                instruction.set_argument1(argument1)
+                instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setin":
-                instruction = SetInInstruction(instruction_token, self.address)
+                instruction = SetInInstruction(instruction_token, self._address)
                 self.match("pr_setin")
                 argument1 = self.expression()
-                instruction.set_argument1(argument1)
+                instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setout":
-                instruction = SetOutInstruction(instruction_token, self.address)
+                instruction = SetOutInstruction(instruction_token, self._address)
                 self.match("pr_setout")
                 argument1 = self.expression()
-                instruction.set_argument1(argument1)
+                instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setpo":
-                instruction = SetPOInstruction(instruction_token, self.address)
+                instruction = SetPOInstruction(instruction_token, self._address)
                 self.match("pr_setpo")
                 argument1 = self.expression()
-                instruction.set_argument1(argument1)
+                instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setlabel":
-                instruction = SetLabelInstruction(instruction_token, self.address)
+                instruction = SetLabelInstruction(instruction_token, self._address)
                 self.match("pr_setlabel")
                 identifier_token = self.current_token
                 self.match("identifier")
                 self.match("comma")
                 argument2 = self.expression()
                 instruction.set_argument1(identifier_token)
-                instruction.set_argument2(argument2)
+                instruction.set_argument2(ExpressionNode(argument2))
             case "pr_jumpt":
-                instruction = JumpTInstruction(instruction_token, self.address)
+                instruction = JumpTInstruction(instruction_token, self._address)
                 self.match("pr_jumpt")
                 argument1 = self.expression()
                 self.match("comma")
                 argument2 = self.expression()
-                instruction.set_argument1(argument1)
-                instruction.set_argument2(argument2)
+                instruction.set_argument1(ExpressionNode(argument1))
+                instruction.set_argument2(ExpressionNode(argument2))
             case "pr_jump":
-                instruction = JumpInstruction(instruction_token, self.address)
+                instruction = JumpInstruction(instruction_token, self._address)
                 self.match("pr_jump")
                 argument1 = self.expression()
-                instruction.set_argument1(argument1)
+                instruction.set_argument1(ExpressionNode(argument1))
             case "pr_halt":
-                instruction = HaltInstruction(instruction_token, self.address)
+                instruction = HaltInstruction(instruction_token, self._address)
                 self.match("pr_halt")
         self.increase_address()
         return instruction
@@ -194,12 +195,15 @@ class SyntacticAnalyzer:
 
         return unary_op_node
 
-    def expression_remainder(self, unary_op):
+    def expression_remainder(self, unary_op_or_operand):
         if self._firsts_map.contains_entry("ExpressionRemainder", self.current_token.token_name):
-            self.binary_op()
-            self.expression()
+            binary_op_node = self.binary_op()    
+            binary_op_node.set_left_side(unary_op_or_operand)        
+            sub_expression = self.expression()
+            binary_op_node.set_right_side(sub_expression)                
+            return binary_op_node
         elif self._nexts_map.contains_entry("ExpressionRemainder", self.current_token.token_name):
-            pass
+            return unary_op_or_operand
         else:
             raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("ExpressionRemainder"))
 
@@ -207,40 +211,52 @@ class SyntacticAnalyzer:
         operand_node = None
         match self.current_token.token_name:
             case "pr_d":
-                operand_node = DataMemoryAccessNode()
+                data_memory_access_token = self.current_token
                 self.match("pr_d")
                 self.match("open_square_bracket")
-                self.expression()
+                sub_expression_node = self.expression()                
                 self.match("close_square_bracket")
+                operand_node = DataMemoryAccessNode(data_memory_access_token, sub_expression_node)
             case "pr_h":
+                heap_memory_access_token = self.current_token
                 self.match("pr_h")
                 self.match("open_square_bracket")
-                self.expression()
+                sub_expression_node = self.expression()
                 self.match("close_square_bracket")
+                operand_node = HeapMemoryAccessNode(heap_memory_access_token, sub_expression_node)
             case "pr_actual":
-                self.match("pr_actual")
+                operand_node = ActualNode(self.current_token)
+                self.match("pr_actual")                
             case "pr_libre":
-                self.match("pr_libre")
+                operand_node = LibreNode(self.current_token)
+                self.match("pr_libre")                
             case "int":
+                operand_node = IntNode(self.current_token)
                 self.match("int")
             case "identifier":
+                operand_node = IdentifierNode(self.current_token)
                 self.match("identifier")
             case "pr_pc":
+                operand_node = PCNode(self.current_token)
                 self.match("pr_pc")
             case "pr_po":
+                operand_node = PONode(self.current_token)
                 self.match("pr_po")
             case "open_parenthesis":
                 self.match("open_parenthesis")
-                self.expression()
+                sub_expression_node = self.expression()
                 self.match("close_parenthesis")
+                operand_node = ParenthesizedExpressionNode(sub_expression_node)
 
         return operand_node
             
     def binary_op(self):
+        binary_op_node = None
         if self._firsts_map.contains_entry("BinaryOp", self.current_token.token_name):
+            binary_op_node = BinaryOpNode(self.current_token)
             match self.current_token.token_name:
                 case "plus":
-                    self.match("plus")
+                    self.match("plus")                    
                 case "minus":
                     self.match("minus")
                 case "multiplication":
@@ -263,8 +279,7 @@ class SyntacticAnalyzer:
                     self.match("and")
                 case "or":
                     self.match("or")
-        elif (self._nexts_map.contains_entry("BinaryOp", self.current_token.token_name)):
-            pass # TODO ver si esto va aca... (no creo)
+            return binary_op_node        
         else:
             raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("BinaryOp"))
         

@@ -4,15 +4,11 @@ from logic.interpreter.lexicalanalyzer.token_ import Token
 from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception import LexicalException
 from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidoperator import LexicalExceptionInvalidOperator
 from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidsymbol import LexicalExceptionInvalidSymbol
-from logic.memories.codememory.codecell import CodeCell
 
 class LexicalAnalyzer:
-    
-    def __init__(self, io_manager, reserved_word_map, codememory):
+    def __init__(self, io_manager, reserved_word_map):
         self.io_manager = io_manager
         self.reserved_word_map = reserved_word_map
-        self._codememory = codememory
-        self._codecell = CodeCell()
         self.current_char = ''
         self._no_errors = True
         self._recover_from_error = False    # esto es por si se buscan varios errores léxicos
@@ -98,7 +94,7 @@ class LexicalAnalyzer:
             # o simplemente una clase, que luego pueda parsear a json con un método
             # para llevarlo al frontend? creo que no sería necesario con eel
             return self.s_annotation()
-        elif self.current_char == '%':
+        elif self.current_char == '#':
             self.update_current_char()
             return self.s_comment()
         elif self.current_char == '*':
@@ -133,6 +129,10 @@ class LexicalAnalyzer:
             self.update_lexeme()
             self.update_current_char()
             return self.s_not()
+        elif self.current_char == '%':
+            self.update_lexeme()
+            self.update_current_char()
+            return self.s_modulus()
         elif self.current_char == IOManager.EOF:
             return self.s_eof()
         else:
@@ -197,11 +197,8 @@ class LexicalAnalyzer:
         return Token("minus", self.lexeme, self.io_manager.get_line_number, self.first_char_index)
             
     def s_annotation(self):
-        if self.is_enter(self.current_char) or self.reached_eof():
-            self.update_current_char()
-            self._codecell.set_annotation(self.lexeme)
-            self.erase_lexeme()
-            return self.s0()
+        if self.is_enter(self.current_char) or self.reached_eof() or self.current_char == '#':
+            return Token("annotation", self.lexeme, self.io_manager.get_line_number, self.first_char_index) 
         else:
             self.update_lexeme()            
             self.update_current_char()
@@ -275,6 +272,9 @@ class LexicalAnalyzer:
     def s_different(self):
         return Token("different", self.lexeme, self.io_manager.get_line_number, self.first_char_index)                
         
+    def s_modulus(self):
+        return Token("mod", self.lexeme, self.io_manager.get_line_number, self.first_char_index)                
+    
     def s_eof(self):
         return Token("EOF", "", self.io_manager.get_line_number, self.first_char_index)
     
@@ -288,14 +288,6 @@ class LexicalAnalyzer:
     def register_lexical_error(self):
         self._no_errors = False
         self._recover_from_error = True
-
-    def add_codecell_to_memory(self):
-        if not (len(self.token_line_list) == 0):
-            self._codecell.set_instruction(self.token_line_list)
-            self._codecell.set_line_number(self.token_line_list[0].line_number)
-            self._codememory.add_codecell(self._codecell)
-            self._codecell = CodeCell()
-            self.token_line_list = []
 
     @property
     def no_errors(self):

@@ -13,8 +13,8 @@ from logic.memories.codememory.codememory import CodeMemory
 reserved_word_map = ReservedWordMap()
 io_manager = IOManager("./test1.txt")
 codememory = CodeMemory()
-lexical_analizer = LexicalAnalyzer(io_manager, reserved_word_map, codememory)
-syntactic_analizer = SyntacticAnalyzer(lexical_analizer)
+lexical_analizer = LexicalAnalyzer(io_manager, reserved_word_map, codememory)   # eliminar la codememory
+syntactic_analizer = SyntacticAnalyzer(lexical_analizer, codememory)
 finish = False
 
 try:

@@ -8,3 +8,6 @@ class SetLabelInstruction(InstructionDoubleArg):
     
     def execute(self, processor):
         pass # TODO
+    
+    def generate_string(self):
+        return (f"{self.name} {self.argument1.lexeme}, {self.argument2.generate_string()}")  

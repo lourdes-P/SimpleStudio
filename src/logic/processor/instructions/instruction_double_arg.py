@@ -12,5 +12,8 @@ class InstructionDoubleArg(InstructionSimpleArg):
     @property
     def argument2(self):
         return self._argument2
+    
+    def generate_string(self):
+        return f"{self.name} {self.argument1.generate_string()}, {self.argument2.generate_string()}" 
 
     

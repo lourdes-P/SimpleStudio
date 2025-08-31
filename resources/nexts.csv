@@ -15,6 +15,7 @@ Enter,pr_jumpt
 Enter,pr_jump
 Enter,pr_halt
 Signature,Annotation
+Signature,annotation
 Annotation,Enter
 Expression,Signature
 Expression,comma
@@ -30,6 +31,7 @@ Expression,greater
 Expression,greater_or_equal
 Expression,and
 Expression,or
+Expression,mod
 Expression,close_parenthesis
 Expression,close_square_bracket
 UnaryOp,pr_d

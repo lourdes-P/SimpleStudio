@@ -46,3 +46,4 @@ BinaryOp,greater
 BinaryOp,greater_or_equal
 BinaryOp,and
 BinaryOp,or
+BinaryOp,mod

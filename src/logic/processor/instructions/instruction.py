@@ -25,3 +25,6 @@ class Instruction(ABC):
     @abstractmethod
     def execute(self, processor):
         pass
+    
+    def generate_string(self):
+        return self.name

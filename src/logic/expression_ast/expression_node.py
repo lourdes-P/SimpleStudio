@@ -20,4 +20,4 @@ class ExpressionNode:
         pass # TODO ver cómo evaluar los nodos de AST
     
     def generate_string(self):
-        self._subexpression_node.generate_string()
+        return self._subexpression_node.generate_string()
