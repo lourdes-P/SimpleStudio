@@ -249,6 +249,14 @@ class SyntacticAnalyzer:
                 operand_node = ParenthesizedExpressionNode(sub_expression_node)
 
         return operand_node
+    
+    def string(self):
+        if self._firsts_map.contains_entry("String", self.current_token.token_name):
+            string_node = StringNode(self.current_token)
+            return string_node       
+        else:
+            raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("BinaryOp"))
+
             
     def binary_op(self):
         binary_op_node = None

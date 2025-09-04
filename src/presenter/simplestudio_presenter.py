@@ -1,10 +1,12 @@
 from logic.memories.codememory.codememory import CodeMemory
 from view.components.codememory import CodeMemoryView
+from view.main_view import SimpleStudioView
 
 class SimpleStudioPresenter:
-    def __init__(self, code_memory: CodeMemory, code_memory_view: CodeMemoryView = None):
+    def __init__(self, code_memory: CodeMemory, code_memory_view: CodeMemoryView = None, main_view: SimpleStudioView = None ):
         self.code_memory = code_memory
-        self.code_memory_view = code_memory_view
+        self.code_memory_view = code_memory_view        # TODO hacer que se obtenga a partir de main_view
+        self.main_view = main_view
     
     def set_code_memory_view(self, code_memory_view):
         self.code_memory_view = code_memory_view
@@ -32,6 +34,16 @@ class SimpleStudioPresenter:
             return code_cell.instruction.generate_string()
         else:
             return str(code_cell.instruction)
+        
+    def on_file_selected(self, file_path):
+        try:          
+            success = self.model.load_program(file_path)
+            if success:
+                print(f"Successfully loaded program from {file_path}")
+            else:
+                self.main_view.display_error("Failed to load the program file")
+        except Exception as e:
+            self.main_view.display_error(f"Error loading file: {str(e)}")
         
     def update_pc(self, pc: int):
         self.code_memory_view.set_current_pc(pc)

@@ -89,10 +89,6 @@ class LexicalAnalyzer:
         elif self.current_char == '@':
             self.update_lexeme()            
             self.update_current_char()
-            # TODO: de alguna forma guardar la anotación para mostrarla
-            # puedo llegar a tener un json? capaz
-            # o simplemente una clase, que luego pueda parsear a json con un método
-            # para llevarlo al frontend? creo que no sería necesario con eel
             return self.s_annotation()
         elif self.current_char == '#':
             self.update_current_char()
@@ -117,6 +113,10 @@ class LexicalAnalyzer:
             self.update_lexeme()
             self.update_current_char()
             return self.s_equals()
+        elif self.current_char == '\'':
+            # TODO ver si deberia guardar las comillas (no lo hago)
+            self.update_current_char()
+            return self.s_string()  
         elif self.current_char == '>':
             self.update_lexeme()
             self.update_current_char()
@@ -260,6 +260,14 @@ class LexicalAnalyzer:
           
     def s_lesser_or_equal(self):
         return Token("lesser_or_equal", self.lexeme, self.io_manager.get_line_number, self.first_char_index)        
+    
+    def s_string(self):
+        if self.current_char != '\'':
+            self.update_lexeme()
+            self.update_current_char()
+            return self.s_string()
+        else:
+            return Token("string", self.lexeme, self.io_manager.get_line_number, self.first_char_index)
         
     def s_not(self):
         if self.current_char == '=':

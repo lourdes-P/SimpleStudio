@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog
 from view.components.codememory import CodeMemoryView
 
 # Set appearance mode and color theme
@@ -29,7 +29,7 @@ class SimpleStudioView(ctk.CTk):
         self.top_frame = ctk.CTkFrame(self, height=140, corner_radius=0)
         self.top_frame.grid(row=0, column=0, sticky="nsew")
         self.top_frame.grid_rowconfigure(0, weight=1)
-        self.top_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5), weight=1)  # Multiple columns for buttons
+        self.top_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6), weight=1)  # Multiple columns for buttons
         
         # Top frame title
         self.logo_label = ctk.CTkLabel(
@@ -61,13 +61,20 @@ class SimpleStudioView(ctk.CTk):
         )
         self.reset_button.grid(row=0, column=4, padx=20, pady=10)
         
+        self.upload_button = ctk.CTkButton(
+            self.top_frame,
+            text="Upload Source",
+            command=self.browse_file
+        )
+        self.upload_button.grid(row=0, column=5, padx=20, pady=10)       
+        
         # Appearance mode option menu
         self.appearance_mode_label = ctk.CTkLabel(
             self.top_frame, 
             text="Appearance:",
             anchor="w"
         )
-        self.appearance_mode_label.grid(row=0, column=5, padx=(20, 0), pady=10)
+        self.appearance_mode_label.grid(row=0, column=6, padx=(20, 0), pady=10)
         
         self.appearance_mode_optionemenu = ctk.CTkOptionMenu(
             self.top_frame, 
@@ -75,7 +82,7 @@ class SimpleStudioView(ctk.CTk):
             command=self.change_appearance_mode,
             width=100
         )
-        self.appearance_mode_optionemenu.grid(row=0, column=6, padx=(0, 20), pady=10)
+        self.appearance_mode_optionemenu.grid(row=0, column=7, padx=(0, 20), pady=10)
         
         # Main content area - now below the top frame
         self.tabview = ctk.CTkTabview(self, width=250)
@@ -155,6 +162,17 @@ class SimpleStudioView(ctk.CTk):
             status = "set" if is_set else "cleared"
             print(f"Breakpoint at line {line_num} {status}")
     
+    def browse_file(self):
+        file_path = filedialog.askopenfilename(
+            title="Select Source File",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+        )
+        
+        if file_path:
+            self.file_path_label.configure(text=file_path)
+            # Notify the controller about the file selection
+            #self.controller.on_file_selected(file_path)
+    
     def create_memory_table(self, parent, title, row):
         # Title
         label = ctk.CTkLabel(parent, text=title, font=ctk.CTkFont(weight="bold"))
@@ -201,7 +219,11 @@ class SimpleStudioView(ctk.CTk):
         self.output_text.configure(state="normal")
         self.output_text.delete("1.0", "end")
         self.output_text.insert("end", "VM reset.\n")
-        self.output_text.configure(state="disabled")        
+        self.output_text.configure(state="disabled")  
+        
+    def display_error(self, message):
+        # TODO implement an error dialog here
+        print(f"Error: {message}")      
 
 if __name__ == "__main__":
     app = SimpleStudioView()

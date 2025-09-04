@@ -44,6 +44,7 @@ UnaryOp,pr_po
 UnaryOp,open_parenthesis
 UnaryOp,int
 ExpressionRemainder,Expression
+String,Expression
 BinaryOp,UnaryOp
 BinaryOp,plus
 BinaryOp,minus
