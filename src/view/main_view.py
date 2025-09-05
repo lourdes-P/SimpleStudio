@@ -16,7 +16,7 @@ class SimpleStudioView(ctk.CTk):
         
         # Initialize components
         self.code_memory_view = None
-        self._presenter = presenter
+        self.presenter = presenter
         
         self.create_widgets()
         
@@ -66,7 +66,13 @@ class SimpleStudioView(ctk.CTk):
             text="Upload Source",
             command=self.browse_file
         )
-        self.upload_button.grid(row=0, column=5, padx=20, pady=10)       
+        self.upload_button.grid(row=0, column=5, padx=(20,0), pady=10)  
+        
+        self.file_path_label = ctk.CTkLabel(
+            self.top_frame, 
+            text="No file selected"
+        )
+        self.file_path_label.grid(row=0, column=6, padx=1, pady=10)    
         
         # Appearance mode option menu
         self.appearance_mode_label = ctk.CTkLabel(
@@ -74,7 +80,7 @@ class SimpleStudioView(ctk.CTk):
             text="Appearance:",
             anchor="w"
         )
-        self.appearance_mode_label.grid(row=0, column=6, padx=(20, 0), pady=10)
+        self.appearance_mode_label.grid(row=0, column=7, padx=(20, 0), pady=10)
         
         self.appearance_mode_optionemenu = ctk.CTkOptionMenu(
             self.top_frame, 
@@ -82,7 +88,7 @@ class SimpleStudioView(ctk.CTk):
             command=self.change_appearance_mode,
             width=100
         )
-        self.appearance_mode_optionemenu.grid(row=0, column=7, padx=(0, 20), pady=10)
+        self.appearance_mode_optionemenu.grid(row=0, column=8, padx=(0, 20), pady=10)
         
         # Main content area - now below the top frame
         self.tabview = ctk.CTkTabview(self, width=250)
@@ -169,9 +175,11 @@ class SimpleStudioView(ctk.CTk):
         )
         
         if file_path:
-            self.file_path_label.configure(text=file_path)
-            # Notify the controller about the file selection
-            #self.controller.on_file_selected(file_path)
+            self.file_path_label.configure(text=file_path)            
+            self.presenter.on_file_selected()
+            
+    def get_selected_file_path(self):
+        return self.file_path_label.cget("text") if self.file_path_label else None
     
     def create_memory_table(self, parent, title, row):
         # Title

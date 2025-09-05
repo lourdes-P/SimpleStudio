@@ -1,12 +1,24 @@
 from logic.memories.codememory.codememory import CodeMemory
+from model.virtual_machine import VirtualMachine
 from view.components.codememory import CodeMemoryView
 from view.main_view import SimpleStudioView
+from listeners import VirtualMachineListener
 
-class SimpleStudioPresenter:
-    def __init__(self, code_memory: CodeMemory, code_memory_view: CodeMemoryView = None, main_view: SimpleStudioView = None ):
-        self.code_memory = code_memory
-        self.code_memory_view = code_memory_view        # TODO hacer que se obtenga a partir de main_view
-        self.main_view = main_view
+class SimpleStudioPresenter(VirtualMachineListener):
+    def __init__(self, code_memory: CodeMemory, virtual_machine : VirtualMachine, code_memory_view: CodeMemoryView = None, main_view: SimpleStudioView = None ):
+        self.code_memory = code_memory        
+        self.virtual_machine = virtual_machine
+        self.start()
+        
+        
+    def start(self):
+        self.main_view = SimpleStudioView(self)
+        self.code_memory_view = self.main_view.get_code_memory_view()
+        self.virtual_machine.addListener(self)
+        self.main_view.mainloop()
+    
+    def set_virtual_machine(self, virtual_machine : VirtualMachine):
+        self.virtual_machine = virtual_machine
     
     def set_code_memory_view(self, code_memory_view):
         self.code_memory_view = code_memory_view
@@ -26,7 +38,7 @@ class SimpleStudioPresenter:
 
         
         self.code_memory_view.load_code(code_data)
-        self.code_memory_view.set_current_pc(self.code_memory_view.current_pc + 3)
+        #self.code_memory_view.set_current_pc(self.code_memory_view.current_pc + 3)
     
     def _get_instruction_string(self, code_cell):
         """Extract the instruction string from a CodeCell"""
@@ -35,15 +47,22 @@ class SimpleStudioPresenter:
         else:
             return str(code_cell.instruction)
         
-    def on_file_selected(self, file_path):
-        try:          
-            success = self.model.load_program(file_path)
-            if success:
-                print(f"Successfully loaded program from {file_path}")
-            else:
-                self.main_view.display_error("Failed to load the program file")
+    def on_file_selected(self):
+        try:
+            file_path = self.main_view.get_selected_file_path()
+            # TODO self.main_view.loading(True)          
+            self.virtual_machine.load_program(file_path)       # crear hilo? puede ser util si ya hay algo mostrandose?
         except Exception as e:
             self.main_view.display_error(f"Error loading file: {str(e)}")
+    
+    def load_has_finished(self):
+        # TODO self.main_view.loading(False)
+        self.code_memory = self.virtual_machine.get_code_memory()
+        self.update_code_memory_view()        
+        
+    def trigger_error(self):
+        error = self.virtual_machine.get_last_triggered_error()
+        self.main_view.display_error(error)
         
     def update_pc(self, pc: int):
         self.code_memory_view.set_current_pc(pc)

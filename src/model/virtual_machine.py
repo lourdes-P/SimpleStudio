@@ -7,71 +7,54 @@ from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invali
 from logic.interpreter.syntacticanalyzer.syntacticanalyzer import SyntacticAnalyzer
 from logic.interpreter.syntacticanalyzer.syntacticexceptions import *
 from logic.memories.codememory.codememory import CodeMemory
-from view.main_view import SimpleStudioView
-from presenter.simplestudio_presenter import SimpleStudioPresenter
-
-"""
-Este es el main de mvp de diseño (está en la carpeta de presentador idk why)
-package main.java.presenter;
-
-import main.java.model.SearchModel;
-import main.java.utils.WikiSearchSimlator;
-
-public class Main {
-
-  public static void main(String[] args) {
-
-    SearchModel model = new SearchModel();
-    //We will simulate the search for now, basically until we implement a concrete connection to the WikiAPI
-    model.setWikiSearcher(new WikiSearchSimlator());
-
-    SearchPresenter presenter = new SearchPresenter(model);
-
-    presenter.start();
-  }
-
-}
-"""
 
 class VirtualMachine:
     def __init__(self):
-        self.program = None
-        self.C_memory = {}
+        self.reserved_word_map = ReservedWordMap()
+        self.code_memory = None
+        self.io_manager = None
+        self.error = None
         self.D_memory = {}
         self.H_memory = {}
+        self.listeners = []     # TODO listeners
         
-    def load_program(self, file_path):
+    def addListener(self, listener) : 
+        self.listeners.append(listener)
+        
+    def load_program(self, file_path):        
+        self.io_manager = IOManager(file_path)
+        self.code_memory = CodeMemory()
+        lexical_analyzer = LexicalAnalyzer(self.io_manager, self.reserved_word_map)
+        syntactic_analyzer = SyntacticAnalyzer(lexical_analyzer, self.code_memory)
         try:
-            with open(file_path, 'r') as file:
-                self.program = self.parse_program(file.read())
-            return True
-        except Exception as e:
-            print(f"Error loading program: {e}")
-            return False
-            
-    def parse_program(self, program_text):
-        # Implement your intermediate code parsing logic here
-        # This is a simple example - you'll need to adapt it to your specific format
-        instructions = []
-        lines = program_text.strip().split('\n')
+            syntactic_analyzer.start()
+        except (LexicalException, LexicalExceptionInvalidSymbol, 
+            LexicalExceptionInvalidOperator, SyntacticException, 
+            SyntacticExceptionNoMatch) as e:
+            self.error = e
+            self.notify_error()
         
-        for line_num, line in enumerate(lines, 1):
-            line = line.strip()
-            if line and not line.startswith('#'):  # Skip empty lines and comments
-                parts = line.split()
-                instructions.append({
-                    'line': line_num,
-                    'opcode': parts[0],
-                    'operands': parts[1:] if len(parts) > 1 else []
-                })
-                
-        return instructions
+        self.notify_load_finished()
+        
+    def notify_load_finished(self):
+        for listener in self.listeners:
+            listener.load_has_finished()
+        
+    def notify_error(self):
+        for listener in self.listeners:
+            listener.trigger_error()
+            
+    def get_last_triggered_error(self):
+        return self.error
+    
+    def get_code_memory(self):
+        return self.code_memory
+    
+    # TODO get heap, and data memory
         
     def execute_program(self):
-        # Implement your virtual machine execution logic here
-        if not self.program:
-            raise Exception("No program loaded")
-            
-        # Your execution logic would go here
-        # This would process the instructions and update C, D, H memories
-        
+        # TODO
+        if not self.io_manager:
+            self.error = 'No source loaded'
+            self.notify_error()
+                    
