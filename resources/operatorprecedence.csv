@@ -1,0 +1,12 @@
+multiplication,60
+division,60
+plus,50
+minus,50
+greater,40
+greater_or_equal,40
+lesser,40
+lesser_or_equal,40
+equals,30
+different,30
+and,20
+or,10

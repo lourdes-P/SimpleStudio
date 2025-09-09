@@ -16,4 +16,4 @@ class StringNode(OperandNode):
         pass # TODO
 
     def generate_string(self):
-        return self.get_string()
+        return f"'{self.get_string()}'"

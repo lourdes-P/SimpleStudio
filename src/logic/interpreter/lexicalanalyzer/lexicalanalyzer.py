@@ -262,11 +262,12 @@ class LexicalAnalyzer:
         return Token("lesser_or_equal", self.lexeme, self.io_manager.get_line_number, self.first_char_index)        
     
     def s_string(self):
-        if self.current_char != '\'':
+        if not self.current_char == '\'':
             self.update_lexeme()
             self.update_current_char()
             return self.s_string()
         else:
+            self.update_current_char()
             return Token("string", self.lexeme, self.io_manager.get_line_number, self.first_char_index)
         
     def s_not(self):

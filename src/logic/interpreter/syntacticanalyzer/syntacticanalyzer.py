@@ -1,27 +1,24 @@
 from logic.expression_ast.expression_node import ExpressionNode
-from logic.interpreter.utils.mapmanager import MapManager
-from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception import SyntacticException
-from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_nomatch import SyntacticExceptionNoMatch
-from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_missingenter import SyntacticExceptionMissingEnter
-from logic.interpreter.iomanager.io_manager import IOManager
+from logic.interpreter.syntacticanalyzer.syntacticexceptions import *
 from logic.memories.codememory.codecell import CodeCell
 from logic.memories.codememory.codememory import CodeMemory
 from logic.processor.instructions import *
 from logic.expression_ast.binaryop_nodes import *
 from logic.expression_ast.unaryop_nodes import *
 from logic.expression_ast.operand_nodes import *
-
+from logic.interpreter.utils import MapManager, OperatorPrecedenceManager
 
 class SyntacticAnalyzer:
 
-    def __init__(self, lexical_analyzer, code_memory):
+    def __init__(self, lexical_analyzer, code_memory, firsts_map = MapManager("resources/firsts.csv"), nexts_map = MapManager("resources/nexts.csv"), operator_precedence_manager = OperatorPrecedenceManager()):
         self.current_token = None
         self.lexical_analyzer = lexical_analyzer
         self._code_memory = code_memory
-        self._firsts_map = MapManager("resources/firsts.csv")
-        self._nexts_map = MapManager("resources/nexts.csv")
+        self._firsts_map = firsts_map
+        self._nexts_map = nexts_map
         self._no_errors = True
         self._address = 0       # suma por cada instrucción que se guarda en la memoria C, incremento en 1
+        self._operator_precedence_manager = operator_precedence_manager
         # sólo se notifica un error
 
 
@@ -101,6 +98,7 @@ class SyntacticAnalyzer:
                 instruction = SetDInstruction(instruction_token, self._address)
                 self.match("pr_setd")
                 argument1 = self.expression()
+                self.check_invalid_string_argument(argument1, instruction_token.lexeme)
                 self.match("comma")
                 argument2 = self.expression()
                 instruction.set_argument1(ExpressionNode(argument1))
@@ -109,6 +107,7 @@ class SyntacticAnalyzer:
                 instruction = SetHInstruction(instruction_token, self._address)
                 self.match("pr_seth")
                 argument1 = self.expression()
+                self.check_invalid_string_argument(argument1, instruction_token.lexeme)                
                 self.match("comma")
                 argument2 = self.expression()
                 instruction.set_argument1(ExpressionNode(argument1))
@@ -117,16 +116,19 @@ class SyntacticAnalyzer:
                 instruction = SetActualInstruction(instruction_token, self._address)
                 self.match("pr_setactual")
                 argument1 = self.expression()
+                self.check_invalid_string_argument(argument1, instruction_token.lexeme)
                 instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setlibre":
                 instruction = SetLibreInstruction(instruction_token, self._address)
                 self.match("pr_setlibre")
                 argument1 = self.expression()
+                self.check_invalid_string_argument(argument1, instruction_token.lexeme)
                 instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setin":
                 instruction = SetInInstruction(instruction_token, self._address)
                 self.match("pr_setin")
                 argument1 = self.expression()
+                self.check_invalid_string_argument(argument1, instruction_token.lexeme)
                 instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setout":
                 instruction = SetOutInstruction(instruction_token, self._address)
@@ -137,6 +139,7 @@ class SyntacticAnalyzer:
                 instruction = SetPOInstruction(instruction_token, self._address)
                 self.match("pr_setpo")
                 argument1 = self.expression()
+                self.check_invalid_string_argument(argument1, instruction_token.lexeme)
                 instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setlabel":
                 instruction = SetLabelInstruction(instruction_token, self._address)
@@ -145,20 +148,24 @@ class SyntacticAnalyzer:
                 self.match("identifier")
                 self.match("comma")
                 argument2 = self.expression()
+                self.check_invalid_string_argument(argument2, instruction_token.lexeme)
                 instruction.set_argument1(identifier_token)
                 instruction.set_argument2(ExpressionNode(argument2))
             case "pr_jumpt":
                 instruction = JumpTInstruction(instruction_token, self._address)
                 self.match("pr_jumpt")
                 argument1 = self.expression()
+                self.check_invalid_string_argument(argument1, instruction_token.lexeme)
                 self.match("comma")
                 argument2 = self.expression()
+                self.check_invalid_string_argument(argument2, instruction_token.lexeme)
                 instruction.set_argument1(ExpressionNode(argument1))
                 instruction.set_argument2(ExpressionNode(argument2))
             case "pr_jump":
                 instruction = JumpInstruction(instruction_token, self._address)
                 self.match("pr_jump")
                 argument1 = self.expression()
+                self.check_invalid_string_argument(argument1, instruction_token.lexeme)
                 instruction.set_argument1(ExpressionNode(argument1))
             case "pr_halt":
                 instruction = HaltInstruction(instruction_token, self._address)
@@ -171,14 +178,27 @@ class SyntacticAnalyzer:
             unary_op_node = self.unary_op()
             operand_node = self.operand()
             unary_op_node.set_operand_node(operand_node)
-            return self.expression_remainder(unary_op_node)
+            return self.expression_remainder_2(unary_op_node)
         elif self._firsts_map.contains_entry("Operand", self.current_token.token_name):
             operand_node = self.operand()
-            return self.expression_remainder(operand_node)
+            return self.expression_remainder_2(operand_node)
         elif self._nexts_map.contains_entry("Expression", self.current_token.token_name):
             return None
         else:
             raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("Expression"))
+
+    def unary_op_or_operand(self):
+        if self._firsts_map.contains_entry("UnaryOp", self.current_token.token_name):
+            unary_op_node = self.unary_op()
+            operand_node = self.operand()
+            self.check_string_operand_validity_unary(unary_op_node.token, operand_node)
+            unary_op_node.set_operand_node(operand_node)
+            return unary_op_node
+        elif self._firsts_map.contains_entry("Operand", self.current_token.token_name):
+            operand_node = self.operand()
+            return operand_node
+        else:
+            raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("UnaryOp").extend(self.concatenated_first_and_next_lists("Operand")))
 
     def unary_op(self):
         unary_op_node = None
@@ -192,6 +212,9 @@ class SyntacticAnalyzer:
             case "not":
                 unary_op_node = NotNode(self.current_token)
                 self.match("not")
+            case _:
+                raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("UnaryOp"))
+
 
         return unary_op_node
 
@@ -247,51 +270,94 @@ class SyntacticAnalyzer:
                 sub_expression_node = self.expression()
                 self.match("close_parenthesis")
                 operand_node = ParenthesizedExpressionNode(sub_expression_node)
+            case 'string':
+                operand_node = StringNode(self.current_token)
+                self.match("string")
+            case _:
+                raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("Operand"))
 
         return operand_node
-    
-    def string(self):
-        if self._firsts_map.contains_entry("String", self.current_token.token_name):
-            string_node = StringNode(self.current_token)
-            return string_node       
+            
+    def expression_remainder_2(self, unary_op_or_operand):
+        if self._firsts_map.contains_entry("ExpressionRemainder", self.current_token.token_name):
+            return self.parse_binary_operation(-1, unary_op_or_operand)
+        elif self._nexts_map.contains_entry("ExpressionRemainder", self.current_token.token_name):
+            return unary_op_or_operand
         else:
-            raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("BinaryOp"))
+            raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("ExpressionRemainder"))
+          
+    def parse_binary_operation(self, former_operator_precedence, left_side):
+        while True:
+            if not self._firsts_map.contains_entry("ExpressionRemainder", self.current_token.token_name):
+                return left_side
+            binary_operator = self.current_token
 
+            current_operator_precedence = int(self.get_operator_precedence(binary_operator))
+
+            if (current_operator_precedence < former_operator_precedence):
+                return left_side            
+            
+            binary_operator_node = self.binary_op() # le asigno el operador en el medio, me falta izquierda y derecha
+            
+            right_side = self.unary_op_or_operand()
+            
+            self.check_string_operand_validity_binary(left_side, binary_operator, right_side)
+            
+            if self._firsts_map.contains_entry("ExpressionRemainder", self.current_token.token_name):
+                next_operator = self.current_token
+                next_operator_precedence = int(self.get_operator_precedence(next_operator))
+                
+                if current_operator_precedence < next_operator_precedence:
+                    right_side = self.parse_binary_operation(current_operator_precedence+1, right_side)
+                    
+            binary_operator_node.set_left_side(left_side)
+            binary_operator_node.set_right_side(right_side)
+            left_side = binary_operator_node
             
     def binary_op(self):
         binary_op_node = None
         if self._firsts_map.contains_entry("BinaryOp", self.current_token.token_name):
-            binary_op_node = BinaryOpNode(self.current_token)
             match self.current_token.token_name:
                 case "plus":
+                    binary_op_node = AdditionNode(self.current_token)
                     self.match("plus")                    
                 case "minus":
+                    binary_op_node = SubtractionNode(self.current_token)
                     self.match("minus")
                 case "multiplication":
+                    binary_op_node = MultiplicationNode(self.current_token)
                     self.match("multiplication")
                 case "division":
+                    binary_op_node = DivisionNode(self.current_token)
                     self.match("division")
                 case "equals":
+                    binary_op_node = EqualsNode(self.current_token)
                     self.match("equals")
                 case "different":
+                    binary_op_node = DiffersNode(self.current_token)
                     self.match("different")
                 case "lesser":
+                    binary_op_node = LesserNode(self.current_token)
                     self.match("lesser")
                 case "lesser_or_equal":
+                    binary_op_node = LesserOrEqualNode(self.current_token)
                     self.match("lesser_or_equal")
                 case "greater":
+                    binary_op_node = GreaterNode(self.current_token)
                     self.match("greater")
                 case "greater_or_equal":
+                    binary_op_node = GreaterOrEqualNode(self.current_token)
                     self.match("greater_or_equal")
                 case "and":
+                    binary_op_node = AndNode(self.current_token)
                     self.match("and")
                 case "or":
+                    binary_op_node = OrNode(self.current_token)
                     self.match("or")
             return binary_op_node        
         else:
             raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("BinaryOp"))
         
-
 
     def concatenated_first_and_next_lists(self, production_name):
         copy_firsts_nexts_list = self._firsts_map.get_value(production_name).copy()
@@ -307,3 +373,29 @@ class SyntacticAnalyzer:
         
     def increase_address(self):
         self._address += 1
+        
+    def get_operator_precedence(self, binary_operator_token):
+        return self._operator_precedence_manager.get_precedence(binary_operator_token.token_name)
+    
+    def check_string_operand_validity_binary(self, left_side, binary_operator_token, right_side):
+        if self.check_if_string(left_side) and left_side.__class__.__name__ == right_side.__class__.__name__ and (binary_operator_token.token_name == 'equals' or binary_operator_token.token_name == 'different'):
+            pass
+        elif self.check_if_string(left_side) and left_side.__class__.__name__ == right_side.__class__.__name__ and (binary_operator_token.token_name != 'equals' and binary_operator_token.token_name != 'different'):
+            raise StringInvalidOperatorSyntacticException(binary_operator_token)
+        elif self.check_if_string(right_side) and left_side.__class__.__name__ != right_side.__class__.__name__:
+            raise StringInvalidComparationSyntacticException(left_side.token)
+        elif self.check_if_string(left_side) and left_side.__class__.__name__ != right_side.__class__.__name__:
+            raise StringInvalidComparationSyntacticException(right_side.token)
+        else:
+            pass
+        
+    def check_string_operand_validity_unary(self, unary_operator_token, operand):
+        if operand.__class__.__name__ == 'StringNode':
+            raise StringInvalidUnaryOperationSyntacticException(unary_operator_token)
+        
+    def check_invalid_string_argument(self, node, instruction_name):
+        if self.check_if_string(node):
+            raise InstructionInvalidStringArgumentSyntacticException(node.token, instruction_name)            
+        
+    def check_if_string(self, node):
+        return True if node.__class__.__name__ == 'StringNode' else False

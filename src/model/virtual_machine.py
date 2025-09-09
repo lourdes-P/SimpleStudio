@@ -7,10 +7,14 @@ from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invali
 from logic.interpreter.syntacticanalyzer.syntacticanalyzer import SyntacticAnalyzer
 from logic.interpreter.syntacticanalyzer.syntacticexceptions import *
 from logic.memories.codememory.codememory import CodeMemory
+from logic.interpreter.utils import MapManager, OperatorPrecedenceManager
 
 class VirtualMachine:
     def __init__(self):
         self.reserved_word_map = ReservedWordMap()
+        self._firsts_map = MapManager("resources/firsts.csv")
+        self._nexts_map = MapManager("resources/nexts.csv")
+        self._operator_precedence_manager = OperatorPrecedenceManager()
         self.code_memory = None
         self.io_manager = None
         self.error = None
@@ -25,7 +29,7 @@ class VirtualMachine:
         self.io_manager = IOManager(file_path)
         self.code_memory = CodeMemory()
         lexical_analyzer = LexicalAnalyzer(self.io_manager, self.reserved_word_map)
-        syntactic_analyzer = SyntacticAnalyzer(lexical_analyzer, self.code_memory)
+        syntactic_analyzer = SyntacticAnalyzer(lexical_analyzer, self.code_memory, self._firsts_map, self._nexts_map, self._operator_precedence_manager)
         try:
             syntactic_analyzer.start()
         except (LexicalException, LexicalExceptionInvalidSymbol, 

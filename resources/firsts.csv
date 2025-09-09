@@ -32,9 +32,9 @@ Operand,pr_pc
 Operand,pr_po
 Operand,open_parenthesis
 Operand,int
+Operand,string
 ExpressionRemainder,BinaryOp
 ExpressionRemainder,empty
-String,apostrophe
 BinaryOp,plus
 BinaryOp,minus
 BinaryOp,multiplication
