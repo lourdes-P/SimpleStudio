@@ -4,5 +4,10 @@ from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_
 from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_string_invalidoperator import StringInvalidOperatorSyntacticException
 from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_string_unaryoperator import StringInvalidUnaryOperationSyntacticException
 from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_string_invalidargument import InstructionInvalidStringArgumentSyntacticException
+from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_duplicatedlabel import DuplicatedLabelSyntacticException
+from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_simple import SimpleSyntacticException
 
-__all__ = ['SyntacticException', 'SyntacticExceptionNoMatch', 'SyntacticExceptionMissingEnter', 'StringInvalidComparationSyntacticException', 'StringInvalidOperatorSyntacticException', 'StringInvalidUnaryOperationSyntacticException', 'InstructionInvalidStringArgumentSyntacticException']
+__all__ = ['SyntacticException', 'SyntacticExceptionNoMatch', 'SyntacticExceptionMissingEnter', 
+           'StringInvalidComparationSyntacticException', 'StringInvalidOperatorSyntacticException', 
+           'StringInvalidUnaryOperationSyntacticException', 'InstructionInvalidStringArgumentSyntacticException',
+           'DuplicatedLabelSyntacticException', 'SimpleSyntacticException']

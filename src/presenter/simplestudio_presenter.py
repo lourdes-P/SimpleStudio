@@ -5,7 +5,7 @@ from view.main_view import SimpleStudioView
 from listeners import VirtualMachineListener
 
 class SimpleStudioPresenter(VirtualMachineListener):
-    def __init__(self, code_memory: CodeMemory, virtual_machine : VirtualMachine, code_memory_view: CodeMemoryView = None, main_view: SimpleStudioView = None ):
+    def __init__(self, code_memory: CodeMemory, virtual_machine : VirtualMachine):
         self.code_memory = code_memory        
         self.virtual_machine = virtual_machine
         self.start()

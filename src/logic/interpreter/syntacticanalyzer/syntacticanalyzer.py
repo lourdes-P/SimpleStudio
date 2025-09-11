@@ -19,8 +19,8 @@ class SyntacticAnalyzer:
         self._no_errors = True
         self._address = 0       # suma por cada instrucción que se guarda en la memoria C, incremento en 1
         self._operator_precedence_manager = operator_precedence_manager
+        self._label_list = {}
         # sólo se notifica un error
-
 
     def match(self, expected_token_name):
         if expected_token_name == self.current_token.token_name:
@@ -60,6 +60,7 @@ class SyntacticAnalyzer:
             codecell = CodeCell(address= self._address)
             # address is increased after         
             label = self.current_token
+            self.add_label_to_list(label, self._address)
             codecell.set_label_token(label)
             self.match("identifier")
             instruction = self.signature()
@@ -399,3 +400,10 @@ class SyntacticAnalyzer:
         
     def check_if_string(self, node):
         return True if node.__class__.__name__ == 'StringNode' else False
+    
+    def add_label_to_list(self, label_token, address):
+        label_name = label_token.token_name
+        if self._label_list.get(label_name) == None:
+            self._label_list[label_name] = address
+        else:
+            raise DuplicatedLabelSyntacticException(label_token)
