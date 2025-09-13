@@ -10,10 +10,6 @@ class CodeCell(MemoryCell):
     def set_label_token(self,label_token):
         self._label_token = label_token
 
-    def set_address(self, address):
-        self._address = address
-        self._instruction.set_address(address)
-
     def set_instruction(self, instruction):
         self._instruction = instruction
 
@@ -37,13 +33,5 @@ class CodeCell(MemoryCell):
         return self._label_token
     
     @property
-    def address(self):
-        return self._address
-    
-    @property
     def instruction(self):
         return self._instruction
-    
-    @property
-    def annotation(self):
-        return self._annotation
