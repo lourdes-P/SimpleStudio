@@ -5,8 +5,7 @@ class CodeMemory:
     def __init__(self):
         self._codecell_list = []
         self._index = 0
-        self._pc = 0
-        
+        self._pc = 0   
 
     def update_pc(self, pc):
         self._pc = pc

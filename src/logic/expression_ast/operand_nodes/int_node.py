@@ -14,7 +14,7 @@ class IntNode(OperandNode):
         return self._token.lexeme
 
     def evaluate(self, processor=None):
-        pass # TODO
+        return self.get_int()
 
     def generate_string(self):
         return str(self.get_int())

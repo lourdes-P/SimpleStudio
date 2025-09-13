@@ -1,11 +1,11 @@
-from logic.interpreter.lexicalanalyzer.token_ import Token
-class CodeCell:
+from logic.memories.memorycell import MemoryCell
+
+class CodeCell(MemoryCell):
 
     def __init__(self, label_token=None, address=None, instruction=None, annotation=None):
+        super().__init__(address, annotation)
         self._label_token = label_token
-        self._address = address
         self._instruction = instruction        
-        self._annotation = annotation
     
     def set_label_token(self,label_token):
         self._label_token = label_token
@@ -16,9 +16,6 @@ class CodeCell:
 
     def set_instruction(self, instruction):
         self._instruction = instruction
-
-    def set_annotation(self, annotation):
-        self._annotation = annotation
 
     def print_codecell(self):
         print(f"label: {self.label_string()}, address: {self.address}, instruction: {self.instruction.generate_string()}, annotation: {self.annotation_string()}.")

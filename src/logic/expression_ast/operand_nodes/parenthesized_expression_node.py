@@ -11,7 +11,7 @@ class ParenthesizedExpressionNode(OperandNode):
     # TODO ver cómo se comporta binarios y accesos
 
     def evaluate(self, processor=None):
-        pass # TODO
+        return self._sub_expression_node.evaluate(processor)
 
     def generate_string(self):
         return f"({self._sub_expression_node.generate_string()})"

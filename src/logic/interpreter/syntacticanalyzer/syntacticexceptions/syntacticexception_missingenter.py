@@ -3,5 +3,5 @@ from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_
 class SyntacticExceptionMissingEnter(SimpleSyntacticException):
     
     def __init__(self, current_token):
-        error_message = f"At line {current_token.line}: missing enter after instruction."
+        error_message = f"At line {current_token.line_number}: missing enter after instruction."
         super().__init__(error_message)

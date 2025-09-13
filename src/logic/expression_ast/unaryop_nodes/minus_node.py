@@ -5,6 +5,6 @@ class MinusNode(UnaryOpNode):
     def __init__(self, operator_token, operand_node = None):
         super().__init__(operator_token, operand_node)
 
-    
     def evaluate(self, processor=None):
-        pass
+        operand_evaluation = self._operand_node.evaluate(processor)
+        return -operand_evaluation

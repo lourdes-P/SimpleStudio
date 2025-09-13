@@ -12,7 +12,7 @@ class LibreNode(OperandNode):
     # TODO ver cómo se comporta binarios y accesos
 
     def evaluate(self, processor=None):
-        pass # TODO
+        return processor.get_libre()
 
     def generate_string(self):
         return str(self.token.lexeme)

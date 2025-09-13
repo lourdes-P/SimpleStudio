@@ -13,7 +13,7 @@ class StringNode(OperandNode):
         return self._token.lexeme
 
     def evaluate(self, processor=None):
-        pass # TODO
+        return self.get_string()
 
     def generate_string(self):
         return f"'{self.get_string()}'"

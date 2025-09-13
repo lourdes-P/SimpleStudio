@@ -30,7 +30,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
             # Convert each CodeCell to the dictionary format
             cell_data = {                
                 'label': code_cell.label_string(),
-                'line': code_cell.address + 1,  # address + 1 as line number
+                'line': code_cell.instruction.line,  # es la linea del archivo, no la address
                 'instruction': self._get_instruction_string(code_cell),
                 'annotation': code_cell.annotation_string()
             }

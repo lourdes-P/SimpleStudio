@@ -6,4 +6,6 @@ class AndNode(BinaryOpNode):
         super().__init__(operator_token, left_side, right_side)
 
     def evaluate(self, processor=None):
-        pass # TODO
+        left_side_evaluation = self.left_side.evaluate(processor)
+        right_side_evaluation = self.right_side.evaluate(processor)
+        return left_side_evaluation and right_side_evaluation

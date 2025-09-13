@@ -6,4 +6,5 @@ class DataMemoryAccessNode(MemoryAccessNode):
         super().__init__(token, sub_expression_node)
 
     def evaluate(self, processor=None):
-        pass # TODO 
+        address = self._sub_expression_node.evaluate(processor)
+        return processor.access_data_memory(address)

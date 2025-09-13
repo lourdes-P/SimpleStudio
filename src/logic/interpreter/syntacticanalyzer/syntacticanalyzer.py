@@ -402,7 +402,7 @@ class SyntacticAnalyzer:
         return True if node.__class__.__name__ == 'StringNode' else False
     
     def add_label_to_list(self, label_token, address):
-        label_name = label_token.token_name
+        label_name = label_token.lexeme
         if self._label_list.get(label_name) == None:
             self._label_list[label_name] = address
         else:
