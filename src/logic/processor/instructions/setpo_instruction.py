@@ -7,4 +7,7 @@ class SetPOInstruction(InstructionSimpleArg):
 
     
     def execute(self, processor):
-        pass # TODO
+        address = self.argument1.evaluate(processor)
+        processor.set_po(address)
+        processor.increase_pc()
+        return processor.SUCCESS

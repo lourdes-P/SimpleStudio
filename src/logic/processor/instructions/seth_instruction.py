@@ -8,3 +8,5 @@ class SetHInstruction(InstructionDoubleArg):
     
     def execute(self, processor):
         pass # TODO
+    # seth destino, fuente
+    

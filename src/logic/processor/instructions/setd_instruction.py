@@ -8,3 +8,4 @@ class SetDInstruction(InstructionDoubleArg):
     
     def execute(self, processor):
         pass # TODO
+    # setd destino, fuente

@@ -11,7 +11,7 @@ class PCNode(OperandNode):
     # TODO ver cómo se comporta binarios y accesos
 
     def evaluate(self, processor=None):
-        return processor.get_pc()
+        return processor.pc()
 
     def generate_string(self):
         return str(self.token.lexeme)

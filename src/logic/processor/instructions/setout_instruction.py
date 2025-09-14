@@ -7,5 +7,9 @@ class SetOutInstruction(InstructionSimpleArg):
 
     
     def execute(self, processor):
-        pass # TODO un print de un entero. muestra por pantalla 
+        argument = self.argument1.evaluate(processor)
+        print(argument)
+        processor.increase_pc()
+        return processor.SUCCESS
+        # TODO un print de un entero. muestra por pantalla 
     #el resultado de evaluar la expresión Fuente

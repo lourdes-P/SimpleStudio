@@ -7,6 +7,6 @@ class HaltInstruction(Instruction):
 
     
     def execute(self, processor):
-        pass # TODO terminar la ejecución
-    # return True ?
+        processor.disable()
+        return processor.SUCCESS
     

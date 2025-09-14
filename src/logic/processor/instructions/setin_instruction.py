@@ -7,6 +7,10 @@ class SetInInstruction(InstructionSimpleArg):
 
     
     def execute(self, processor):
-        pass # TODO leer input del usuario y guardarlo en la 
+        target_address = self.argument1.evaluate(processor)
+        input = processor.get_user_input()
+        processor.save_in_data_memory(target_address, input)
+        return processor.SUCCESS
+        # TODO leer input del usuario y guardarlo en la 
     # memoria D, específicamente, en la direccion resultante
     # de evaluar la expresión destino

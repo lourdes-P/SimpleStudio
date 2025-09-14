@@ -17,7 +17,7 @@ class ExpressionNode:
         return self._subexpression_node
     
     def evaluate(self, processor):
-        pass # TODO ver cómo evaluar los nodos de AST
+        return self._subexpression_node.evaluate(processor) # TODO ver cómo evaluar los nodos de AST
     
     def generate_string(self):
         return self._subexpression_node.generate_string()

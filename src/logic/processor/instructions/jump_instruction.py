@@ -7,5 +7,7 @@ class JumpInstruction(InstructionSimpleArg):
 
     
     def execute(self, processor):
-        pass # TODO
+        address = self.argument1.evaluate(processor)
+        processor.set_pc(address)
+        return processor.SUCCESS
     

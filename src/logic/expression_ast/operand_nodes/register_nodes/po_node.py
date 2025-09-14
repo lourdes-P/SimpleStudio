@@ -11,7 +11,7 @@ class PONode(OperandNode):
     # TODO ver cómo se comporta binarios y accesos
 
     def evaluate(self, processor=None):
-        return processor.get_po()
+        return processor.po()
 
     def generate_string(self):
         return str(self.token.lexeme)
