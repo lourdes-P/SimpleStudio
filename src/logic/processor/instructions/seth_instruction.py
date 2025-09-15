@@ -7,6 +7,9 @@ class SetHInstruction(InstructionDoubleArg):
 
     
     def execute(self, processor):
-        pass # TODO
-    # seth destino, fuente
+        target_address = self.argument1.evaluate(processor)
+        data = self.argument2.evaluate(processor)
+        processor.set_in_heap_memory(target_address, data)
+        
+        return processor.SUCCESS
     

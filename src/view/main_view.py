@@ -19,6 +19,7 @@ class SimpleStudioView(ctk.CTk):
         self.presenter = presenter
         
         self.create_widgets()
+        # TODO execution buttons unabled before source load
         
     def create_widgets(self):
         # Create main grid - now with a row for the top sidebar
@@ -93,24 +94,24 @@ class SimpleStudioView(ctk.CTk):
         # Main content area - now below the top frame
         self.tabview = ctk.CTkTabview(self, width=250)
         self.tabview.grid(row=1, column=0, padx=20, pady=20, sticky="nsew")
-        
+        '''
         # Add tabs
-        self.tabview.add("Code")
+        self.tabview.add("Code")'''
         self.tabview.add("Memory")
-        self.tabview.add("Output")
+        '''self.tabview.add("Output")
         
         # Configure tab weights to make them expand properly
         self.tabview.tab("Code").grid_rowconfigure(0, weight=1)
-        self.tabview.tab("Code").grid_columnconfigure(0, weight=1)
+        self.tabview.tab("Code").grid_columnconfigure(0, weight=1)'''
         self.tabview.tab("Memory").grid_rowconfigure(0, weight=1)
         self.tabview.tab("Memory").grid_columnconfigure(0, weight=1)
-        self.tabview.tab("Output").grid_rowconfigure(0, weight=1)
+        '''self.tabview.tab("Output").grid_rowconfigure(0, weight=1)
         self.tabview.tab("Output").grid_columnconfigure(0, weight=1)
         
         # Code tab
         self.code_text = ctk.CTkTextbox(self.tabview.tab("Code"), width=400)
         self.code_text.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
-        self.code_text.insert("0.0", "// Enter your intermediate code here\n")
+        self.code_text.insert("0.0", "// Enter your intermediate code here\n")'''
         
         # Memory tab - using a frame with grid
         self.memory_frame = ctk.CTkFrame(self.tabview.tab("Memory"))
@@ -120,10 +121,10 @@ class SimpleStudioView(ctk.CTk):
                         
         self.create_c_memory()
         
-        # Output tab
+        '''# Output tab
         self.output_text = ctk.CTkTextbox(self.tabview.tab("Output"), width=400)
         self.output_text.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
-        self.output_text.configure(state="disabled")  # Make it read-only
+        self.output_text.configure(state="disabled")  # Make it read-only'''
         
         
     def create_c_memory(self):        
@@ -167,6 +168,9 @@ class SimpleStudioView(ctk.CTk):
             """Example breakpoint change handler"""
             status = "set" if is_set else "cleared"
             print(f"Breakpoint at line {line_num} {status}")
+            
+    def get_breakpoints(self):
+        return self.code_memory_view.get_breakpoints()
     
     def browse_file(self):
         file_path = filedialog.askopenfilename(

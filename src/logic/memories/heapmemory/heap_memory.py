@@ -19,7 +19,7 @@ class HeapMemory(DataHeapMemory):
         self._po = new_address
         self._heapcell_list[self._po].place_po()
         
-    def update_cell(self, address, value = None, annotation = None):
+    def set_cell(self, address, value = None, annotation = None):
         self._heapcell_list[address].set_value(value)
         self._heapcell_list[address].set_annotation(annotation)
         

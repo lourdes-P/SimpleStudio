@@ -10,6 +10,15 @@ class VirtualMachineListener(ABC):
     def trigger_error(self):
         pass
     
+    @abstractmethod
+    def trigger_user_input(self):
+        pass
+    
+    @abstractmethod
+    def disable_execution(self):
+        pass
+    
+    
     '''
     @abstractmethod
     def execution_completed(self):

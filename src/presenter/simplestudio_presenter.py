@@ -30,7 +30,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
             # Convert each CodeCell to the dictionary format
             cell_data = {                
                 'label': code_cell.label_string(),
-                'line': code_cell.instruction.line,  # es la linea del archivo, no la address
+                'address': code_cell.instruction.address,  # TODO address o linea?
                 'instruction': self._get_instruction_string(code_cell),
                 'annotation': code_cell.annotation_string()
             }
@@ -46,7 +46,9 @@ class SimpleStudioPresenter(VirtualMachineListener):
             return code_cell.instruction.generate_string()
         else:
             return str(code_cell.instruction)
-        
+       
+    # --------- user view events    
+     
     def on_file_selected(self):
         try:
             file_path = self.main_view.get_selected_file_path()
@@ -54,6 +56,18 @@ class SimpleStudioPresenter(VirtualMachineListener):
             self.virtual_machine.load_program(file_path)       # crear hilo? puede ser util si ya hay algo mostrandose?
         except Exception as e:
             self.main_view.display_error(f"Error loading file: {str(e)}")
+            
+    def on_user_input(self):
+        input = self.get_user_input()
+        self.virtual_machine.deliver_user_input(input)
+        
+    def on_breakpoint_change(self):
+        breakpoint_list = self.main_view.get_breakpoints()
+        self.virtual_machine.update_breakpoint_list(breakpoint_list)
+        
+    # --------- end user view events      
+    
+    # --------- listener methods
     
     def load_has_finished(self):
         # TODO self.main_view.loading(False)
@@ -63,6 +77,15 @@ class SimpleStudioPresenter(VirtualMachineListener):
     def trigger_error(self):
         error = self.virtual_machine.get_last_triggered_error()
         self.main_view.display_error(error)
+        
+    def trigger_user_input(self):
+        self.main_view.display_user_input() # TODO main_view.display_user_input
+        
+    def disable_execution(self):
+        self.main_view.disable_execution()  # TODO main_view.disable_execution
+        
+    # --------- end listener methods
+    
         
     def update_pc(self, pc: int):
         self.code_memory_view.set_current_pc(pc)

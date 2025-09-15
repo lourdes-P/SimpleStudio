@@ -7,10 +7,15 @@ class SetInInstruction(InstructionSimpleArg):
 
     
     def execute(self, processor):
-        target_address = self.argument1.evaluate(processor)
-        input = processor.get_user_input()
-        processor.save_in_data_memory(target_address, input)
+        processor.trigger_user_input()
+
         return processor.SUCCESS
         # TODO leer input del usuario y guardarlo en la 
     # memoria D, específicamente, en la direccion resultante
     # de evaluar la expresión destino
+    
+    def on_user_input(self, processor):
+        target_address = self.argument1.evaluate(processor)
+        processor.set_in_data_memory(target_address, processor.get_user_input())
+        
+        

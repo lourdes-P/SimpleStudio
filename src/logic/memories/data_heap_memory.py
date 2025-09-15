@@ -7,7 +7,7 @@ class DataHeapMemory(ABC):
         pass
     
     @abstractmethod
-    def update_cell(self, address, value = None, annotation = None):
+    def set_cell(self, address, value = None, annotation = None):
         pass
         
     @abstractmethod
