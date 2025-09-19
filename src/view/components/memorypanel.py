@@ -42,15 +42,48 @@ class MemoryPanel(ctk.CTkFrame):
         for item in self.tree.get_children():
             self.tree.delete(item)
         
-        # Insert new data
-        for item in new_data:
-            self.tree.insert('', 'end', values=item)
+        hmem_label = ctk.CTkLabel(self.hmem_container, text="H", font=ctk.CTkFont(weight="bold"))
+        hmem_label.grid(row=0, column=0, padx=2, pady=(1,0), sticky="sw")
+        self.heap_memory_view = DataHeapMemoryView(self.hmem_container)
+        self.heap_memory_view.grid(row=1, column=0, padx=0, pady=1, sticky="nsew")
+        
+        self.paned_memory.add(self.hmem_container)
+        
+    def load_code_onto_c_memory(self, code_data):
+        self.code_memory_view.load_code(code_data)
+        
+    def change_appearance_mode(self, new_appearance_mode):
+        ctk.set_appearance_mode(new_appearance_mode)
+        self.after(20, lambda: 
+            self.paned_memory.configure(bg=self.get_single_color(self.cget("fg_color")))
+        )
+        self.code_memory_view.change_appearance_mode(new_appearance_mode)
+        self.data_memory_view.change_appearance_mode(new_appearance_mode)
+        self.heap_memory_view.change_appearance_mode(new_appearance_mode)  
+      
+    def get_code_memory_view(self):
+        return self.code_memory_view        
+        
+    def on_breakpoint_change(self, line_num: int, is_set: bool):
+            """Example breakpoint change handler"""
+            status = "set" if is_set else "cleared"
+            print(f"Breakpoint at line {line_num} {status}")
             
-    def highlight_row(self, index, color='lightblue'):
-        """Highlight a specific row"""
-        for item in self.tree.get_children():
-            if self.tree.item(item)['values'][0] == str(index):
-                self.tree.tag_configure('highlight', background=color)
-                self.tree.item(item, tags=('highlight',))
-                self.tree.see(item)  # Scroll to make the row visible
-                break
+    def get_breakpoints(self):
+        return self.code_memory_view.get_breakpoints()
+    
+    def get_code_memory_view(self):
+        return self.code_memory_view
+    
+    def change_paned_window_appearance(self):
+        # TODO para que uso esto
+        bg_color = self.get_single_color(self.cget("fg_color"))
+        self.paned_memory.configure(bg=bg_color, proxybackground=bg_color, background=bg_color)
+        self.code_memory_view.change_appearance_mode()      
+    
+    def get_single_color(self, color_tuple):
+        """Convert CTk color tuple to single color string based on current appearance mode"""
+        if ctk.get_appearance_mode() == "Light":
+            return color_tuple[0]  
+        else:
+            return color_tuple[1] 
