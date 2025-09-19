@@ -2,11 +2,12 @@ import customtkinter as ctk
 from customtkinter import ThemeManager
 from typing import List, Dict, Optional, Callable
 
+from view.components.dualscrollframe import DualScrollFrame
+
 class CodeMemoryView(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         
-        # Configuration
         self.breakpoints = set()
         self.current_pc = None
         self.on_breakpoint_change: Optional[Callable] = None
@@ -14,30 +15,25 @@ class CodeMemoryView(ctk.CTkFrame):
         self.default_text_color = None
         self.codecell_list = None
         
-        # Tooltip for annotations
+        # for annotations
         self.tooltip = None
         self.current_hover_line = None
         self.tooltip_scheduled_id = None
         
-        # Create the main layout
-        self._create_widgets()
-        self._setup_layout()
-        
-    def _create_widgets(self):
-        """Create all the widgets for the code memory view"""
-        # Configuration for column widths
         self.column_widths = {
             'pc': 40,
             'label': 80,
             'line': 80,
             'instruction': 200,
-            'annotation': 150
         }
         
-        # Header frame
+        self._create_widgets()
+        self._setup_layout()
+        
+    def _create_widgets(self):
+        """Create all the widgets for the code memory view"""  
         self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
         
-        # Configure header frame grid
         self.header_frame.grid_columnconfigure(0, minsize=self.column_widths['pc'])
         self.header_frame.grid_columnconfigure(1, minsize=self.column_widths['label'])
         self.header_frame.grid_columnconfigure(2, minsize=self.column_widths['line'])
@@ -50,9 +46,26 @@ class CodeMemoryView(ctk.CTkFrame):
         self.instruction_header = ctk.CTkLabel(self.header_frame, text="Instruction", width=self.column_widths['instruction'], anchor="w")
         
         # Scrollable frame for code lines
-        self.scroll_frame = ctk.CTkScrollableFrame(self, height=400)
-        self.code_lines_frame = ctk.CTkFrame(self.scroll_frame, fg_color="transparent")
+        self.scroll_frame = DualScrollFrame(self)
+        
+        """self.scroll_frame.grid(row=1,column=0,pady=0)
+        v_scrollbar = ctk.CTkScrollbar(self, orientation="vertical", command=self.scroll_frame._parent_canvas.yview) 
+        v_scrollbar.grid(row=1, column=1) 
+        self.scroll_frame._parent_canvas.configure(yscrollcommand=v_scrollbar.set)"""
+        self.code_lines_frame = ctk.CTkFrame(self.scroll_frame.get_scrollable_frame(), fg_color="transparent")
         self.code_lines_frame.pack(fill="both", expand=True)
+        # since we clearly need a workaround to have two scroll bars:
+        """The workaround is to use the .grid and add a vertical Scrollbar using CTkScrollbar, so: 
+
+        my_frame = customtkinter.CTkScrollableFrame(master=root, orientation="horizontal")
+        my_frame.grid(row=1, column=0, pady=10) 
+
+        v_scrollbar = customtkinter.CTkScrollbar(master=root, orientation="vertical", command=my_frame.yview) 
+        v_scrollbar.grid(row=1, column=1) 
+
+        my_frame.configure(yscrollcommand=v_scrollbar.set) 
+
+This seemed to work for me for what I was doing with putting a table into the Scrollable Frame and having it scroll through the table. For me, instead of it scrolling the frame, I had it scroll the table instead. """
         
         # Dictionary to store line widgets and PC mapping
         self.line_widgets: Dict[int, dict] = {}  # key: line number
@@ -66,14 +79,14 @@ class CodeMemoryView(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         
         # Header layout
-        self.header_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=(5, 0))
+        self.header_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=(2, 0))
         self.pc_header.grid(row=0, column=0, padx=2, pady=2, sticky="w")
         self.label_header.grid(row=0, column=1, padx=2, pady=2, sticky="w")
         self.line_header.grid(row=0, column=2, padx=2, pady=2, sticky="w")
         self.instruction_header.grid(row=0, column=3, padx=2, pady=2, sticky="w")
         
         # Scroll frame layout
-        self.scroll_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+        self.scroll_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=(0, 5))
         
     def _create_tooltip(self, text, widget):
         """Create a tooltip with the annotation text"""
@@ -356,3 +369,4 @@ class CodeMemoryView(ctk.CTkFrame):
         temp_label = ctk.CTkLabel(self)
         self.default_text_color = temp_label.cget("text_color")
         temp_label.destroy()
+        self.scroll_frame.change_appearance_mode()
