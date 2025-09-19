@@ -2,61 +2,73 @@ import customtkinter as ctk
 
 class ControlPanel(ctk.CTkFrame):
     """Component for execution controls"""
-    def __init__(self, master, step_callback=None, run_callback=None, 
-                 pause_callback=None, reset_callback=None, **kwargs):
-        super().__init__(master, **kwargs)
+    def __init__(self, master, step_callback=None, run_callback=None,
+                 reset_callback=None, change_appearance_mode = None,
+                 browse_file = None, **kwargs):
+        super().__init__(master, height=140, corner_radius=0, **kwargs)
         
+        self.master = master    # main_view 
         self.step_callback = step_callback
         self.run_callback = run_callback
-        self.pause_callback = pause_callback
         self.reset_callback = reset_callback
+        self.change_appearance_mode_callback = change_appearance_mode
+        self.browse_files_callback = browse_file
         
-        self.setup_ui()
         
-    def setup_ui(self):
-        # Title
-        title_label = ctk.CTkLabel(self, text="Control Panel", font=ctk.CTkFont(size=16, weight="bold"))
-        title_label.pack(pady=(10, 15))
+    def initialize(self):
+        self.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6, 7), weight=1)
         
-        # PC display
-        pc_frame = ctk.CTkFrame(self)
-        pc_frame.pack(fill='x', padx=10, pady=5)
+        # Control buttons - arranged horizontally
+        self.run_button = ctk.CTkButton(
+            self, 
+            text="Run",
+            command=self.run_callback
+        )
+        self.run_button.grid(row=0, column=1, padx=20, pady=(20,5))
         
-        ctk.CTkLabel(pc_frame, text="PC:").pack(side='left', padx=(10, 5))
-        self.pc_value = ctk.CTkLabel(pc_frame, text="0", font=ctk.CTkFont(weight="bold"))
-        self.pc_value.pack(side='left')
+        self.step_button = ctk.CTkButton(
+            self, 
+            text="Step",
+            command=self.step_callback
+        )
+        self.step_button.grid(row=0, column=2, padx=20, pady=(20,5))
         
-        # Control buttons
-        buttons_frame = ctk.CTkFrame(self)
-        buttons_frame.pack(fill='x', padx=10, pady=15)
+        self.reset_button = ctk.CTkButton(
+            self, 
+            text="Reset",
+            command=self.reset_callback
+        )
+        self.reset_button.grid(row=0, column=3, padx=20, pady=(20,5))
         
-        self.step_btn = ctk.CTkButton(buttons_frame, text="Step", width=80, command=self.on_step)
-        self.step_btn.pack(side='left', padx=5)
+        self.upload_button = ctk.CTkButton(
+            self,
+            text="Upload Source",
+            command=self.browse_files_callback
+        )
+        self.upload_button.grid(row=0, column=4, padx=(20,0), pady=(20,5))  
         
-        self.run_btn = ctk.CTkButton(buttons_frame, text="Run", width=80, command=self.on_run)
-        self.run_btn.pack(side='left', padx=5)
+        # Appearance mode option menu
+        self.appearance_mode_label = ctk.CTkLabel(
+            self, 
+            text="Appearance:",
+            anchor="w"
+        )
+        self.appearance_mode_label.grid(row=0, column=6, padx=(20, 2), pady=(20,5))
         
-        self.pause_btn = ctk.CTkButton(buttons_frame, text="Pause", width=80, command=self.on_pause)
-        self.pause_btn.pack(side='left', padx=5)
+        self.appearance_mode_optionemenu = ctk.CTkOptionMenu(
+            self, 
+            values=["System", "Dark", "Light"],
+            command=self.change_appearance_mode_callback,
+            width=100
+        )
+        self.appearance_mode_optionemenu.grid(row=0, column=7, padx=(0, 20), pady=(20,5))
         
-        self.reset_btn = ctk.CTkButton(buttons_frame, text="Reset", width=80, command=self.on_reset)
-        self.reset_btn.pack(side='left', padx=5)
-        
-        # Speed control
-        speed_frame = ctk.CTkFrame(self)
-        speed_frame.pack(fill='x', padx=10, pady=5)
-        
-        ctk.CTkLabel(speed_frame, text="Speed:").pack(side='left', padx=(10, 5))
-        self.speed_slider = ctk.CTkSlider(speed_frame, from_=1, to=10, number_of_steps=9)
-        self.speed_slider.pack(side='left', fill='x', expand=True, padx=5)
-        self.speed_slider.set(5)  # Default to middle value
-        
-        # Speed value display
-        self.speed_value = ctk.CTkLabel(speed_frame, text="5")
-        self.speed_value.pack(side='left', padx=5)
-        
-        # Bind slider change event
-        self.speed_slider.configure(command=self.on_speed_change)
+        self.file_path_label = ctk.CTkLabel(
+            self, 
+            text="No file selected",
+            compound="left"
+        )
+        self.file_path_label.grid(row=1, column=0, columnspan=8, padx=20, pady=(0,1), sticky="w")
     
     def on_step(self):
         if self.step_callback:
@@ -66,28 +78,29 @@ class ControlPanel(ctk.CTkFrame):
         if self.run_callback:
             self.run_callback()
             
-    def on_pause(self):
-        if self.pause_callback:
-            self.pause_callback()
-            
     def on_reset(self):
         if self.reset_callback:
             self.reset_callback()
-            
-    def on_speed_change(self, value):
-        self.speed_value.configure(text=str(int(float(value))))
+
+    def change_apparance_mode(self, new_appearance_mode):
+        ctk.set_appearance_mode(new_appearance_mode)
     
-    def update_pc(self, value):
-        """Update the PC display"""
-        self.pc_value.configure(text=str(value))
+    def set_change_appearance_mode_callback(self, change_appearance_mode):
+        self.change_appearance_mode_callback = change_appearance_mode
+        
+    def set_file_path_label(self, file_path):
+        self.file_path_label.configure(text=file_path)
+        
+    def get_file_path(self):
+        return self.file_path_label.cget("text") if self.file_path_label else None
         
     def set_buttons_state(self, running=False):
         """Enable/disable buttons based on execution state"""
         if running:
             self.step_btn.configure(state="disabled")
             self.run_btn.configure(state="disabled")
-            self.pause_btn.configure(state="normal")
+            self.reset_btn.configure(state="normal")
         else:
             self.step_btn.configure(state="normal")
             self.run_btn.configure(state="normal")
-            self.pause_btn.configure(state="disabled")
+            self.reset_btn.configure(state="disabled")

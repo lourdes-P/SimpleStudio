@@ -1,46 +1,64 @@
 import customtkinter as ctk
 from tkinter import ttk
+import tkinter as tk
+from view.components.codememory import CodeMemoryView
+from view.components.data_heap_memory import DataHeapMemoryView
 
 class MemoryPanel(ctk.CTkFrame):
     """Component for displaying memory tables (C, D, or H)"""
-    def __init__(self, master, title, columns, data, **kwargs):
+    def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         
-        self.title = title
-        self.columns = columns
-        self.data = data
+        self.paned_memory = None
         
-        self.setup_ui()
+        self.code_memory_view = None
+        self.data_memory_view = None
+        self.heap_memory_view = None
         
-    def setup_ui(self):
-        # Title
-        title_label = ctk.CTkLabel(self, text=self.title, font=ctk.CTkFont(size=16, weight="bold"))
-        title_label.pack(pady=(10, 15))
+    def initialize(self):
+        """self.grid_rowconfigure(1, weight=1)  # Make the code memory expand
+        self.grid_columnconfigure((0,1,2), weight=1)"""
+        fg_color=self.get_single_color(self.cget("fg_color"))
+        self.paned_memory = tk.PanedWindow(self, orient=tk.HORIZONTAL, sashrelief=tk.FLAT, bg=fg_color,
+                                      borderwidth=0, sashwidth=8, showhandle=False)
+        self.paned_memory.pack(fill="both", expand=True)
+                        
+        self.create_c_memory()
+        self.create_d_memory()
+        self.create_h_memory()
         
-        # Create treeview (table)
-        self.tree = ttk.Treeview(self, columns=self.columns, show='headings', height=10)
+    def create_c_memory(self):     
+        self.cmem_container = ctk.CTkFrame(self.paned_memory, corner_radius=0)
+        self.cmem_container.grid_rowconfigure(1, weight=1)
+        self.cmem_container.grid_columnconfigure(0, weight=1)
         
-        # Define columns
-        for col in self.columns:
-            self.tree.heading(col, text=col)
-            self.tree.column(col, width=100, anchor='center')
+        cmem_label = ctk.CTkLabel(self.cmem_container, text="C", font=ctk.CTkFont(weight="bold"))
+        cmem_label.grid(row=0, column=0, padx=2, pady=(1,0), sticky="sw")
+        self.code_memory_view = CodeMemoryView(self.cmem_container)
+        self.code_memory_view.grid(row=1, column=0, padx=(0,0), pady=1, sticky="nsew")
         
-        # Add scrollbar
-        scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar.set)
+        self.code_memory_view.set_breakpoint_change_callback(self.on_breakpoint_change)
+        self.code_memory_view.change_appearance_mode("System")
         
-        # Pack tree and scrollbar
-        self.tree.pack(side='left', fill='both', expand=True, padx=(10, 0), pady=(0, 10))
-        scrollbar.pack(side='right', fill='y', padx=(0, 10), pady=(0, 10))
+        self.paned_memory.add(self.cmem_container)
+     
+    def create_d_memory(self):
+        self.dmem_container = ctk.CTkFrame(self.paned_memory, corner_radius=0)
+        self.dmem_container.grid_rowconfigure(1, weight=1)
+        self.dmem_container.grid_columnconfigure(0, weight=1)
         
-        # Insert data
-        self.update_data(self.data)
+        dmem_label = ctk.CTkLabel(self.dmem_container, text="D", font=ctk.CTkFont(weight="bold"))
+        dmem_label.grid(row=0, column=0, padx=2, pady=(1,0), sticky="sw")
+        self.data_memory_view = DataHeapMemoryView(self.dmem_container)
+        self.data_memory_view.grid(row=1, column=0, padx=(0,0), pady=1, sticky="nsew")
+
+        self.paned_memory.add(self.dmem_container)
+        #self.code_memory_view.change_appearance_mode("System")
     
-    def update_data(self, new_data):
-        """Update the table with new data"""
-        # Clear existing data
-        for item in self.tree.get_children():
-            self.tree.delete(item)
+    def create_h_memory(self):
+        self.hmem_container = ctk.CTkFrame(self.paned_memory, corner_radius=0)
+        self.hmem_container.grid_rowconfigure(1, weight=1)
+        self.hmem_container.grid_columnconfigure(0, weight=1)
         
         hmem_label = ctk.CTkLabel(self.hmem_container, text="H", font=ctk.CTkFont(weight="bold"))
         hmem_label.grid(row=0, column=0, padx=2, pady=(1,0), sticky="sw")

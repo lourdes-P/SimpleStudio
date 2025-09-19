@@ -37,7 +37,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
             code_data.append(cell_data)
 
         
-        self.code_memory_view.load_code(code_data)
+        self.main_view.load_code_onto_c_memory(code_data)
         #self.code_memory_view.set_current_pc(self.code_memory_view.current_pc + 3)
     
     def _get_instruction_string(self, code_cell):
