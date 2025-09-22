@@ -8,5 +8,5 @@ class HaltInstruction(Instruction):
     
     def execute(self, processor):
         processor.disable()
-        return processor.SUCCESS
+        return processor.COMPLETED
     

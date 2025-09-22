@@ -26,7 +26,7 @@ class BinaryOpNode(SubexpressionNode):
         return self._operator_token
     
     def evaluate(self, processor=None):
-        pass    #   TODO
+        pass    #   TODO ponerle abstractmethod?
 
     def generate_string(self):
         return self._left_side.generate_string() + self._operator_token.lexeme + self._right_side.generate_string()

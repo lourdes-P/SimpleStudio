@@ -9,6 +9,7 @@ class DataHeapMemoryView(ctk.CTkFrame):
         self.memory_data = []
         self.current_register = None
         self.default_text_color = None
+        self.cell_widgets = {}
         
         self.column_widths = {
             'register': 80,
@@ -73,8 +74,8 @@ class DataHeapMemoryView(ctk.CTkFrame):
         # Clear existing widgets
         for widget in self.memory_cells_frame.winfo_children():
             widget.destroy()
+            
         self.cell_widgets.clear()
-        
         self.memory_data = memory_data
         
         # Create new cell widgets
@@ -85,7 +86,7 @@ class DataHeapMemoryView(ctk.CTkFrame):
         """Create a single cell widget for a memory cell"""
         address = cell_data.get('address', '')
         register = cell_data.get('register', '')
-        value = cell_data.get('value', '')
+        value = 0
         annotation = cell_data.get('annotation', '')
         
         # Create frame for the cell
@@ -141,10 +142,18 @@ class DataHeapMemoryView(ctk.CTkFrame):
         # Apply register highlighting if this cell has a register
         register_text = widgets['register'].cget('text')
         if register_text and register_text.strip():
-            frame.configure(fg_color="#4ecdc4")  # Teal background for register cells
+            frame.configure(fg_color="#2c3e50")  # Teal background for register cells
             for widget_key in label_widgets:
                 if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                    widgets[widget_key].configure(text_color="black")
+                    widgets[widget_key].configure(text_color="white")
+    
+    def update_memory(self, modified_cells):
+        for cell_data in modified_cells:
+            address = cell_data.get('address', '')
+            register = cell_data.get('register', None)
+            value = cell_data.get('value', '0')
+            annotation = cell_data.get('annotation', None)
+            self.update_cell_value(address, value, register, annotation)
     
     def update_cell_value(self, address: str, value: str, register: str = None, annotation: str = None):
         """Update the value of a specific memory cell"""

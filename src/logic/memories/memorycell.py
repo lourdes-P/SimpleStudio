@@ -11,6 +11,9 @@ class MemoryCell(ABC):
         
     def set_annotation(self, annotation):
         self._annotation = annotation
+        
+    def annotation_string(self):
+        return self._annotation.lexeme if self._annotation else ""
     
     @property
     def address(self):

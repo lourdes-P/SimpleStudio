@@ -1,8 +1,9 @@
 import customtkinter as ctk
-import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import filedialog
 from view.components.controlpanel import ControlPanel
+from view.components.input_dialog import InputDialog
 from view.components.memorypanel import MemoryPanel
+from CTkMessagebox import CTkMessagebox
 
 # Set appearance mode and color theme
 ctk.set_appearance_mode("System")  # "System", "Dark", "Light"
@@ -29,7 +30,10 @@ class SimpleStudioView(ctk.CTk):
         self.grid_columnconfigure(0, weight=1)  # Single column for main content
         self.grid_rowconfigure(1, weight=1)     # Main content area gets the weight
         
-        self.control_panel = ControlPanel(self, change_appearance_mode= self.change_appearance_mode, browse_file= self.browse_file)
+        self.control_panel = ControlPanel(self, step_callback= self.presenter.on_single_step_execution,
+                                          run_callback= self.presenter.on_complete_execution,
+                                          n_step_callback= self.presenter.on_n_step_execution,
+                                          change_appearance_mode= self.change_appearance_mode, browse_file= self.on_browse_file)
         self.control_panel.grid(row=0, column=0, sticky="nsew")
         self.control_panel.grid_rowconfigure(0, weight=1)
         self.control_panel.initialize()
@@ -49,21 +53,51 @@ class SimpleStudioView(ctk.CTk):
         self.output_text.insert("end", "Code parsed successfully!\n")
         self.output_text.configure(state="disabled")
 
+    def set_pc(self, pc):
+        self.memory_panel.set_pc(pc)
+
     def get_code_memory_view(self):
         return self.memory_panel.get_code_memory_view()
+    
+    def get_breakpoints(self):
+        return self.code_memory_view.get_breakpoints()
+    
+    def get_user_input(self):
+        return None # TODO get user input
     
     def load_code_onto_c_memory(self, code_data):
         self.memory_panel.load_code_onto_c_memory(code_data)
         
+    def load_data_memory(self, data):
+        self.memory_panel.load_data_memory(data)
+        
+    def load_heap_memory(self, data):
+        self.memory_panel.load_heap_memory(data)
+        
+    def update_data_memory(self, modified_data_cells):
+        self.memory_panel.update_data_memory(modified_data_cells)
+        
+    def update_heap_memory(self, modified_heap_cells):
+        self.memory_panel.update_heap_memory(modified_heap_cells)
+        
     def on_breakpoint_change(self, line_num: int, is_set: bool):
-            """Example breakpoint change handler"""
-            status = "set" if is_set else "cleared"
-            print(f"Breakpoint at line {line_num} {status}")
+        """Example breakpoint change handler"""
+        status = "set" if is_set else "cleared"
+        print(f"Breakpoint at line {line_num} {status}")
             
-    def get_breakpoints(self):
-        return self.code_memory_view.get_breakpoints()
+    def on_run(self):
+        pass
     
-    def browse_file(self):
+    def on_single_step(self):
+        pass
+    
+    def on_n_step(self, n):
+        pass
+    
+    def on_reset(self):
+        pass
+    
+    def on_browse_file(self):
         file_path = filedialog.askopenfilename(
             title="Select Source File",
             filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
@@ -80,19 +114,7 @@ class SimpleStudioView(ctk.CTk):
         if new_appearance_mode != ctk.get_appearance_mode():
             ctk.set_appearance_mode(new_appearance_mode)
             self.memory_panel.change_appearance_mode(new_appearance_mode)
-        
-    def run_code(self):
-        # Placeholder for run functionality
-        self.output_text.configure(state="normal")
-        self.output_text.insert("end", "Running code...\n")
-        self.output_text.configure(state="disabled")
-        
-    def step_code(self):
-        # Placeholder for step functionality
-        self.output_text.configure(state="normal")
-        self.output_text.insert("end", "Stepping through code...\n")
-        self.output_text.configure(state="disabled")
-        
+         
     def reset_vm(self):
         # Placeholder for reset functionality
         self.output_text.configure(state="normal")
@@ -102,7 +124,24 @@ class SimpleStudioView(ctk.CTk):
         
     def display_error(self, message):
         # TODO implement an error dialog here
-        print(f"Error: {message}")      
+        error_box = CTkMessagebox(
+            title="ERROR",
+            message=message,
+            icon="cancel",
+            option_1="OK",
+            width= 300,
+            height= 200,
+            master=self
+        )    
+        
+    def display_user_input(self, on_user_input_callback):
+        InputDialog.show_input_dialog(self, on_user_input_callback) # TODO checkear si anda bien (se testeo sin callback)
+        
+    def disable_execution(self):
+        self.control_panel.set_buttons_state(False)
+        
+    def enable_execution(self):
+        self.control_panel.set_buttons_state(True)
 
 if __name__ == "__main__":
     app = SimpleStudioView()

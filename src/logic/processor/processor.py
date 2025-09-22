@@ -1,17 +1,20 @@
 
 
 class Processor:
-    SUCCESS = 0
-    FAILURE_DISABLED = 1
+    COMPLETED = 0
+    DISABLED = 1
     FAILURE = 2
+    SUCCESS = 3
     
     def __init__(self, virtual_machine = None):
         self._virtual_machine = virtual_machine
-        self._pc = 0
+        self._former_pc = 0
+        self._pc = self._former_pc
         self._actual = 0
         self._libre = 0
         self._po = 0   
-        self._enabled = True     
+        self._enabled = False
+        self.enable()    
         self._next_instruction = None
     
     def reset(self):
@@ -19,21 +22,28 @@ class Processor:
         self._actual = 0
         self._libre = 0
         self._po = 0   
-        self._enabled = True 
+        self.enable()
         self._next_instruction = None
     
     def execute_next_instruction(self):
         self._next_instruction = self.get_next_instruction()
         if self._next_instruction and self._enabled:
-            success = self._next_instruction.execute()
+            success = self._next_instruction.execute(self)
+            if self._former_pc == self._pc:
+                self.increase_pc()
+            else:
+                self._former_pc = self._pc
             return success
         elif not self._enabled:
-            return self.FAILURE_DISABLED
+            return self.DISABLED
         else:
             return self.FAILURE
         
     def get_next_instruction(self):
         return self._virtual_machine.get_instruction(self._pc)
+    
+    def get_label_address(self, label_name):
+        return self._virtual_machine.get_label_address(label_name)
     
     def access_data_memory(self, address):
         return self._virtual_machine.access_data_memory(address) #TODO review mechanic
@@ -67,21 +77,29 @@ class Processor:
         
     def enable(self):
         self._enabled = True
+        self._virtual_machine.enable_execution()
         
     def set_actual(self, address):
+        former = self._actual
         self._actual = address
+        self._virtual_machine.set_actual(former, self._actual)
         
     def set_libre(self, address):
+        former = self._libre
         self._libre = address
+        self._virtual_machine.set_libre(former, self._libre)
         
     def set_po(self, address):
+        former = self._po
         self._po = address
+        self._virtual_machine.set_po(former, self._po)
         
     def set_pc(self, address):
         self._pc = address
         
     def increase_pc(self):
         self._pc += 1
+        self._former_pc += self._pc
     
     @property
     def pc(self):

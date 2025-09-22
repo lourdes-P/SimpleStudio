@@ -22,4 +22,4 @@ class DataCell(DataHeapMemoryCell):
         self._libre = False
         
     def generate_register_string(self):
-        return "" if self._libre is False and self.actual is False else f"{'Actual' if self._actual else ''}{'&' if self._actual and self._libre else ''}{'Libre' if self._libre else ''} ->"
+        return "" if self._libre is False and self._actual is False else f"{'Act' if self._actual else ''}{'&' if self._actual and self._libre else ''}{'Lib' if self._libre else ''} →"

@@ -51,6 +51,7 @@ class MemoryPanel(ctk.CTkFrame):
         dmem_label.grid(row=0, column=0, padx=2, pady=(1,0), sticky="sw")
         self.data_memory_view = DataHeapMemoryView(self.dmem_container)
         self.data_memory_view.grid(row=1, column=0, padx=(0,0), pady=1, sticky="nsew")
+        self.data_memory_view.change_appearance_mode("System")
 
         self.paned_memory.add(self.dmem_container)
         #self.code_memory_view.change_appearance_mode("System")
@@ -64,20 +65,33 @@ class MemoryPanel(ctk.CTkFrame):
         hmem_label.grid(row=0, column=0, padx=2, pady=(1,0), sticky="sw")
         self.heap_memory_view = DataHeapMemoryView(self.hmem_container)
         self.heap_memory_view.grid(row=1, column=0, padx=0, pady=1, sticky="nsew")
+        self.heap_memory_view.change_appearance_mode("System")
         
         self.paned_memory.add(self.hmem_container)
         
     def load_code_onto_c_memory(self, code_data):
         self.code_memory_view.load_code(code_data)
         
+    def load_data_memory(self, data):
+        self.data_memory_view.load_memory(data)
+        
+    def load_heap_memory(self, data):
+        self.heap_memory_view.load_memory(data)
+        
+    def set_pc(self, pc):
+        self.code_memory_view.set_current_pc(pc)
+        
+    def update_data_memory(self, modified_data_cells):
+        self.data_memory_view.update_memory(modified_data_cells)
+        
+    def update_heap_memory(self, modified_heap_cells):
+        self.heap_memory_view.update_memory(modified_heap_cells)
+        
     def change_appearance_mode(self, new_appearance_mode):
         ctk.set_appearance_mode(new_appearance_mode)
         self.after(20, lambda: 
-            self.paned_memory.configure(bg=self.get_single_color(self.cget("fg_color")))
-        )
-        self.code_memory_view.change_appearance_mode(new_appearance_mode)
-        self.data_memory_view.change_appearance_mode(new_appearance_mode)
-        self.heap_memory_view.change_appearance_mode(new_appearance_mode)  
+            self._change_paned_window_appearance(new_appearance_mode)
+        ) 
       
     def get_code_memory_view(self):
         return self.code_memory_view        
@@ -93,11 +107,12 @@ class MemoryPanel(ctk.CTkFrame):
     def get_code_memory_view(self):
         return self.code_memory_view
     
-    def change_paned_window_appearance(self):
-        # TODO para que uso esto
+    def _change_paned_window_appearance(self, new_appearance_mode):
         bg_color = self.get_single_color(self.cget("fg_color"))
         self.paned_memory.configure(bg=bg_color, proxybackground=bg_color, background=bg_color)
-        self.code_memory_view.change_appearance_mode()      
+        self.code_memory_view.change_appearance_mode(new_appearance_mode)
+        self.data_memory_view.change_appearance_mode(new_appearance_mode)
+        self.heap_memory_view.change_appearance_mode(new_appearance_mode)  
     
     def get_single_color(self, color_tuple):
         """Convert CTk color tuple to single color string based on current appearance mode"""

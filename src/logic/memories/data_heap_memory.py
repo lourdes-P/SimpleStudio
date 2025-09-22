@@ -7,6 +7,10 @@ class DataHeapMemory(ABC):
         pass
     
     @abstractmethod
+    def reset():
+        pass
+    
+    @abstractmethod
     def set_cell(self, address, value = None, annotation = None):
         pass
         
@@ -18,3 +22,4 @@ class DataHeapMemory(ABC):
     @abstractmethod
     def cell_list(self):
         pass
+    

@@ -8,7 +8,7 @@ class SetOutInstruction(InstructionSimpleArg):
     
     def execute(self, processor):
         argument = self.argument1.evaluate(processor)
-        print(argument)
+        print(argument)     # TODO hacer un print en el output de la view
         processor.increase_pc()
         return processor.SUCCESS
         # TODO un print de un entero. muestra por pantalla 

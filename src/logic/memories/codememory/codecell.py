@@ -19,9 +19,6 @@ class CodeCell(MemoryCell):
     def label_string(self):
         return self._label_token.lexeme if self._label_token else ""
     
-    def annotation_string(self):
-        return self._annotation.lexeme if self._annotation else ""
-    
     def str_instruction(self):
         instruction = ""
         for token in self._instruction:

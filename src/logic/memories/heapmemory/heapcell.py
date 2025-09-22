@@ -13,4 +13,4 @@ class HeapCell(DataHeapMemoryCell):
         self._po = False
         
     def generate_register_string(self):
-        return "" if self._po is False else f"{'PO' if self._actual else ''} ->"
+        return "" if self._po is False else f"{'PO' if self._po else ''} →"

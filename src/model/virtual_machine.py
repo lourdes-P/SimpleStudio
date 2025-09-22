@@ -18,38 +18,39 @@ class VirtualMachine:
     N_STEP_EXECUTION_MODE = 2
     
     def __init__(self):
-        self.reserved_word_map = ReservedWordMap()
+        self._reserved_word_map = ReservedWordMap()
         self._firsts_map = MapManager("resources/firsts.csv")
         self._nexts_map = MapManager("resources/nexts.csv")
         self._operator_precedence_manager = OperatorPrecedenceManager()
-        self.code_memory = None
-        self.data_memory = None
-        self.heap_memory = None
-        self.processor = None
-        self.io_manager = None
-        self.error = None
-        self.breakpoint_list = None
+        self._code_memory = None
+        self._data_memory = DataMemory()
+        self._heap_memory = HeapMemory()  
+        self._processor = None
+        self._io_manager = None
+        self._error = None
+        self._breakpoint_list = None
         self._label_dictionary = None
-        self.D_memory = {}
-        self.H_memory = {}
-        self.listeners = []     
+        self._listeners = []
+        self._modified_data_cells = []
+        self._modified_heap_cells = []
+        
         
     def addListener(self, listener) : 
-        self.listeners.append(listener)
+        self._listeners.append(listener)
         
     def load_program(self, file_path):        
-        self.io_manager = IOManager(file_path)
-        self.code_memory = CodeMemory()
-        self.data_memory = DataMemory()
-        self.heap_memory = HeapMemory()        
-        lexical_analyzer = LexicalAnalyzer(self.io_manager, self.reserved_word_map)
-        syntactic_analyzer = SyntacticAnalyzer(lexical_analyzer, self.code_memory, self._firsts_map, self._nexts_map, self._operator_precedence_manager)
+        self._io_manager = IOManager(file_path)
+        self._code_memory = CodeMemory()
+        self._data_memory.reset()
+        self._heap_memory.reset()     
+        lexical_analyzer = LexicalAnalyzer(self._io_manager, self._reserved_word_map)
+        syntactic_analyzer = SyntacticAnalyzer(lexical_analyzer, self._code_memory, self._firsts_map, self._nexts_map, self._operator_precedence_manager)
         try:
             syntactic_analyzer.start()
         except (LexicalException, LexicalExceptionInvalidSymbol, 
             LexicalExceptionInvalidOperator, SyntacticException, 
             SyntacticExceptionNoMatch) as e:
-            self.error = e
+            self._error = e
             self.notify_error()
             # TODO excecution buttons unabled in view
         
@@ -59,100 +60,180 @@ class VirtualMachine:
         self.notify_load_finished()
         
     def update_breakpoint_list(self, breakpoint_list):
-        self.breakpoint_list = breakpoint_list
+        self._breakpoint_list = breakpoint_list
         
     def initialize_processor(self):
-        if self.processor:
-            self.processor.reset()
+        if self._processor:
+            self._processor.reset()
         else:
-            self.processor = Processor()
+            self._processor = Processor(virtual_machine=self)
+            
+    # --------- notify listeners
         
     def notify_load_finished(self):
-        for listener in self.listeners:
+        for listener in self._listeners:
             listener.load_has_finished()
         
     def notify_error(self):
-        for listener in self.listeners:
-            listener.trigger_error()
+        for listener in self._listeners:
+            listener.trigger_error()    # TODO deshabilitar botones?
+            # TODO ver de resetear toda la vm con el boton reset
+            
+    def notify_execution_finished(self):
+        for listener in self._listeners:
+            listener.execution_finished()
             
     def disable_execution(self):
-        for listener in self.listeners:
+        for listener in self._listeners:
             listener.disable_execution()
-            # TODO
+            
+    def enable_execution(self):
+        for listener in self._listeners:
+            listener.enable_execution()
+            
+    def trigger_user_input(self):
+        for listener in self._listeners:
+            listener.trigger_user_input()
+            
+    # --------- notify listeners (END)
             
     def get_last_triggered_error(self):
-        return self.error
+        return self._error
+    
+    def get_instruction(self, address):
+        return self._code_memory.get_instruction(address)
     
     def get_code_memory(self):
-        return self.code_memory
+        return self._code_memory
     
-    # TODO get heap, and data memory
+    def get_data_memory(self):
+        return self._data_memory
+    
+    def get_heap_memory(self):
+        return self._heap_memory
+    
+    def get_modified_data_cells(self):
+        return self._modified_data_cells
+    
+    def get_modified_heap_cells(self):
+        return self._modified_heap_cells
+    
+    def get_user_input(self):
+        return self._last_user_input
+    
+    def get_pc(self):
+        return self._processor.pc if self._processor != None else 0
+    
+    def get_libre(self):
+        return self._processor.libre if self._processor != None else 0
+    
+    def get_actual(self):
+        return self._processor.actual if self._processor != None else 0
+    
+    def get_po(self):
+        return self._processor.po if self._processor != None else 0
+    
+    def get_label_address(self, label_name):
+        address = self._label_dictionary.get(label_name)
+        if address == None:
+            self._error = f"Label with name {label_name} does not exist"
+            self.notify_error()
+        return address
+    
     def access_data_memory(self, address):
         return self._data_memory.get_cell(address)
     
     def access_heap_memory(self, address):
         return self._heap_memory.get_cell(address)
     
-    def set_data_memory(self, address, data):
-        annotation = self.code_memory.get_codecell(address).annotation
-        self.data_memory.set_cell(address, data, annotation)
+    def set_data_memory(self, address, data = None):
+        annotation = self._code_memory.get_codecell(address).annotation
+        modified_cell = self._data_memory.set_cell(address, data, annotation)
+        self._modified_data_cells.append(modified_cell)
         
-    def set_heap_memory(self, address, data):
-        annotation = self.code_memory.get_codecell(address).annotation
-        self.heap_memory.set_cell(address, data, annotation)
+    def set_heap_memory(self, address, data = None):
+        annotation = self._code_memory.get_codecell(address).annotation
+        modified_cell = self._heap_memory.set_cell(address, data, annotation)
+        self._modified_heap_cells.append(modified_cell)
+        
+    def set_libre(self, former_libre, libre):
+        former = self._data_memory.get_cell(former_libre)
+        former.remove_libre()
+        new = self._data_memory.get_cell(libre)
+        new.place_libre()
+        self._modified_data_cells.append(former)
+        self._modified_data_cells.append(new)
+        
+    def set_actual(self, former_actual, actual):
+        former = self._data_memory.get_cell(former_actual)
+        former.remove_actual()
+        new = self._data_memory.get_cell(actual)
+        new.place_actual()
+        self._modified_data_cells.append(former)
+        self._modified_data_cells.append(new)
+        
+    def set_po(self, former_po, po):
+        former = self._heap_memory.get_cell(former_po)
+        former.remove_po()
+        new = self._heap_memory.get_cell(po)
+        new.place_po()
+        self._modified_heap_cells.append(former)
+        self._modified_heap_cells.append(new)
         
     def define_label(self, label_token, address):
         label_name = label_token.lexeme
         if self._label_dictionary.get(label_name) == None:
             self._label_dictionary[label_name] = address
         else:
-            pass # TODO
-        
-    def trigger_user_input(self):
-        for listener in self.listeners:
-            listener.trigger_user_input()
-            # TODO
+            pass # TODO define_label que hacer si hay label repetida
             
     def deliver_user_input(self, input):
         self._last_user_input = input
-        self.processor.deliver_user_input()
-        
-    def get_user_input(self):
-        return self._last_user_input
-    
-    def get_pc(self):
-        return self.processor.pc if self.processor else 0
+        self._processor.deliver_user_input()
         
     def execute_program(self, mode, steps = None):
-        # TODO obtener breakpoints de la view
-        match mode:
-            case self.SINGLE_STEP_EXECUTION_MODE:
-                self.single_step_execution()
-            case self.N_STEP_EXECUTION_MODE:
-                self.n_step_execution(steps)
-            case self.COMPLETE_EXECUTION_MODE:
-                pass
-                
-        # TODO check if instructions remaining: if there are less than n steps instructions, execute all instructions left
-        # TODO unable to execute if all instructions have been executed (unable from view too)
-        if not self.io_manager:
-            self.error = 'No source loaded'
+        self._modified_data_cells.clear()
+        self._modified_heap_cells.clear()
+        
+        if not self._io_manager:
+            self._error = 'No source loaded'
             self.notify_error()
             
-    def single_step_execution(self):
-        code = self.processor.execute_next_instruction()
+        match mode:
+            case self.SINGLE_STEP_EXECUTION_MODE:
+                self._single_step_execution()
+            case self.N_STEP_EXECUTION_MODE:
+                self._n_step_execution(steps)
+            case self.COMPLETE_EXECUTION_MODE:
+                self._complete_execution()
+                
+        self.notify_execution_finished()
+            
+    def _single_step_execution(self):
+        state = self._processor.execute_next_instruction()
+        return state
         
-    def n_step_execution(self, steps):
-        code = self.single_step_execution()
+    def _n_step_execution(self, steps):
+        state = self._single_step_execution()
         
-        for i in range(steps-1):
-            if code != self.processor.SUCCESS or self.breakpoint_list != None and self.get_pc in self.breakpoint_list:
-                return
+        for _ in range(steps-1):
+            if state != Processor.SUCCESS or self._breakpoint_list != None and self.get_pc in self._breakpoint_list:
+                break
             else:
-                code = self.processor.execute_next_instruction()                
-                
-    
+                state = self._processor.execute_next_instruction()     
         
-
+        self._check_execution_state(state)
                 
-                    
+    def _complete_execution(self):
+        state = self._single_step_execution()
+        while state == Processor.SUCCESS and not (self._breakpoint_list != None and self.get_pc in self._breakpoint_list):
+            state = self._single_step_execution()
+        
+        self._check_execution_state(state)
+            
+    def _check_execution_state(self, state):
+        if state == Processor.COMPLETED:
+            pass # TODO ver si deberia hacer algo mas (ya se deshabilita)
+        elif state == Processor.FAILURE:
+            self._error = "Error while executing source code"   
+            self.notify_error()

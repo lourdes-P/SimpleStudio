@@ -7,7 +7,7 @@ class SetLabelInstruction(InstructionDoubleArg):
 
     
     def execute(self, processor):
-        label_token = self.argument1.subexpression_node.token
+        label_token = self.argument1
         value = self.argument2.evaluate(processor)
         success = processor.define_label(label_token, value)
         

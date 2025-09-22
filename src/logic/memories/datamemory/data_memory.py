@@ -7,7 +7,9 @@ class DataMemory(DataHeapMemory):
         self._datacell_list = []
         self._actual = 0
         self._libre = 0
-        self.initialize_memory(10000)
+        self._initial_cell_number = 100
+        # TODO encontrar una manera de renderizar mas celdas
+        self.initialize_memory(self._initial_cell_number)
         
     def initialize_memory(self, cell_number):
         for i in range(cell_number):
@@ -15,7 +17,10 @@ class DataMemory(DataHeapMemory):
             self._datacell_list.append(datacell)
         self._datacell_list[self._actual].place_actual()
         self._datacell_list[self._libre].place_libre()
-        
+    
+    def reset(self):
+        self.initialize_memory(self._initial_cell_number)    
+    
     def place_actual(self, new_address):
         self._datacell_list[self._actual].remove_actual()
         self._actual = new_address
@@ -27,8 +32,13 @@ class DataMemory(DataHeapMemory):
         self._datacell_list[self._libre].place_libre()
         
     def set_cell(self, address, value = None, annotation = None):
-        self._datacell_list[address].set_value(value)
-        self._datacell_list[address].set_annotation(annotation)
+        if (address <= self._initial_cell_number):
+            self._datacell_list[address].set_value(value)
+            self._datacell_list[address].set_annotation(annotation)
+            return self._datacell_list[address]
+        else:
+            print("ERROR: memory address out of range")
+            # TODO excepcion de memoria (out of range)
         
     def get_cell(self, address):
         return self._datacell_list[address]

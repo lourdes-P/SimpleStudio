@@ -9,10 +9,9 @@ class LibreNode(OperandNode):
     @property
     def token(self):
         return self._token
-    # TODO ver cómo se comporta binarios y accesos
 
     def evaluate(self, processor=None):
-        return processor.libre()
+        return int(processor.libre)
 
     def generate_string(self):
         return str(self.token.lexeme)

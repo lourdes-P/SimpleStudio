@@ -11,7 +11,7 @@ class IntNode(OperandNode):
     # TODO ver cómo se comporta binarios y accesos
 
     def get_int(self):
-        return self._token.lexeme
+        return int(self._token.lexeme)
 
     def evaluate(self, processor=None):
         return self.get_int()

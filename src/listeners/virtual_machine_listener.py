@@ -15,9 +15,16 @@ class VirtualMachineListener(ABC):
         pass
     
     @abstractmethod
+    def execution_finished(self):
+        pass
+    
+    @abstractmethod
     def disable_execution(self):
         pass
     
+    @abstractmethod
+    def enable_execution(self):
+        pass
     
     '''
     @abstractmethod

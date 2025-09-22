@@ -102,16 +102,15 @@ This seemed to work for me for what I was doing with putting a table into the Sc
         y = widget.winfo_rooty() 
         
         # Ensure tooltip stays on screen
-        screen_width = self.winfo_screenwidth()
+        screen_width = self.winfo_width()
         screen_height = self.winfo_screenheight()
         
         # Adjust if tooltip would go off screen right
-        tooltip_width = 300
-        if x + tooltip_width > screen_width:
-            x = screen_width - tooltip_width - 10
+        if x > screen_width:
+            x = screen_width
         
         # Adjust if tooltip would go off screen bottom
-        tooltip_height = 100  # Estimated height
+        tooltip_height = 30  # Estimated height
         if y + tooltip_height > screen_height:
             y = widget.winfo_rooty() - tooltip_height - 5
         
@@ -195,7 +194,7 @@ This seemed to work for me for what I was doing with putting a table into the Sc
         address_label = ctk.CTkLabel(line_frame, text=str(line_num), 
                                  width=80, anchor="w")
         instruction_label = ctk.CTkLabel(line_frame, text=str(instruction.get('instruction', '')), 
-                                        width=200, anchor="w")
+                                         anchor="w")
         
         # Layout widgets
         label_label.grid(row=0, column=1, padx=2, pady=2, sticky="w")

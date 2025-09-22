@@ -103,5 +103,7 @@ class DualScrollFrame(ctk.CTkFrame):
         else:
             return color_tuple[1] 
         
+        
+        
     def get_scrollable_frame(self):
         return self.scrollable_frame
