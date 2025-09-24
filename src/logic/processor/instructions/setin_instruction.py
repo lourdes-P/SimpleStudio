@@ -10,7 +10,7 @@ class SetInInstruction(InstructionSimpleArg):
         processor.trigger_user_input()
 
         return processor.SUCCESS
-        # TODO leer input del usuario y guardarlo en la 
+        # leer input del usuario y guardarlo en la 
     # memoria D, específicamente, en la direccion resultante
     # de evaluar la expresión destino
     

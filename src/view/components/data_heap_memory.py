@@ -1,8 +1,9 @@
 import customtkinter as ctk
-from typing import List, Dict, Optional, Callable
+from typing import List
 from view.components.dualscrollframe import DualScrollFrame
 
 class DataHeapMemoryView(ctk.CTkFrame):
+    LAST_MODIFIED_CELL_COLOR = "#4b8bab"
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         
@@ -10,6 +11,8 @@ class DataHeapMemoryView(ctk.CTkFrame):
         self.current_register = None
         self.default_text_color = None
         self.cell_widgets = {}
+        self.last_modified_cell_address = None
+        
         
         self.column_widths = {
             'register': 80,
@@ -90,7 +93,7 @@ class DataHeapMemoryView(ctk.CTkFrame):
         annotation = cell_data.get('annotation', '')
         
         # Create frame for the cell
-        cell_frame = ctk.CTkFrame(self.memory_cells_frame, height=30)
+        cell_frame = ctk.CTkFrame(self.memory_cells_frame)
         cell_frame.pack(fill="x", pady=1)
         
         # Create labels for each column
@@ -139,80 +142,80 @@ class DataHeapMemoryView(ctk.CTkFrame):
             if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
                 widgets[widget_key].configure(text_color=self.default_text_color)
         
-        # Apply register highlighting if this cell has a register
-        register_text = widgets['register'].cget('text')
-        if register_text and register_text.strip():
-            frame.configure(fg_color="#2c3e50")  # Teal background for register cells
+        if self.last_modified_cell_address is not None and int(self.last_modified_cell_address) == int(address):
+            frame.configure(fg_color=self.LAST_MODIFIED_CELL_COLOR)
             for widget_key in label_widgets:
                 if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                    widgets[widget_key].configure(text_color="white")
+                    widgets[widget_key].configure(text_color="black")
+        else:
+            # Apply register highlighting if this cell has a register
+            register_text = widgets['register'].cget('text')
+            if register_text and register_text.strip():
+                frame.configure(fg_color="#2c3e50")
+
+                for widget_key in label_widgets:
+                    if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
+                        widgets[widget_key].configure(text_color="white")
+                    
     
     def update_memory(self, modified_cells):
+        last_modified_cell_address = None
         for cell_data in modified_cells:
             address = cell_data.get('address', '')
             register = cell_data.get('register', None)
-            value = cell_data.get('value', '0')
+            value = cell_data.get('value', None)
             annotation = cell_data.get('annotation', None)
+            memory_modified = cell_data.get('memory_modified', False)
             self.update_cell_value(address, value, register, annotation)
+            if memory_modified:
+                last_modified_cell_address = address
+        
+        if last_modified_cell_address is not None:
+            self._update_last_modified_cell(last_modified_cell_address)
+            
+    def reset(self, cell_list):
+        self.last_modified_cell_address = None
+        for cell_data in cell_list:
+            address = cell_data.get('address', '')
+            register = cell_data.get('register', None)
+            value = cell_data.get('value', None)
+            annotation = cell_data.get('annotation', None)
+            memory_modified = cell_data.get('memory_modified', False)
+            self.update_cell_value(address, value, register, annotation)
+            
+    def _update_last_modified_cell(self, last_modified_cell_address):
+        former_last_modified_cell_address = self.last_modified_cell_address
+        self.last_modified_cell_address = last_modified_cell_address
+        self._update_cell_appearance(former_last_modified_cell_address)
+        self._update_cell_appearance(self.last_modified_cell_address)
     
-    def update_cell_value(self, address: str, value: str, register: str = None, annotation: str = None):
+    def update_cell_value(self, address: str, value: str = None, register: str = None, annotation: str = None):
         """Update the value of a specific memory cell"""
         if address not in self.cell_widgets:
             return
         
         widgets = self.cell_widgets[address]
         
-        # Update value
-        widgets['value'].configure(text=value)
+        if value is not None:
+            widgets['value'].configure(text=value) 
         
-        # Update register if provided
         if register is not None:
-            widgets['register'].configure(text=register)
+            widgets['register'].configure(text=register)   
         
-        # Update annotation if provided
         if annotation is not None:
-            widgets['annotation'].configure(text=annotation)
+            widgets['annotation'].configure(text=annotation)  
         
-        # Update appearance
-        self._update_cell_appearance(address)
-        
-        # Update the data model
         for cell in self.memory_data:
             if cell.get('address') == address:
-                cell['value'] = value
+                if value is not None:
+                    cell['value'] = value
                 if register is not None:
                     cell['register'] = register
                 if annotation is not None:
                     cell['annotation'] = annotation
                 break
-    
-    def highlight_cell(self, address: str, register: str = None):
-        """Highlight a specific memory cell by address"""
-        # First, clear any previous highlights
-        for addr, widgets in self.cell_widgets.items():
-            widgets['frame'].configure(fg_color="transparent")
-            for widget_key in ['register', 'address', 'value', 'annotation']:
-                if widget_key in widgets:
-                    widgets[widget_key].configure(text_color=self.default_text_color)
-        
-        # Highlight the cell with the matching address
-        if address in self.cell_widgets:
-            widgets = self.cell_widgets[address]
-            widgets['frame'].configure(fg_color="#2c3e50")  # Dark blue background for highlighted cell
             
-            # Update text colors for better contrast
-            for widget_key in ['register', 'address', 'value', 'annotation']:
-                if widget_key in widgets:
-                    widgets[widget_key].configure(text_color="white")
-            
-            # Update register information if provided
-            if register is not None:
-                widgets['register'].configure(text=register)
-                # Update the data model
-                for cell in self.memory_data:
-                    if cell.get('address') == address:
-                        cell['register'] = register
-                        break
+        self._update_cell_appearance(address)
     
     def change_appearance_mode(self, new_appearance_mode):
         """Update appearance based on the selected mode"""

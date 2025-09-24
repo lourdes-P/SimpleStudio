@@ -11,7 +11,7 @@ class ActualNode(OperandNode):
         return self._token
 
     def evaluate(self, processor=None):
-        return processor.actual()
+        return int(processor.actual)
 
     def generate_string(self):
         return str(self.token.lexeme)

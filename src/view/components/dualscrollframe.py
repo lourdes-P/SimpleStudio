@@ -13,15 +13,10 @@ class DualScrollFrame(ctk.CTkFrame):
         self.h_scrollbar = ctk.CTkScrollbar(self, orientation="horizontal", command=self.canvas.xview)
         self.v_scrollbar = ctk.CTkScrollbar(self, orientation="vertical", command=self.canvas.yview)
         
-        self.scrollable_frame = ctk.CTkFrame(self.canvas, fg_color=self._get_single_color(self._fg_color))
+        self.scrollable_frame = ctk.CTkFrame(self.canvas, fg_color=self._get_single_color(self._fg_color), corner_radius=0, height=100, width=150)
         self.scrollable_frame.pack(fill="both", expand=True)
-        
-        self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: self.canvas.configure(
-                scrollregion=self.canvas.bbox("all")
-            )
-        )
+  
+        ctk.AppearanceModeTracker.add(self.change_appearance_mode)
         
         self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         self.canvas.configure(xscrollcommand=self.h_scrollbar.set, yscrollcommand=self.v_scrollbar.set)
@@ -91,7 +86,7 @@ class DualScrollFrame(ctk.CTkFrame):
         """Horizontal scrolling with shift+mousewheel"""
         self.canvas.xview_scroll(int(-1 * (event.delta / 120)), "units")
         
-    def change_appearance_mode(self):
+    def change_appearance_mode(self, mode=None):
         fg_color = self._get_single_color(self._fg_color)
         self.canvas.configure(bg=fg_color)
         self.scrollable_frame.configure(fg_color=fg_color)
@@ -101,9 +96,7 @@ class DualScrollFrame(ctk.CTkFrame):
         if ctk.get_appearance_mode() == "Light":
             return color_tuple[0]  
         else:
-            return color_tuple[1] 
-        
-        
+            return color_tuple[1]         
         
     def get_scrollable_frame(self):
         return self.scrollable_frame

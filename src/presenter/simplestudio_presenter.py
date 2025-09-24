@@ -2,6 +2,7 @@ from logic.memories.codememory.codememory import CodeMemory
 from model.virtual_machine import VirtualMachine
 from view.main_view import SimpleStudioView
 from listeners import VirtualMachineListener
+from presenter.utils.presenter_parser import PresenterParser
 
 class SimpleStudioPresenter(VirtualMachineListener):
     def __init__(self, code_memory: CodeMemory, virtual_machine : VirtualMachine):
@@ -23,48 +24,19 @@ class SimpleStudioPresenter(VirtualMachineListener):
         self.code_memory_view = code_memory_view
     
     def update_code_memory_view(self):        
-        code_data = []
-        
-        for code_cell in self.code_memory.codecell_list:
-            cell_data = {                
-                'label': code_cell.label_string(),
-                'address': code_cell.instruction.address,
-                'instruction': self._get_instruction_string(code_cell),
-                'annotation': code_cell.annotation_string()
-            }
-            code_data.append(cell_data)
-
+        code_data = PresenterParser.parse_code_memory(self.code_memory.codecell_list)
         
         self.main_view.load_code_onto_c_memory(code_data)
-        #self.code_memory_view.set_current_pc(self.code_memory_view.current_pc + 3)
-        
-    def update_data_memory_view(self, data_memory):
-        pass    # TODO update_data_memory_view
-    """dos opciones:
-        - despues de cada instruccion, si fue modificada la data memory (tener un boolean en la clase).
-        - si fue mas de un step, y si fue modificada la data memory, guardo las addresses que fueron modificadas
-        en un arreglo o algo, y cambio todas las lineas de una en la vista
-    """
-    
-    def update_heap_memory_view(self, heap_memory):
-        pass    # TODO update_heap_memory_view
-    
-    def _get_instruction_string(self, code_cell):
-        """Extract the instruction string from a CodeCell"""
-        if hasattr(code_cell.instruction, 'generate_string'):
-            return code_cell.instruction.generate_string()
-        else:
-            return str(code_cell.instruction)
        
     # --------- user view events    
      
     def on_file_selected(self):
-        #try:
-        file_path = self.main_view.get_selected_file_path()
-        # TODO self.main_view.loading(True)          
-        self.virtual_machine.load_program(file_path)       # crear hilo? puede ser util si ya hay algo mostrandose?
-        """except Exception as e:
-            self.main_view.display_error(f"Error loading file: {str(e)}")"""
+        try:
+            file_path = self.main_view.get_selected_file_path()
+            # TODO self.main_view.loading(True)          
+            self.virtual_machine.load_program(file_path)       # crear hilo? puede ser util si ya hay algo mostrandose?
+        except Exception as e:
+            self.main_view.display_error(f"Error loading file: {str(e)}")
             
     def on_user_input(self, input):
         self.virtual_machine.deliver_user_input(input)
@@ -80,10 +52,10 @@ class SimpleStudioPresenter(VirtualMachineListener):
         self.virtual_machine.execute_program(VirtualMachine.SINGLE_STEP_EXECUTION_MODE)
     
     def on_n_step_execution(self, steps=None):
-        self.virtual_machine.execute_program(steps, VirtualMachine.N_STEP_EXECUTION_MODE)
+        self.virtual_machine.execute_program(VirtualMachine.N_STEP_EXECUTION_MODE, steps)
     
     def on_reset(self):
-        pass # TODO on_reset (presenter)
+        self.virtual_machine.reset()
         
     # --------- end user view events      
     
@@ -92,10 +64,13 @@ class SimpleStudioPresenter(VirtualMachineListener):
     def load_has_finished(self):
         # TODO self.main_view.loading(False)
         self.code_memory = self.virtual_machine.get_code_memory()
-        self.update_code_memory_view()       
+        self.update_code_memory_view()
+        label_list = PresenterParser.parse_label_dictionary(self.virtual_machine.get_label_dictionary())
+        self.main_view.load_label_panel(label_list)       
         
     def trigger_error(self):
         error = self.virtual_machine.get_last_triggered_error()
+        self.disable_execution()
         self.main_view.display_error(error)
         
     def trigger_user_input(self):
@@ -103,12 +78,22 @@ class SimpleStudioPresenter(VirtualMachineListener):
         
     def execution_finished(self):
         pc = self.virtual_machine.get_pc()
+        last_executed_instruction_address = self.virtual_machine.get_last_executed_instruction_address()
         modified_data_cells = self.virtual_machine.get_modified_data_cells()
         modified_heap_cells = self.virtual_machine.get_modified_heap_cells()
+        added_labels = self.virtual_machine.get_last_execution_added_labels()
         
-        self.main_view.set_pc(pc)
-        self.main_view.update_data_memory(self._parse_data_heap_memory(modified_data_cells))
-        self.main_view.update_heap_memory(self._parse_data_heap_memory(modified_heap_cells))
+        self.main_view.set_pc(pc, last_executed_instruction_address)
+        if added_labels is not None and len(added_labels) > 0:
+            self.main_view.add_labels(PresenterParser.parse_label_dictionary(added_labels))
+        self._update_memories(modified_data_cells, modified_heap_cells)
+        
+    def reset_has_finished(self):
+        self.update_code_memory_view()
+        parsed_data_memory = PresenterParser.parse_data_heap_memory(self.virtual_machine.get_data_memory().cell_list)
+        parsed_heap_memory = PresenterParser.parse_data_heap_memory(self.virtual_machine.get_heap_memory().cell_list)
+        label_list = PresenterParser.parse_label_dictionary(self.virtual_machine.get_label_dictionary())
+        self.main_view.reset(parsed_data_memory, parsed_heap_memory, label_list)
         
     def disable_execution(self):
         self.main_view.disable_execution()
@@ -119,23 +104,17 @@ class SimpleStudioPresenter(VirtualMachineListener):
     # --------- end listener methods
     
     def initialize_data_memory_view(self, data_memory):
-        self.main_view.load_data_memory(self._parse_data_heap_memory(data_memory.cell_list))
+        self.main_view.load_data_memory(PresenterParser.parse_data_heap_memory(data_memory.cell_list))
     
     def initialize_heap_memory_view(self, heap_memory):
-        self.main_view.load_heap_memory(self._parse_data_heap_memory(heap_memory.cell_list))
+        self.main_view.load_heap_memory(PresenterParser.parse_data_heap_memory(heap_memory.cell_list))
         
-    def _parse_data_heap_memory(self, cell_list):
-        data = []
-        for cell in cell_list:
-            cell_data = {                
-                'register': cell.generate_register_string(),
-                'address': cell.address, 
-                'value': cell.value,
-                'annotation': cell.annotation_string()
-            }
-            data.append(cell_data)
-            
-        return data
+    def _update_memories(self, modified_data_cells, modified_heap_cells):
+        data_modified = PresenterParser.parse_modified_cells(modified_data_cells)
+        heap_modified = PresenterParser.parse_modified_cells(modified_heap_cells)
+        
+        self.main_view.update_data_memory(data_modified)
+        self.main_view.update_heap_memory(heap_modified)    
         
     def update_pc(self, pc: int):
         self.code_memory_view.set_current_pc(pc)

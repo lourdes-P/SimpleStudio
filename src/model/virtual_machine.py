@@ -16,6 +16,8 @@ class VirtualMachine:
     COMPLETE_EXECUTION_MODE = 0
     SINGLE_STEP_EXECUTION_MODE = 1
     N_STEP_EXECUTION_MODE = 2
+    ONLY_REGISTER_MODIFIED = False
+    SET_MEMORY_MODIFIED = True
     
     def __init__(self):
         self._reserved_word_map = ReservedWordMap()
@@ -30,10 +32,11 @@ class VirtualMachine:
         self._error = None
         self._breakpoint_list = None
         self._label_dictionary = None
+        self._last_execution_added_labels = {}
         self._listeners = []
-        self._modified_data_cells = []
-        self._modified_heap_cells = []
-        
+        self._modified_data_cells = {}
+        self._modified_heap_cells = {}
+        self._last_executed_instruction_address = 0
         
     def addListener(self, listener) : 
         self._listeners.append(listener)
@@ -54,10 +57,23 @@ class VirtualMachine:
             self.notify_error()
             # TODO excecution buttons unabled in view
         
+        self._original_label_dictionary = syntactic_analyzer.get_label_dictionary()
         self._label_dictionary = syntactic_analyzer.get_label_dictionary()
         self.initialize_processor()
         
         self.notify_load_finished()
+        
+    def reset(self):
+        # TODO  have to divide the view methods in threads or something
+        if self._code_memory is not None:
+            self._data_memory.reset()
+            self._heap_memory.reset()
+            self._processor.reset()
+            self._label_dictionary = self._original_label_dictionary.copy()
+            self._last_execution_added_labels.clear()
+            self._reset_modified_cells()
+            self.enable_execution()
+            self.notify_reset_finished()
         
     def update_breakpoint_list(self, breakpoint_list):
         self._breakpoint_list = breakpoint_list
@@ -68,6 +84,27 @@ class VirtualMachine:
         else:
             self._processor = Processor(virtual_machine=self)
             
+    def _reset_modified_cells(self):
+        if self._modified_data_cells.get(self.SET_MEMORY_MODIFIED) is not None:
+            self._modified_data_cells[self.SET_MEMORY_MODIFIED].clear()
+        else:
+            self._modified_data_cells[self.SET_MEMORY_MODIFIED] = []
+            
+        if self._modified_data_cells.get(self.ONLY_REGISTER_MODIFIED) is not None:
+            self._modified_data_cells[self.ONLY_REGISTER_MODIFIED].clear()
+        else:
+            self._modified_data_cells[self.ONLY_REGISTER_MODIFIED] = []
+        
+        if self._modified_heap_cells.get(self.SET_MEMORY_MODIFIED) is not None:
+            self._modified_heap_cells[self.SET_MEMORY_MODIFIED].clear()
+        else:
+            self._modified_heap_cells[self.SET_MEMORY_MODIFIED] = []
+            
+        if self._modified_heap_cells.get(self.ONLY_REGISTER_MODIFIED) is not None:
+            self._modified_heap_cells[self.ONLY_REGISTER_MODIFIED].clear()
+        else:
+            self._modified_heap_cells[self.ONLY_REGISTER_MODIFIED] = []
+            
     # --------- notify listeners
         
     def notify_load_finished(self):
@@ -76,12 +113,15 @@ class VirtualMachine:
         
     def notify_error(self):
         for listener in self._listeners:
-            listener.trigger_error()    # TODO deshabilitar botones?
-            # TODO ver de resetear toda la vm con el boton reset
+            listener.trigger_error()
             
     def notify_execution_finished(self):
         for listener in self._listeners:
             listener.execution_finished()
+            
+    def notify_reset_finished(self):
+        for listener in self._listeners:
+            listener.reset_has_finished()
             
     def disable_execution(self):
         for listener in self._listeners:
@@ -99,6 +139,9 @@ class VirtualMachine:
             
     def get_last_triggered_error(self):
         return self._error
+    
+    def get_last_executed_instruction_address(self):
+        return self._last_executed_instruction_address
     
     def get_instruction(self, address):
         return self._code_memory.get_instruction(address)
@@ -121,6 +164,12 @@ class VirtualMachine:
     def get_user_input(self):
         return self._last_user_input
     
+    def get_label_dictionary(self):
+        return self._label_dictionary
+    
+    def get_last_execution_added_labels(self):
+        return self._last_execution_added_labels
+    
     def get_pc(self):
         return self._processor.pc if self._processor != None else 0
     
@@ -134,66 +183,73 @@ class VirtualMachine:
         return self._processor.po if self._processor != None else 0
     
     def get_label_address(self, label_name):
-        address = self._label_dictionary.get(label_name)
+        address = self._label_dictionary.get(str.lower(label_name))
         if address == None:
             self._error = f"Label with name {label_name} does not exist"
             self.notify_error()
         return address
     
     def access_data_memory(self, address):
-        return self._data_memory.get_cell(address)
+        return self._data_memory.get_cell(address).value
     
     def access_heap_memory(self, address):
-        return self._heap_memory.get_cell(address)
+        return self._heap_memory.get_cell(address).value
     
-    def set_data_memory(self, address, data = None):
-        annotation = self._code_memory.get_codecell(address).annotation
+    def set_data_memory(self, address, data = None, source_instruction_address = None):
+        annotation = None
+        if source_instruction_address is not None:
+            annotation = self._code_memory.get_codecell(source_instruction_address).annotation
         modified_cell = self._data_memory.set_cell(address, data, annotation)
-        self._modified_data_cells.append(modified_cell)
+        self._add_to_modified_cell_dictionary(self._modified_data_cells, self.SET_MEMORY_MODIFIED, modified_cell)
         
-    def set_heap_memory(self, address, data = None):
-        annotation = self._code_memory.get_codecell(address).annotation
+    def set_heap_memory(self, address, data = None, source_instruction_address = None):
+        annotation = None
+        if source_instruction_address is not None:
+            annotation = self._code_memory.get_codecell(source_instruction_address).annotation
         modified_cell = self._heap_memory.set_cell(address, data, annotation)
-        self._modified_heap_cells.append(modified_cell)
+        self._add_to_modified_cell_dictionary(self._modified_heap_cells, self.SET_MEMORY_MODIFIED, modified_cell)
         
     def set_libre(self, former_libre, libre):
         former = self._data_memory.get_cell(former_libre)
         former.remove_libre()
         new = self._data_memory.get_cell(libre)
         new.place_libre()
-        self._modified_data_cells.append(former)
-        self._modified_data_cells.append(new)
+        self._add_to_modified_cell_dictionary(self._modified_data_cells, self.ONLY_REGISTER_MODIFIED, former)
+        self._add_to_modified_cell_dictionary(self._modified_data_cells, self.ONLY_REGISTER_MODIFIED, new)
         
     def set_actual(self, former_actual, actual):
         former = self._data_memory.get_cell(former_actual)
         former.remove_actual()
         new = self._data_memory.get_cell(actual)
         new.place_actual()
-        self._modified_data_cells.append(former)
-        self._modified_data_cells.append(new)
-        
+        self._add_to_modified_cell_dictionary(self._modified_data_cells, self.ONLY_REGISTER_MODIFIED, former)
+        self._add_to_modified_cell_dictionary(self._modified_data_cells, self.ONLY_REGISTER_MODIFIED, new)
+       
     def set_po(self, former_po, po):
         former = self._heap_memory.get_cell(former_po)
         former.remove_po()
         new = self._heap_memory.get_cell(po)
         new.place_po()
-        self._modified_heap_cells.append(former)
-        self._modified_heap_cells.append(new)
+        self._add_to_modified_cell_dictionary(self._modified_heap_cells, self.ONLY_REGISTER_MODIFIED, former)
+        self._add_to_modified_cell_dictionary(self._modified_heap_cells, self.ONLY_REGISTER_MODIFIED, new)
         
     def define_label(self, label_token, address):
-        label_name = label_token.lexeme
+        label_name = str.lower(label_token.lexeme)
         if self._label_dictionary.get(label_name) == None:
             self._label_dictionary[label_name] = address
+            self._last_execution_added_labels[label_name] = address
+            return Processor.SUCCESS
         else:
-            pass # TODO define_label que hacer si hay label repetida
+            return Processor.SUCCESS # TODO define_label que hacer si hay label repetida
             
     def deliver_user_input(self, input):
         self._last_user_input = input
         self._processor.deliver_user_input()
         
-    def execute_program(self, mode, steps = None):
-        self._modified_data_cells.clear()
-        self._modified_heap_cells.clear()
+    def execute_program(self, mode, steps : int = None):
+        self._reset_modified_cells()
+        self._last_execution_added_labels.clear()
+        state = Processor.SUCCESS
         
         if not self._io_manager:
             self._error = 'No source loaded'
@@ -201,35 +257,36 @@ class VirtualMachine:
             
         match mode:
             case self.SINGLE_STEP_EXECUTION_MODE:
-                self._single_step_execution()
+                state = self._single_step_execution()
             case self.N_STEP_EXECUTION_MODE:
-                self._n_step_execution(steps)
+                state = self._n_step_execution(steps)
             case self.COMPLETE_EXECUTION_MODE:
-                self._complete_execution()
+                state = self._complete_execution()
+                
+        self._check_execution_state(state)
                 
         self.notify_execution_finished()
             
     def _single_step_execution(self):
+        self._last_executed_instruction_address = self.get_pc()
         state = self._processor.execute_next_instruction()
         return state
         
-    def _n_step_execution(self, steps):
+    def _n_step_execution(self, steps : int):
         state = self._single_step_execution()
+        steps-= 1
+        while steps > 0 and state == Processor.SUCCESS and not (self._in_breakpoint_list(self.get_pc())):
+            state = self._single_step_execution()     
+            steps-= 1
         
-        for _ in range(steps-1):
-            if state != Processor.SUCCESS or self._breakpoint_list != None and self.get_pc in self._breakpoint_list:
-                break
-            else:
-                state = self._processor.execute_next_instruction()     
-        
-        self._check_execution_state(state)
+        return state
                 
     def _complete_execution(self):
         state = self._single_step_execution()
-        while state == Processor.SUCCESS and not (self._breakpoint_list != None and self.get_pc in self._breakpoint_list):
+        while state == Processor.SUCCESS and not (self._in_breakpoint_list(self.get_pc())):
             state = self._single_step_execution()
         
-        self._check_execution_state(state)
+        return state
             
     def _check_execution_state(self, state):
         if state == Processor.COMPLETED:
@@ -237,3 +294,10 @@ class VirtualMachine:
         elif state == Processor.FAILURE:
             self._error = "Error while executing source code"   
             self.notify_error()
+            
+    def _add_to_modified_cell_dictionary(self, dictionary, key, cell):
+        if dictionary.get(key) is not None:
+            dictionary[key].append(cell)
+            
+    def _in_breakpoint_list(self, address : int):
+        return self._breakpoint_list != None and address in self._breakpoint_list

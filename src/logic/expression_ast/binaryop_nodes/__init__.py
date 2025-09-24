@@ -11,6 +11,10 @@ from logic.expression_ast.binaryop_nodes.lesser_or_equal_node import LesserOrEqu
 from logic.expression_ast.binaryop_nodes.multiplication_node import MultiplicationNode
 from logic.expression_ast.binaryop_nodes.or_node import OrNode
 from logic.expression_ast.binaryop_nodes.subtraction_node import SubtractionNode
+from logic.expression_ast.binaryop_nodes.modulus_node import ModulusNode
 
 
-__all__ = [ 'BinaryOpNode', 'AdditionNode', 'AndNode', 'DiffersNode', 'DivisionNode', 'EqualsNode', 'GreaterNode', 'GreaterOrEqualNode', 'LesserNode', 'LesserOrEqualNode', 'MultiplicationNode', 'OrNode', 'SubtractionNode' ]
+__all__ = [ 'BinaryOpNode', 'AdditionNode', 'AndNode', 'DiffersNode', 
+           'DivisionNode', 'EqualsNode', 'GreaterNode', 'GreaterOrEqualNode', 
+           'LesserNode', 'LesserOrEqualNode', 'MultiplicationNode', 'OrNode', 
+           'SubtractionNode', 'ModulusNode' ]

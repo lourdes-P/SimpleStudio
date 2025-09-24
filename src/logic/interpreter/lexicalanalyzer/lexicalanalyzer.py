@@ -114,7 +114,6 @@ class LexicalAnalyzer:
             self.update_current_char()
             return self.s_equals()
         elif self.current_char == '\'':
-            # TODO ver si deberia guardar las comillas (no lo hago)
             self.update_current_char()
             return self.s_string()  
         elif self.current_char == '>':

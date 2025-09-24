@@ -19,6 +19,9 @@ class DataMemory(DataHeapMemory):
         self._datacell_list[self._libre].place_libre()
     
     def reset(self):
+        self._actual = 0
+        self._libre = 0
+        self._datacell_list.clear()
         self.initialize_memory(self._initial_cell_number)    
     
     def place_actual(self, new_address):

@@ -1,47 +1,100 @@
 import customtkinter as ctk
-from tkinter import ttk
+from view.components.dualscrollframe import DualScrollFrame
+from typing import List, Dict
 
 class LabelPanel(ctk.CTkFrame):
-    """Component for displaying the label table"""
-    def __init__(self, master, title, columns, data, **kwargs):
-        super().__init__(master, **kwargs)
+    def __init__(self, master, **kwargs):
+        super().__init__(master, height=150, width=200+35, **kwargs)
         
-        self.title = title
-        self.columns = columns
-        self.data = data
+        self.column_widths = {
+            'label': 100,
+            'address': 100,
+        }
         
-        self.setup_ui()
+        self._create_widgets()
+        self._setup_layout()
         
-    def setup_ui(self):
-        # Title
-        title_label = ctk.CTkLabel(self, text=self.title, font=ctk.CTkFont(size=16, weight="bold"))
-        title_label.pack(pady=(10, 15))
+    def _create_widgets(self):
+        self.line_widgets: Dict[int, dict] = {}
+        self.line_widget_index = 0
+        self.grid_propagate(False)
         
-        # Create treeview (table)
-        self.tree = ttk.Treeview(self, columns=self.columns, show='headings', height=5)
+        self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
         
-        # Define columns
-        for col in self.columns:
-            self.tree.heading(col, text=col)
-            self.tree.column(col, width=100, anchor='center')
+        self.header_frame.grid_columnconfigure(0, minsize=self.column_widths['label'])
+        self.header_frame.grid_columnconfigure(1, minsize=self.column_widths['address'])
         
-        # Add scrollbar
-        scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar.set)
+        self.label_header = ctk.CTkLabel(self.header_frame, text="Label", width=self.column_widths['label'], anchor="w")
+        self.address_header = ctk.CTkLabel(self.header_frame, text="Address", width=self.column_widths['address'], anchor="w")
+
         
-        # Pack tree and scrollbar
-        self.tree.pack(side='left', fill='both', expand=True, padx=(10, 0), pady=(0, 10))
-        scrollbar.pack(side='right', fill='y', padx=(0, 10), pady=(0, 10))
+        self.scroll_frame = DualScrollFrame(self, height=150, width=200)
         
-        # Insert data
-        self.update_data(self.data)
+        self.label_frame =  ctk.CTkFrame(self.scroll_frame.get_scrollable_frame(), fg_color="transparent", height=100, width=100)
+        self.label_frame.pack(fill="both", expand=True)
         
-    def update_data(self, new_data):
-        """Update the table with new data"""
-        # Clear existing data
-        for item in self.tree.get_children():
-            self.tree.delete(item)
+    def _setup_layout(self):
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_columnconfigure(0, weight=1)
         
-        # Insert new data
-        for item in new_data:
-            self.tree.insert('', 'end', values=item)
+        self.header_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=(2, 0))
+        self.label_header.grid(row=0, column=0, padx=2, pady=2, sticky="w")
+        self.address_header.grid(row=0, column=1, padx=2, pady=2, sticky="w")
+        
+        self.scroll_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=(0, 5))
+        
+    def change_appearance_mode(self, new_appearance_mode):
+        ctk.set_appearance_mode(new_appearance_mode)
+        self.scroll_frame.change_appearance_mode()    
+    
+    def load_data(self, data: List[dict]):
+        """
+        Load label information.
+        Each label follows the structure:
+            name: (label name)
+            address: (value)
+        """
+        for widget in self.label_frame.winfo_children():
+            widget.destroy()
+        self.line_widgets.clear()
+        
+        for i, label in enumerate(data):
+            self._create_line_widget(label, i)
+            
+    def reset(self, label_list):
+        self.load_data(label_list)
+            
+    def add_label(self, label: dict, color = None):
+        self._create_line_widget(label, self.line_widget_index, color)
+        
+    def add_label_list(self, label_list, color):
+        for i, label in enumerate(label_list):
+            self.add_label(label, color)
+        
+    def _create_line_widget(self, label: dict, index: int, color = None):
+        label_name = label['name']
+        label_value = label['address']
+        
+        line_frame = ctk.CTkFrame(self.label_frame, height=20, corner_radius=0)
+        line_frame.pack(fill="x", pady=1)
+        
+        name_label = ctk.CTkLabel(line_frame, text=str(label_name), 
+                                width=self.column_widths['label'], anchor="w")
+        address_label = ctk.CTkLabel(line_frame, text=str(label_value), 
+                                width=self.column_widths['address'], anchor="w")
+        
+        name_label.grid(row=0, column=0, padx=2, pady=2, sticky="w")
+        address_label.grid(row=0, column=1, padx=2, pady=2, sticky="w")
+        
+        if color is not None:
+            line_frame.configure(fg_color=color)
+            name_label.configure(text_color="white")
+            address_label.configure(text_color="white")
+        
+        self.line_widgets[index] = {
+            'name': label_name,
+            'address': label_value
+        }
+        
+        self.line_widget_index = index + 1
+        

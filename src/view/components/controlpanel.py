@@ -122,18 +122,16 @@ class ControlPanel(ctk.CTkFrame):
         
     def set_buttons_state(self, enabled=False):
         """Enable/disable buttons with boolean value (True enabled, False disabled)"""
-        if enabled:
+        if enabled is True:
             self.step_button.configure(state="normal")
             self.n_step_button.configure(state="normal")
             self.run_button.configure(state="normal")
-            self.reset_button.configure(state="normal")
         else:
             self.step_button.configure(state="disabled")
             self.n_step_button.configure(state="disabled")
             self.run_button.configure(state="disabled")
-            self.reset_button.configure(state="disabled")
             
     def _calculate_button_width(self, text, padding=20):
         """Calculate appropriate width based on text length"""
-        base_width = len(text) * 8 + padding  # Adjust multiplier as needed
+        base_width = len(text) * 8 + padding
         return max(50, base_width)

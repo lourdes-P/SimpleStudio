@@ -16,6 +16,8 @@ class HeapMemory(DataHeapMemory):
         self._heapcell_list[self._po].place_po()
         
     def reset(self):
+        self._po = 0
+        self._heapcell_list.clear()
         self.initialize_memory(self._initial_cell_number)
         
     def place_po(self, new_address):
@@ -27,7 +29,7 @@ class HeapMemory(DataHeapMemory):
         if (address <= self._initial_cell_number):
             self._heapcell_list[address].set_value(value)
             self._heapcell_list[address].set_annotation(annotation)
-            return self._datacell_list[address]
+            return self._heapcell_list[address]
         else:
             print("ERROR: memory address out of range")
             # TODO excepcion de memoria (out of range)

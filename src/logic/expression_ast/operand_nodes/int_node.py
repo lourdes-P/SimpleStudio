@@ -8,7 +8,6 @@ class IntNode(OperandNode):
     @property
     def token(self):
         return self._token
-    # TODO ver cómo se comporta binarios y accesos
 
     def get_int(self):
         return int(self._token.lexeme)

@@ -5,6 +5,7 @@ from typing import List, Dict, Optional, Callable
 from view.components.dualscrollframe import DualScrollFrame
 
 class CodeMemoryView(ctk.CTkFrame):
+    LAST_EXECUTED_INSTRUCTION_COLOR = "#4b8bab"
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         
@@ -14,6 +15,7 @@ class CodeMemoryView(ctk.CTkFrame):
         self.on_pc_change: Optional[Callable] = None
         self.default_text_color = None
         self.codecell_list = None
+        self.last_executed_instruction = None
         
         # for annotations
         self.tooltip = None
@@ -39,38 +41,18 @@ class CodeMemoryView(ctk.CTkFrame):
         self.header_frame.grid_columnconfigure(2, minsize=self.column_widths['line'])
         self.header_frame.grid_columnconfigure(3, minsize=self.column_widths['instruction'])
         
-        # Column headers 
         self.pc_header = ctk.CTkLabel(self.header_frame, text="PC", width=self.column_widths['pc'], anchor="w")
         self.label_header = ctk.CTkLabel(self.header_frame, text="Label", width=self.column_widths['label'], anchor="w")
         self.line_header = ctk.CTkLabel(self.header_frame, text="Line", width=self.column_widths['line'], anchor="w")
         self.instruction_header = ctk.CTkLabel(self.header_frame, text="Instruction", width=self.column_widths['instruction'], anchor="w")
         
-        # Scrollable frame for code lines
         self.scroll_frame = DualScrollFrame(self)
         
-        """self.scroll_frame.grid(row=1,column=0,pady=0)
-        v_scrollbar = ctk.CTkScrollbar(self, orientation="vertical", command=self.scroll_frame._parent_canvas.yview) 
-        v_scrollbar.grid(row=1, column=1) 
-        self.scroll_frame._parent_canvas.configure(yscrollcommand=v_scrollbar.set)"""
         self.code_lines_frame = ctk.CTkFrame(self.scroll_frame.get_scrollable_frame(), fg_color="transparent")
         self.code_lines_frame.pack(fill="both", expand=True)
-        # since we clearly need a workaround to have two scroll bars:
-        """The workaround is to use the .grid and add a vertical Scrollbar using CTkScrollbar, so: 
-
-        my_frame = customtkinter.CTkScrollableFrame(master=root, orientation="horizontal")
-        my_frame.grid(row=1, column=0, pady=10) 
-
-        v_scrollbar = customtkinter.CTkScrollbar(master=root, orientation="vertical", command=my_frame.yview) 
-        v_scrollbar.grid(row=1, column=1) 
-
-        my_frame.configure(yscrollcommand=v_scrollbar.set) 
-
-This seemed to work for me for what I was doing with putting a table into the Scrollable Frame and having it scroll through the table. For me, instead of it scrolling the frame, I had it scroll the table instead. """
         
-        # Dictionary to store line widgets and PC mapping
+        # dictionary to store line widgets
         self.line_widgets: Dict[int, dict] = {}  # key: line number
-        self.pc_to_line: Dict[int, int] = {}     # key: PC value, value: line number
-        self.line_to_pc: Dict[int, int] = {}     # key: line number, value: PC value
         
     def _setup_layout(self):
         """Set up the layout of the widgets"""
@@ -160,8 +142,6 @@ This seemed to work for me for what I was doing with putting a table into the Sc
         for widget in self.code_lines_frame.winfo_children():
             widget.destroy()
         self.line_widgets.clear()
-        self.pc_to_line.clear()
-        self.line_to_pc.clear()
         
         self.codecell_list = code_data
         self.current_pc = 0
@@ -190,11 +170,11 @@ This seemed to work for me for what I was doing with putting a table into the Sc
         
         # Create other labels
         label_label = ctk.CTkLabel(line_frame, text=str(instruction.get('label', '')), 
-                                  width=80, anchor="w")
+                                width=80, anchor="w")
         address_label = ctk.CTkLabel(line_frame, text=str(line_num), 
-                                 width=80, anchor="w")
+                                width=80, anchor="w")
         instruction_label = ctk.CTkLabel(line_frame, text=str(instruction.get('instruction', '')), 
-                                         anchor="w")
+                                anchor="w")
         
         # Layout widgets
         label_label.grid(row=0, column=1, padx=2, pady=2, sticky="w")
@@ -248,7 +228,7 @@ This seemed to work for me for what I was doing with putting a table into the Sc
         if self.on_breakpoint_change:
             self.on_breakpoint_change(address, address in self.breakpoints)
     
-    def _update_line_appearance(self, line_num: int):
+    def _update_line_appearance(self, line_num: int, color = None):
         """Update the visual appearance of a line based on its state"""        
         if line_num not in self.line_widgets:
             return        
@@ -268,22 +248,25 @@ This seemed to work for me for what I was doing with putting a table into the Sc
             if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
                 widgets[widget_key].configure(text_color=self.default_text_color)
         
-        # Apply breakpoint styling
-        if line_num in self.breakpoints:
-            frame.configure(fg_color="#ff6b6b")  # Red background for breakpoints
-            for widget_key in label_widgets:
-                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                    widgets[widget_key].configure(text_color="black")
-        
-        # Apply current PC styling with arrow
         if self.current_pc_on_address(line_num):
             frame.configure(fg_color="#2c3e50")  # Dark blue background for current PC
             pc_arrow.configure(text="→", text_color="#4ecdc4", font=ctk.CTkFont(weight="bold", size=14))
             for widget_key in label_widgets:
                 if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
                     widgets[widget_key].configure(text_color="white")
+                    
+        if line_num in self.breakpoints and color is None:
+            frame.configure(fg_color="#ff6b6b")  # Red background for breakpoints
+            for widget_key in label_widgets:
+                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
+                    widgets[widget_key].configure(text_color="black")
+                    
+        if color is not None:
+            frame.configure(fg_color=color)
+            for widget_key in label_widgets:
+                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
+                    widgets[widget_key].configure(text_color="black")
         
-        # Add subtle indicator for lines with annotations
         if widgets['has_annotation']:
             widgets['instruction'].configure(
                 font=ctk.CTkFont(weight="bold")
@@ -295,7 +278,7 @@ This seemed to work for me for what I was doing with putting a table into the Sc
         self._hide_tooltip()
         super().destroy()            
     
-    def set_current_pc(self, pc_value: Optional[int]):
+    def set_current_pc(self, pc_value: int, last_executed_instruction_address: int):
         """
         Set the current program counter by PC value
         
@@ -303,19 +286,24 @@ This seemed to work for me for what I was doing with putting a table into the Sc
             pc_value: PC value to highlight as current, or None to clear
         """
         old_pc_line = self.current_pc
-        
+        old_last_executed_instruction_address = self.last_executed_instruction
+        self.last_executed_instruction = last_executed_instruction_address
         # Find the line number for this PC value
         if pc_value is not None and self.codecell_list is not None and pc_value < len(self.codecell_list):
             self.current_pc = pc_value
         else:
             self.current_pc = None
-        
-        # Update appearance of old and new PC lines
+
         if old_pc_line is not None and old_pc_line in self.line_widgets:
             self._update_line_appearance(old_pc_line)
         if self.current_pc is not None and self.current_pc in self.line_widgets:
             self._update_line_appearance(self.current_pc)
         
+        if old_last_executed_instruction_address is not None and old_last_executed_instruction_address in self.line_widgets:
+            self._update_line_appearance(old_last_executed_instruction_address)
+        if self.last_executed_instruction is not None and self.last_executed_instruction in self.line_widgets:
+            self._update_line_appearance(self.last_executed_instruction, self.LAST_EXECUTED_INSTRUCTION_COLOR)
+            
         # Notify callback if set
         if self.on_pc_change:
             self.on_pc_change(pc_value, self.current_pc)

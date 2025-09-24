@@ -19,6 +19,10 @@ class VirtualMachineListener(ABC):
         pass
     
     @abstractmethod
+    def reset_has_finished(self):
+        pass
+    
+    @abstractmethod
     def disable_execution(self):
         pass
     

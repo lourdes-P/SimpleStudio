@@ -8,7 +8,6 @@ class ParenthesizedExpressionNode(OperandNode):
     @property
     def token(self):
         return self._sub_expression_node.token
-    # TODO ver cómo se comporta binarios y accesos
 
     def evaluate(self, processor=None):
         return self._sub_expression_node.evaluate(processor)

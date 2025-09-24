@@ -355,10 +355,12 @@ class SyntacticAnalyzer:
                 case "or":
                     binary_op_node = OrNode(self.current_token)
                     self.match("or")
+                case "mod":
+                    binary_op_node = ModulusNode(self.current_token)
+                    self.match("mod")
             return binary_op_node        
         else:
             raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("BinaryOp"))
-        
 
     def concatenated_first_and_next_lists(self, production_name):
         copy_firsts_nexts_list = self._firsts_map.get_value(production_name).copy()
@@ -402,7 +404,7 @@ class SyntacticAnalyzer:
         return True if node.__class__.__name__ == 'StringNode' else False
     
     def add_label_to_dictionary(self, label_token, address):
-        label_name = label_token.lexeme
+        label_name = str.lower(label_token.lexeme)
         if self._label_dictionary.get(label_name) == None:
             self._label_dictionary[label_name] = address
         else:

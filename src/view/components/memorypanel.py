@@ -69,6 +69,10 @@ class MemoryPanel(ctk.CTkFrame):
         
         self.paned_memory.add(self.hmem_container)
         
+    def reset(self, parsed_data_memory, parsed_heap_memory):
+        self.data_memory_view.reset(parsed_data_memory)
+        self.heap_memory_view.reset(parsed_heap_memory)
+        
     def load_code_onto_c_memory(self, code_data):
         self.code_memory_view.load_code(code_data)
         
@@ -78,8 +82,8 @@ class MemoryPanel(ctk.CTkFrame):
     def load_heap_memory(self, data):
         self.heap_memory_view.load_memory(data)
         
-    def set_pc(self, pc):
-        self.code_memory_view.set_current_pc(pc)
+    def set_pc(self, pc, last_executed_instruction_address):
+        self.code_memory_view.set_current_pc(pc, last_executed_instruction_address)
         
     def update_data_memory(self, modified_data_cells):
         self.data_memory_view.update_memory(modified_data_cells)

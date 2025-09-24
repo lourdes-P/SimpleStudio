@@ -29,9 +29,9 @@ class Processor:
         self._next_instruction = self.get_next_instruction()
         if self._next_instruction and self._enabled:
             success = self._next_instruction.execute(self)
-            if self._former_pc == self._pc:
+            if success == self.SUCCESS and self._former_pc == self._pc:
                 self.increase_pc()
-            else:
+            elif success == self.SUCCESS:
                 self._former_pc = self._pc
             return success
         elif not self._enabled:
@@ -52,21 +52,21 @@ class Processor:
         return self._virtual_machine.access_heap_memory(address)
     
     def set_in_data_memory(self, address, data):
-        self._virtual_machine.set_data_memory(address, data)
+        self._virtual_machine.set_data_memory(address, data, self._pc)
     
     def set_in_heap_memory(self, address, data):
-        self._virtual_machine.set_heap_memory(address, data)
+        self._virtual_machine.set_heap_memory(address, data, self._pc)
     
     def trigger_user_input(self):
-        self._virtual_machine.trigger_user_input()
         self.disable()
-    
+        self._virtual_machine.trigger_user_input()
+        
     def deliver_user_input(self):
-        self._next_instruction.on_user_input()
+        self._next_instruction.on_user_input(self)
         self.enable()
         
     def get_user_input(self):
-        self._virtual_machine.get_user_input()
+        return self._virtual_machine.get_user_input()
     
     def define_label(self, label_token, address):
         return self._virtual_machine.define_label(label_token, address)
@@ -99,7 +99,7 @@ class Processor:
         
     def increase_pc(self):
         self._pc += 1
-        self._former_pc += self._pc
+        self._former_pc = self._pc
     
     @property
     def pc(self):

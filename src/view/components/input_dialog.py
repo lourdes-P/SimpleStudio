@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from typing import Callable, Union, Optional
 from CTkMessagebox import CTkMessagebox
-# TODO add in documentation pip install CTkMessageBox
+# TODO add in documentation pip install CTkMessagebox
 
 class InputDialog(ctk.CTkInputDialog):
     def __init__(
@@ -9,7 +9,6 @@ class InputDialog(ctk.CTkInputDialog):
         callback: Callable[[Union[str, int]], None],
         title: str = "Input",
         text: str = "Enter value:",
-        input_type: str = "auto",
         **kwargs
     ):
         """
@@ -23,44 +22,24 @@ class InputDialog(ctk.CTkInputDialog):
         """
         super().__init__(title=title, text=text, **kwargs)
         self.callback = callback
-        self.input_type = input_type
         self.input_value = None
         self.top_level = None
         
     def _ok_event(self, event=None):
         """Override the ok event to handle input validation and callback"""
-        input_value = self.get_input()
-        
-        if not input_value:
-            # Show error for empty input
+        self._user_input = self._entry.get()
+
+        if not self._user_input:
             self._show_error("Input cannot be empty")
             return
         
-        try:
-            # Process input based on type
-            processed_value = self._process_input(input_value)
+        try:            
+            self.callback(self._user_input)
             
-            # Call the callback with the processed value
-            self.callback(processed_value)
-            
-            # Close the dialog
             self.grab_release()
-            self.destroy()
-            
+            self.destroy()   
         except ValueError as e:
             self._show_error(str(e))
-    
-    def _process_input(self, input_value: str) -> Union[str, int]:
-        """Process and validate input based on the specified type"""
-        if self.input_type == "integer":
-            try:
-                return int(input_value)
-            except ValueError:
-                raise ValueError("Please enter a valid integer")
-        elif self.input_type == "string":
-            return input_value        
-        else: 
-            self._show_error("Please enter a valid input.")
     
     def _cancel_event(self):
         """Override cancel event so that it shows an error"""
@@ -92,18 +71,17 @@ class InputDialog(ctk.CTkInputDialog):
         callback: Callable[[Union[str, int]], None],
         title: str = "Input",
         text: str = "Enter value:",
-        input_type: str = "auto",
+        **kwargs
     ) -> None:
         """
-        Static method to show the input dialog conveniently.
+        Static method to show input dialog.
         
         Example usage:
-            InputDialog.show_input_dialog(
                 callback=self.handle_input,
                 title="Enter value",
                 text="Please input a value:",
-                input_type="integer"
+                **kwargs
             )
         """
-        dialog = InputDialog(callback, title, text, input_type)
+        dialog = InputDialog(callback, title, text, **kwargs)
         dialog.wait_window()
