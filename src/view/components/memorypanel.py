@@ -15,7 +15,7 @@ class MemoryPanel(ctk.CTkFrame):
         self.data_memory_view = None
         self.heap_memory_view = None
         
-    def initialize(self):
+    def initialize(self, on_breakpoint_change_callback):
         """self.grid_rowconfigure(1, weight=1)  # Make the code memory expand
         self.grid_columnconfigure((0,1,2), weight=1)"""
         fg_color=self.get_single_color(self.cget("fg_color"))
@@ -23,11 +23,11 @@ class MemoryPanel(ctk.CTkFrame):
                                       borderwidth=0, sashwidth=8, showhandle=False)
         self.paned_memory.pack(fill="both", expand=True)
                         
-        self.create_c_memory()
+        self.create_c_memory(on_breakpoint_change_callback)
         self.create_d_memory()
         self.create_h_memory()
         
-    def create_c_memory(self):     
+    def create_c_memory(self, on_breakpoint_change_callback):     
         self.cmem_container = ctk.CTkFrame(self.paned_memory, corner_radius=0)
         self.cmem_container.grid_rowconfigure(1, weight=1)
         self.cmem_container.grid_columnconfigure(0, weight=1)
@@ -37,7 +37,7 @@ class MemoryPanel(ctk.CTkFrame):
         self.code_memory_view = CodeMemoryView(self.cmem_container)
         self.code_memory_view.grid(row=1, column=0, padx=(0,0), pady=1, sticky="nsew")
         
-        self.code_memory_view.set_breakpoint_change_callback(self.on_breakpoint_change)
+        self.code_memory_view.set_breakpoint_change_callback(on_breakpoint_change_callback)
         self.code_memory_view.change_appearance_mode("System")
         
         self.paned_memory.add(self.cmem_container)
@@ -99,11 +99,6 @@ class MemoryPanel(ctk.CTkFrame):
       
     def get_code_memory_view(self):
         return self.code_memory_view        
-        
-    def on_breakpoint_change(self, line_num: int, is_set: bool):
-            """Example breakpoint change handler"""
-            status = "set" if is_set else "cleared"
-            print(f"Breakpoint at line {line_num} {status}")
             
     def get_breakpoints(self):
         return self.code_memory_view.get_breakpoints()

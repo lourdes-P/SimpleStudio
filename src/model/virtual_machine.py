@@ -55,7 +55,6 @@ class VirtualMachine:
             SyntacticExceptionNoMatch) as e:
             self._error = e
             self.notify_error()
-            # TODO excecution buttons unabled in view
         
         self._original_label_dictionary = syntactic_analyzer.get_label_dictionary()
         self._label_dictionary = syntactic_analyzer.get_label_dictionary()
@@ -235,12 +234,14 @@ class VirtualMachine:
         
     def define_label(self, label_token, address):
         label_name = str.lower(label_token.lexeme)
-        if self._label_dictionary.get(label_name) == None:
+        if self._original_label_dictionary.get(label_name) == None:  
             self._label_dictionary[label_name] = address
             self._last_execution_added_labels[label_name] = address
             return Processor.SUCCESS
         else:
-            return Processor.SUCCESS # TODO define_label que hacer si hay label repetida
+            self._error = f"Label with name {label_name} is already defined in the code memory."
+            self.notify_error()
+            return Processor.FAILURE
             
     def deliver_user_input(self, input):
         self._last_user_input = input

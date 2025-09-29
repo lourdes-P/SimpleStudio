@@ -19,7 +19,7 @@ class LabelPanel(ctk.CTkFrame):
         self.line_widget_index = 0
         self.grid_propagate(False)
         
-        self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.header_frame = ctk.CTkFrame(self, fg_color="transparent", height=22)
         
         self.header_frame.grid_columnconfigure(0, minsize=self.column_widths['label'])
         self.header_frame.grid_columnconfigure(1, minsize=self.column_widths['address'])
@@ -79,9 +79,9 @@ class LabelPanel(ctk.CTkFrame):
         line_frame.pack(fill="x", pady=1)
         
         name_label = ctk.CTkLabel(line_frame, text=str(label_name), 
-                                width=self.column_widths['label'], anchor="w")
+                                width=self.column_widths['label'], anchor="w", height=20)
         address_label = ctk.CTkLabel(line_frame, text=str(label_value), 
-                                width=self.column_widths['address'], anchor="w")
+                                width=self.column_widths['address'], anchor="w", height=20)
         
         name_label.grid(row=0, column=0, padx=2, pady=2, sticky="w")
         address_label.grid(row=0, column=1, padx=2, pady=2, sticky="w")

@@ -50,7 +50,7 @@ class SimpleStudioView(ctk.CTk):
         # TODO clase de frame de memorias (extiende a customtkinter.CTkFrame)
         self.memory_panel = MemoryPanel(self)
         self.memory_panel.grid(row=1, column=0, columnspan=3, padx=5, pady=10, sticky="nsew")
-        self.memory_panel.initialize()
+        self.memory_panel.initialize(self.presenter.on_breakpoint_change)
         
         self.label_panel = LabelPanel(self)
         self.label_panel.grid(row=2, column=0, padx=5, pady=(0,10), sticky="sw")
@@ -63,7 +63,7 @@ class SimpleStudioView(ctk.CTk):
         return self.memory_panel.get_code_memory_view()
     
     def get_breakpoints(self):
-        return self.code_memory_view.get_breakpoints()
+        return self.memory_panel.get_breakpoints()
     
     def load_code_onto_c_memory(self, code_data):
         self.memory_panel.load_code_onto_c_memory(code_data)
@@ -85,11 +85,6 @@ class SimpleStudioView(ctk.CTk):
         
     def update_heap_memory(self, modified_heap_cells):
         self.memory_panel.update_heap_memory(modified_heap_cells)
-        
-    def on_breakpoint_change(self, line_num: int, is_set: bool):
-        """Example breakpoint change handler"""
-        status = "set" if is_set else "cleared"
-        print(f"Breakpoint at line {line_num} {status}")
             
     def on_run(self):
         pass

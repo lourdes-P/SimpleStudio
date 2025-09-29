@@ -70,7 +70,164 @@ class CodeMemoryView(ctk.CTkFrame):
         # Scroll frame layout
         self.scroll_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=(0, 5))
         
-    def _create_tooltip(self, text, widget):
+    def load_code(self, code_data: List[dict]):
+        """
+        Load code into the memory view
+        
+        Args:
+            code_data: List of dictionaries with keys: 
+                    'label', 'address', 'instruction', 'annotation'
+        """
+        # Clear existing widgets and mappings
+        for widget in self.code_lines_frame.winfo_children():
+            widget.destroy()
+        self.line_widgets.clear()
+        
+        self.codecell_list = code_data
+        self.current_pc = 0
+        
+        # Create new line widgets
+        for i, instruction in enumerate(code_data):
+            self._create_line_widget(instruction, i)  
+            
+    def _create_line_widget(self, instruction: dict, index: int):
+        """Create a single line widget for an instruction"""
+        line_num = instruction['address']
+        annotation = instruction.get('annotation', '')
+        
+        # Create frame for the line
+        line_frame = ctk.CTkFrame(self.code_lines_frame, height=15, corner_radius=0, border_width=0, fg_color=self._get_alternating_colors(index))
+        line_frame.pack(fill="x")
+        
+        # Create PC column with only arrow indicator (no PC value displayed)
+        pc_frame = ctk.CTkFrame(line_frame, width=30, height=20, fg_color='transparent', corner_radius=6)
+        pc_frame.pack_propagate(False)  # Prevent children from resizing the frame
+        
+        pc_arrow = ctk.CTkLabel(pc_frame, text="", width=30, anchor="center")
+        pc_arrow.pack(fill="both", expand=True)
+        
+        pc_frame.grid(row=0, column=0, padx=2, sticky="w")
+        
+        # Create other labels
+        label_label = ctk.CTkLabel(line_frame, text=str(instruction.get('label', '')), 
+                                width=80, height=20, anchor="w")
+        address_label = ctk.CTkLabel(line_frame, text=str(line_num), 
+                                width=80, height=20, anchor="w")
+        instruction_label = ctk.CTkLabel(line_frame, text=str(instruction.get('instruction', '')), 
+                                height=20, anchor="w")
+        
+        # Layout widgets
+        label_label.grid(row=0, column=1, padx=2, pady=2, sticky="w")
+        address_label.grid(row=0, column=2, padx=2, pady=2, sticky="w")
+        instruction_label.grid(row=0, column=3, padx=2, pady=2, sticky="w")
+        
+        pc_frame.bind("<Button-1>", lambda e, ln=line_num: self._toggle_breakpoint(ln))
+        pc_arrow.bind("<Button-1>", lambda e, ln=line_num: self._toggle_breakpoint(ln))
+        
+        # Make the line clickable for breakpoints
+        """line_frame.bind("<Button-1>", lambda e, ln=line_num: self._toggle_breakpoint(ln))
+        for widget in [pc_frame, label_label, address_label, instruction_label]:
+            widget.bind("<Button-1>", lambda e, ln=line_num: self._toggle_breakpoint(ln))"""
+        
+        # Add hover events for instruction column to show annotation tooltip
+        if annotation:  # Only add hover events if there's an annotation
+            instruction_label.bind("<Enter>", lambda e, ln=line_num, ann=annotation: self._on_instruction_hover(e, ln, ann, instruction_label))
+            instruction_label.bind("<Leave>", lambda e: self._on_instruction_leave(e))
+        
+        # Store reference to widgets
+        self.line_widgets[line_num] = {
+            'frame': line_frame,
+            'pc_frame': pc_frame,
+            'pc_arrow': pc_arrow,
+            'label': label_label,
+            'address': address_label,
+            'instruction': instruction_label,
+            'has_annotation': bool(annotation)
+        }
+        
+        # Set initial appearance
+        self._update_line_appearance(line_num)  
+    
+    def _update_line_appearance(self, line_num: int, color = None):
+        """Update the visual appearance of a line based on its state"""        
+        if line_num not in self.line_widgets:
+            return        
+        
+        widgets = self.line_widgets[line_num]
+        frame = widgets['frame']
+        pc_frame = widgets['pc_frame']
+        pc_arrow = widgets['pc_arrow']
+        
+        pc_arrow.configure(text="")
+        
+        # Reset text colors for all label widgets
+        label_widgets = ['pc_arrow', 'label', 'address', 'instruction']
+                
+        for widget_key in label_widgets:
+            if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
+                widgets[widget_key].configure(text_color=self.default_text_color)
+        
+        if self.current_pc_on_address(line_num):
+            frame.configure(fg_color="#2c3e50")  # Dark blue background for current PC
+            pc_arrow.configure(text="→", text_color="#4ecdc4", font=ctk.CTkFont(weight="bold", size=14))
+            for widget_key in label_widgets:
+                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
+                    widgets[widget_key].configure(text_color="white")
+        elif color is not None:
+            frame.configure(fg_color=color)
+            for widget_key in label_widgets:
+                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
+                    widgets[widget_key].configure(text_color="black")
+        else:
+            frame.configure(fg_color=self._get_alternating_colors(line_num))
+                    
+        if line_num in self.breakpoints:
+            pc_frame.configure(fg_color="#ff6b6b")
+            pc_arrow.configure(text_color='black')
+        else:
+            pc_frame.configure(fg_color="transparent")
+            pc_arrow.configure(text_color="white")
+            """for widget_key in label_widgets:
+                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
+                    widgets[widget_key].configure(text_color="black")"""
+        
+        if widgets['has_annotation']:
+            widgets['instruction'].configure(
+                font=ctk.CTkFont(weight="bold")
+            )
+            
+    def _update_breakpoint_frame(self, line_num):
+        if line_num not in self.line_widgets:
+            return        
+        
+        widgets = self.line_widgets[line_num]
+        pc_frame = widgets['pc_frame']
+        pc_arrow = widgets['pc_arrow']
+        
+        if line_num in self.breakpoints:
+            pc_frame.configure(fg_color="#ff6b6b")  # Red background for breakpoints
+            pc_arrow.configure(text_color='black')
+        else:
+            pc_frame.configure(fg_color="transparent")
+            pc_arrow.configure(text_color="white")
+            
+    def _get_alternating_colors(self, index: int):
+        """Get the background color for alternating rows"""
+        header_color = 'transparent'
+        if index % 2 != 0:
+            header_color = self._get_single_color(self._fg_color)
+            if header_color is None:
+                header_color = self._get_single_color(ThemeManager.theme["CTkFrame"]["fg_color"])
+        return header_color
+                
+    def _get_single_color(self, color_tuple):
+        """Convert CTk color tuple to single color string based on current appearance mode"""
+        if ctk.get_appearance_mode() == "Light":
+            return color_tuple[0]  
+        else:
+            return color_tuple[1]  
+    
+    def _create_tooltip(self, text, widget : ctk.CTkLabel):
         """Create a tooltip with the annotation text"""
         if self.tooltip:
             self.tooltip.destroy()
@@ -79,32 +236,32 @@ class CodeMemoryView(ctk.CTkFrame):
         self.tooltip.wm_overrideredirect(True)
         self.tooltip.wm_attributes("-topmost", True)
         
-        # Get widget position (assign to right of instruction)
+        # widget position (assign to right of instruction)
         x = widget.winfo_rootx() + widget.winfo_width()
         y = widget.winfo_rooty() 
         
-        # Ensure tooltip stays on screen
-        screen_width = self.winfo_width()
+        screen_width = self.scroll_frame.winfo_width()
         screen_height = self.winfo_screenheight()
         
-        # Adjust if tooltip would go off screen right
-        if x > screen_width:
-            x = screen_width
+        # adjust if tooltip would go off frame to the right
+        default_scrollbar_width = 16
+        if x > self.scroll_frame.winfo_rootx() + screen_width - default_scrollbar_width:
+            x = self.scroll_frame.winfo_rootx() + screen_width - default_scrollbar_width
         
-        # Adjust if tooltip would go off screen bottom
-        tooltip_height = 30  # Estimated height
+        # adjust if tooltip would go off screen bottom (estimated)
+        tooltip_height = 20  
         if y + tooltip_height > screen_height:
             y = widget.winfo_rooty() - tooltip_height - 5
         
         self.tooltip.wm_geometry(f"+{x}+{y}")
         
-        # Create tooltip content
         tooltip_frame = ctk.CTkFrame(self.tooltip, corner_radius=5, fg_color="#2c3e50")
         tooltip_frame.pack(padx=0, pady=0, fill="both", expand=True)
         
         tooltip_label = ctk.CTkLabel(
             tooltip_frame, 
             text=text, 
+            height=20,
             wraplength=280,
             justify="left",
             fg_color="#2c3e50",
@@ -129,81 +286,6 @@ class CodeMemoryView(ctk.CTkFrame):
     def _schedule_tooltip(self, widget, annotation):
         """Schedule tooltip to appear after delay"""
         self.tooltip_scheduled_id = self.after(100, lambda: self._create_tooltip(annotation, widget))
-        
-    def load_code(self, code_data: List[dict]):
-        """
-        Load code into the memory view
-        
-        Args:
-            code_data: List of dictionaries with keys: 
-                    'label', 'address', 'instruction', 'annotation'
-        """
-        # Clear existing widgets and mappings
-        for widget in self.code_lines_frame.winfo_children():
-            widget.destroy()
-        self.line_widgets.clear()
-        
-        self.codecell_list = code_data
-        self.current_pc = 0
-        
-        # Create new line widgets
-        for i, instruction in enumerate(code_data):
-            self._create_line_widget(instruction, i)
-    
-    def _create_line_widget(self, instruction: dict, index: int):
-        """Create a single line widget for an instruction"""
-        line_num = instruction['address']
-        annotation = instruction.get('annotation', '')
-        
-        # Create frame for the line
-        line_frame = ctk.CTkFrame(self.code_lines_frame, height=30)
-        line_frame.pack(fill="x", pady=1)
-        
-        # Create PC column with only arrow indicator (no PC value displayed)
-        pc_frame = ctk.CTkFrame(line_frame, width=30, height=30, fg_color="transparent")
-        pc_frame.pack_propagate(False)  # Prevent children from resizing the frame
-        
-        pc_arrow = ctk.CTkLabel(pc_frame, text="", width=30, anchor="center")
-        pc_arrow.pack(fill="both", expand=True)
-        
-        pc_frame.grid(row=0, column=0, padx=2, pady=2, sticky="w")
-        
-        # Create other labels
-        label_label = ctk.CTkLabel(line_frame, text=str(instruction.get('label', '')), 
-                                width=80, anchor="w")
-        address_label = ctk.CTkLabel(line_frame, text=str(line_num), 
-                                width=80, anchor="w")
-        instruction_label = ctk.CTkLabel(line_frame, text=str(instruction.get('instruction', '')), 
-                                anchor="w")
-        
-        # Layout widgets
-        label_label.grid(row=0, column=1, padx=2, pady=2, sticky="w")
-        address_label.grid(row=0, column=2, padx=2, pady=2, sticky="w")
-        instruction_label.grid(row=0, column=3, padx=2, pady=2, sticky="w")
-        
-        # Make the line clickable for breakpoints
-        line_frame.bind("<Button-1>", lambda e, ln=line_num: self._toggle_breakpoint(ln))
-        for widget in [pc_frame, label_label, address_label, instruction_label]:
-            widget.bind("<Button-1>", lambda e, ln=line_num: self._toggle_breakpoint(ln))
-        
-        # Add hover events for instruction column to show annotation tooltip
-        if annotation:  # Only add hover events if there's an annotation
-            instruction_label.bind("<Enter>", lambda e, ln=line_num, ann=annotation: self._on_instruction_hover(e, ln, ann, instruction_label))
-            instruction_label.bind("<Leave>", lambda e: self._on_instruction_leave(e))
-        
-        # Store reference to widgets
-        self.line_widgets[line_num] = {
-            'frame': line_frame,
-            'pc_frame': pc_frame,
-            'pc_arrow': pc_arrow,
-            'label': label_label,
-            'address': address_label,
-            'instruction': instruction_label,
-            'has_annotation': bool(annotation)
-        }
-        
-        # Set initial appearance
-        self._update_line_appearance(line_num)
     
     def _on_instruction_hover(self, event, line_num, annotation, widget):
         """Handle mouse entering instruction column"""
@@ -222,55 +304,11 @@ class CodeMemoryView(ctk.CTkFrame):
             self.breakpoints.add(address)
         
         # Update appearance
-        self._update_line_appearance(address)
+        self._update_breakpoint_frame(address)
         
         # Notify callback if set
         if self.on_breakpoint_change:
-            self.on_breakpoint_change(address, address in self.breakpoints)
-    
-    def _update_line_appearance(self, line_num: int, color = None):
-        """Update the visual appearance of a line based on its state"""        
-        if line_num not in self.line_widgets:
-            return        
-        
-        widgets = self.line_widgets[line_num]
-        frame = widgets['frame']
-        pc_arrow = widgets['pc_arrow']
-        
-        # Reset colors and arrow
-        frame.configure(fg_color="transparent")
-        pc_arrow.configure(text="")
-        
-        # Reset text colors for all label widgets
-        label_widgets = ['pc_arrow', 'label', 'address', 'instruction']
-                
-        for widget_key in label_widgets:
-            if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                widgets[widget_key].configure(text_color=self.default_text_color)
-        
-        if self.current_pc_on_address(line_num):
-            frame.configure(fg_color="#2c3e50")  # Dark blue background for current PC
-            pc_arrow.configure(text="→", text_color="#4ecdc4", font=ctk.CTkFont(weight="bold", size=14))
-            for widget_key in label_widgets:
-                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                    widgets[widget_key].configure(text_color="white")
-                    
-        if line_num in self.breakpoints and color is None:
-            frame.configure(fg_color="#ff6b6b")  # Red background for breakpoints
-            for widget_key in label_widgets:
-                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                    widgets[widget_key].configure(text_color="black")
-                    
-        if color is not None:
-            frame.configure(fg_color=color)
-            for widget_key in label_widgets:
-                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                    widgets[widget_key].configure(text_color="black")
-        
-        if widgets['has_annotation']:
-            widgets['instruction'].configure(
-                font=ctk.CTkFont(weight="bold")
-            )
+            self.on_breakpoint_change()
     
     # Make sure to clean up when the widget is destroyed
     def destroy(self):
