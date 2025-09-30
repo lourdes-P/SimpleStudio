@@ -1,9 +1,9 @@
 import customtkinter as ctk
 from typing import List
 from view.components.dualscrollframe import DualScrollFrame
+from view.utils.color_manager import ColorManager
 
 class DataHeapMemoryView(ctk.CTkFrame):
-    LAST_MODIFIED_CELL_COLOR = "#4b8bab"
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         
@@ -89,22 +89,22 @@ class DataHeapMemoryView(ctk.CTkFrame):
         """Create a single cell widget for a memory cell"""
         address = cell_data.get('address', '')
         register = cell_data.get('register', '')
-        value = 0
+        value = cell_data.get('value','###')
         annotation = cell_data.get('annotation', '')
         
         # Create frame for the cell
-        cell_frame = ctk.CTkFrame(self.memory_cells_frame)
-        cell_frame.pack(fill="x", pady=1)
+        cell_frame = ctk.CTkFrame(self.memory_cells_frame, height=15, corner_radius=0, border_width=0, fg_color=ColorManager.get_alternating_colors(self, index))
+        cell_frame.pack(fill="x")
         
         # Create labels for each column
         register_label = ctk.CTkLabel(cell_frame, text=register, 
-                                     width=self.column_widths['register'], anchor="w")
+                                     width=self.column_widths['register'], height=20, anchor="w")
         address_label = ctk.CTkLabel(cell_frame, text=address, 
-                                    width=self.column_widths['address'], anchor="w")
+                                    width=self.column_widths['address'], height=20, anchor="w")
         value_label = ctk.CTkLabel(cell_frame, text=value, 
-                                  width=self.column_widths['value'], anchor="w")
+                                  width=self.column_widths['value'], height=20, anchor="w")
         annotation_label = ctk.CTkLabel(cell_frame, text=annotation, 
-                                       width=self.column_widths['annotation'], anchor="w")
+                                       width=self.column_widths['annotation'], height=20, anchor="w")
         
         # Layout widgets
         register_label.grid(row=0, column=0, padx=2, pady=2, sticky="w")
@@ -132,30 +132,27 @@ class DataHeapMemoryView(ctk.CTkFrame):
         widgets = self.cell_widgets[address]
         frame = widgets['frame']
         
-        # Reset colors
-        frame.configure(fg_color="transparent")
-        
         # Reset text colors for all label widgets
         label_widgets = ['register', 'address', 'value', 'annotation']
-                
+        register_text = widgets['register'].cget('text')
+             
         for widget_key in label_widgets:
             if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
                 widgets[widget_key].configure(text_color=self.default_text_color)
         
         if self.last_modified_cell_address is not None and int(self.last_modified_cell_address) == int(address):
-            frame.configure(fg_color=self.LAST_MODIFIED_CELL_COLOR)
+            frame.configure(fg_color=ColorManager.TERTIARY_COLOR)
             for widget_key in label_widgets:
                 if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
                     widgets[widget_key].configure(text_color="black")
-        else:
+        elif register_text and register_text.strip():
             # Apply register highlighting if this cell has a register
-            register_text = widgets['register'].cget('text')
-            if register_text and register_text.strip():
-                frame.configure(fg_color="#2c3e50")
-
-                for widget_key in label_widgets:
-                    if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                        widgets[widget_key].configure(text_color="white")
+            frame.configure(fg_color=ColorManager.SECONDARY_COLOR)
+            for widget_key in label_widgets:
+                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
+                    widgets[widget_key].configure(text_color="white")
+        else:
+            frame.configure(fg_color=ColorManager.get_alternating_colors(self, address))
                     
     
     def update_memory(self, modified_cells):
@@ -221,12 +218,13 @@ class DataHeapMemoryView(ctk.CTkFrame):
         """Update appearance based on the selected mode"""
         ctk.set_appearance_mode(new_appearance_mode)
         
-        # Get the default text color for the current mode
         temp_label = ctk.CTkLabel(self)
         self.default_text_color = temp_label.cget("text_color")
         temp_label.destroy()
+        for i in range(len(self.cell_widgets)):
+            if i%2 != 0:
+                frame = self.cell_widgets[i]['frame']
+                frame.configure(fg_color=ColorManager.get_alternating_colors(self, i))
         self.scroll_frame.change_appearance_mode()
         
-        """# Update all cells
-        for address in self.cell_widgets.keys():
-            self._update_cell_appearance(address)"""
+        

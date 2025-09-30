@@ -8,7 +8,6 @@ class ControlPanel(ctk.CTkFrame):
                  browse_file = None, **kwargs):
         super().__init__(master, height=140, corner_radius=0, **kwargs)
         
-        self.master = master    # main_view 
         self.step_callback = step_callback
         self.n_step_callback = n_step_callback
         self.run_callback = run_callback

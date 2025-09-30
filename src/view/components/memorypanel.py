@@ -3,6 +3,7 @@ from tkinter import ttk
 import tkinter as tk
 from view.components.codememory import CodeMemoryView
 from view.components.data_heap_memory import DataHeapMemoryView
+from view.utils.color_manager import ColorManager
 
 class MemoryPanel(ctk.CTkFrame):
     """Component for displaying memory tables (C, D, or H)"""
@@ -18,7 +19,7 @@ class MemoryPanel(ctk.CTkFrame):
     def initialize(self, on_breakpoint_change_callback):
         """self.grid_rowconfigure(1, weight=1)  # Make the code memory expand
         self.grid_columnconfigure((0,1,2), weight=1)"""
-        fg_color=self.get_single_color(self.cget("fg_color"))
+        fg_color= ColorManager.get_single_color(self.cget("fg_color"))
         self.paned_memory = tk.PanedWindow(self, orient=tk.HORIZONTAL, sashrelief=tk.FLAT, bg=fg_color,
                                       borderwidth=0, sashwidth=8, showhandle=False)
         self.paned_memory.pack(fill="both", expand=True)
@@ -107,15 +108,8 @@ class MemoryPanel(ctk.CTkFrame):
         return self.code_memory_view
     
     def _change_paned_window_appearance(self, new_appearance_mode):
-        bg_color = self.get_single_color(self.cget("fg_color"))
+        bg_color = ColorManager.get_single_color(self.cget("fg_color"))
         self.paned_memory.configure(bg=bg_color, proxybackground=bg_color, background=bg_color)
         self.code_memory_view.change_appearance_mode(new_appearance_mode)
         self.data_memory_view.change_appearance_mode(new_appearance_mode)
         self.heap_memory_view.change_appearance_mode(new_appearance_mode)  
-    
-    def get_single_color(self, color_tuple):
-        """Convert CTk color tuple to single color string based on current appearance mode"""
-        if ctk.get_appearance_mode() == "Light":
-            return color_tuple[0]  
-        else:
-            return color_tuple[1] 

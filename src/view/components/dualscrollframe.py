@@ -1,6 +1,8 @@
 import customtkinter as ctk
 import tkinter as tk
 
+from view.utils.color_manager import ColorManager
+
 class DualScrollFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
@@ -8,12 +10,12 @@ class DualScrollFrame(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         # Create canvas and scrollbars
-        self.canvas = tk.Canvas(self, highlightthickness=0, bg=self._get_single_color(self._fg_color))
+        self.canvas = tk.Canvas(self, highlightthickness=0, bg=ColorManager.get_single_color(self._fg_color))
         
         self.h_scrollbar = ctk.CTkScrollbar(self, orientation="horizontal", command=self.canvas.xview)
         self.v_scrollbar = ctk.CTkScrollbar(self, orientation="vertical", command=self.canvas.yview)
         
-        self.scrollable_frame = ctk.CTkFrame(self.canvas, fg_color=self._get_single_color(self._fg_color), corner_radius=0, height=100, width=150)
+        self.scrollable_frame = ctk.CTkFrame(self.canvas, fg_color=ColorManager.get_single_color(self._fg_color), corner_radius=0, height=100, width=150)
         self.scrollable_frame.pack(fill="both", expand=True)
   
         ctk.AppearanceModeTracker.add(self.change_appearance_mode)
@@ -87,16 +89,9 @@ class DualScrollFrame(ctk.CTkFrame):
         self.canvas.xview_scroll(int(-1 * (event.delta / 120)), "units")
         
     def change_appearance_mode(self, mode=None):
-        fg_color = self._get_single_color(self._fg_color)
+        fg_color = ColorManager.get_single_color(self._fg_color)
         self.canvas.configure(bg=fg_color)
-        self.scrollable_frame.configure(fg_color=fg_color)
-        
-    def _get_single_color(self, color_tuple):
-        """Convert CTk color tuple to single color string based on current appearance mode"""
-        if ctk.get_appearance_mode() == "Light":
-            return color_tuple[0]  
-        else:
-            return color_tuple[1]         
+        self.scrollable_frame.configure(fg_color=fg_color)      
         
     def get_scrollable_frame(self):
         return self.scrollable_frame

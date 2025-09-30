@@ -1,11 +1,10 @@
 import customtkinter as ctk
 from customtkinter import ThemeManager
 from typing import List, Dict, Optional, Callable
-
 from view.components.dualscrollframe import DualScrollFrame
+from view.utils.color_manager import ColorManager
 
 class CodeMemoryView(ctk.CTkFrame):
-    LAST_EXECUTED_INSTRUCTION_COLOR = "#4b8bab"
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         
@@ -96,13 +95,13 @@ class CodeMemoryView(ctk.CTkFrame):
         annotation = instruction.get('annotation', '')
         
         # Create frame for the line
-        line_frame = ctk.CTkFrame(self.code_lines_frame, height=15, corner_radius=0, border_width=0, fg_color=self._get_alternating_colors(index))
-        line_frame.pack(fill="x")
+        line_frame = ctk.CTkFrame(self.code_lines_frame, height=15, corner_radius=0, 
+                                  border_width=0, fg_color=ColorManager.get_alternating_colors(self, index))
+        line_frame.pack(fill="x", expand=True)
         
         # Create PC column with only arrow indicator (no PC value displayed)
-        pc_frame = ctk.CTkFrame(line_frame, width=30, height=20, fg_color='transparent', corner_radius=6)
-        pc_frame.pack_propagate(False)  # Prevent children from resizing the frame
-        
+        pc_frame = ctk.CTkFrame(line_frame, width=40, height=20, fg_color='transparent', bg_color="transparent")
+        pc_frame.pack_propagate(False)  
         pc_arrow = ctk.CTkLabel(pc_frame, text="", width=30, anchor="center")
         pc_arrow.pack(fill="both", expand=True)
         
@@ -160,36 +159,32 @@ class CodeMemoryView(ctk.CTkFrame):
         
         pc_arrow.configure(text="")
         
-        # Reset text colors for all label widgets
         label_widgets = ['pc_arrow', 'label', 'address', 'instruction']
-                
-        for widget_key in label_widgets:
-            if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                widgets[widget_key].configure(text_color=self.default_text_color)
         
-        if self.current_pc_on_address(line_num):
-            frame.configure(fg_color="#2c3e50")  # Dark blue background for current PC
-            pc_arrow.configure(text="→", text_color="#4ecdc4", font=ctk.CTkFont(weight="bold", size=14))
-            for widget_key in label_widgets:
-                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                    widgets[widget_key].configure(text_color="white")
-        elif color is not None:
+        if line_num in self.breakpoints:
+            pc_frame.configure(fg_color=ColorManager.BREAKPOINT_COLOR)
+            pc_arrow.configure(text_color="white")
+        else:
+            pc_frame.configure(fg_color="transparent")
+        
+        if color is not None:
+            if self.current_pc_on_address(line_num):
+                pc_arrow.configure(text="→", text_color="black", font=ctk.CTkFont(weight="bold", size=14))
             frame.configure(fg_color=color)
             for widget_key in label_widgets:
                 if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
                     widgets[widget_key].configure(text_color="black")
-        else:
-            frame.configure(fg_color=self._get_alternating_colors(line_num))
-                    
-        if line_num in self.breakpoints:
-            pc_frame.configure(fg_color="#ff6b6b")
-            pc_arrow.configure(text_color='black')
-        else:
-            pc_frame.configure(fg_color="transparent")
-            pc_arrow.configure(text_color="white")
-            """for widget_key in label_widgets:
+        elif self.current_pc_on_address(line_num):
+            frame.configure(fg_color=ColorManager.SECONDARY_COLOR)
+            pc_arrow.configure(text="→", text_color="white", font=ctk.CTkFont(weight="bold", size=14))
+            for widget_key in label_widgets:
                 if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                    widgets[widget_key].configure(text_color="black")"""
+                    widgets[widget_key].configure(text_color="white")
+        else:
+            frame.configure(fg_color=ColorManager.get_alternating_colors(self, line_num))
+            for widget_key in label_widgets:
+                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
+                    widgets[widget_key].configure(text_color=self.default_text_color)
         
         if widgets['has_annotation']:
             widgets['instruction'].configure(
@@ -203,29 +198,19 @@ class CodeMemoryView(ctk.CTkFrame):
         widgets = self.line_widgets[line_num]
         pc_frame = widgets['pc_frame']
         pc_arrow = widgets['pc_arrow']
+        frame = widgets['frame']
         
         if line_num in self.breakpoints:
-            pc_frame.configure(fg_color="#ff6b6b")  # Red background for breakpoints
-            pc_arrow.configure(text_color='black')
+            pc_frame.configure(fg_color=ColorManager.BREAKPOINT_COLOR)
+            pc_arrow.configure(text_color="white")
         else:
             pc_frame.configure(fg_color="transparent")
-            pc_arrow.configure(text_color="white")
-            
-    def _get_alternating_colors(self, index: int):
-        """Get the background color for alternating rows"""
-        header_color = 'transparent'
-        if index % 2 != 0:
-            header_color = self._get_single_color(self._fg_color)
-            if header_color is None:
-                header_color = self._get_single_color(ThemeManager.theme["CTkFrame"]["fg_color"])
-        return header_color
-                
-    def _get_single_color(self, color_tuple):
-        """Convert CTk color tuple to single color string based on current appearance mode"""
-        if ctk.get_appearance_mode() == "Light":
-            return color_tuple[0]  
-        else:
-            return color_tuple[1]  
+            if frame.cget('fg_color') == ColorManager.SECONDARY_COLOR:
+                pc_arrow.configure(text_color="white")
+            elif frame.cget('fg_color') == ColorManager.TERTIARY_COLOR:
+                pc_arrow.configure(text_color="black")
+            else:
+                pc_arrow.configure(text_color=self.default_text_color)
     
     def _create_tooltip(self, text, widget : ctk.CTkLabel):
         """Create a tooltip with the annotation text"""
@@ -243,7 +228,7 @@ class CodeMemoryView(ctk.CTkFrame):
         screen_width = self.scroll_frame.winfo_width()
         screen_height = self.winfo_screenheight()
         
-        # adjust if tooltip would go off frame to the right
+        # adjust if tooltip would go off frame on x axis
         default_scrollbar_width = 16
         if x > self.scroll_frame.winfo_rootx() + screen_width - default_scrollbar_width:
             x = self.scroll_frame.winfo_rootx() + screen_width - default_scrollbar_width
@@ -255,7 +240,7 @@ class CodeMemoryView(ctk.CTkFrame):
         
         self.tooltip.wm_geometry(f"+{x}+{y}")
         
-        tooltip_frame = ctk.CTkFrame(self.tooltip, corner_radius=5, fg_color="#2c3e50")
+        tooltip_frame = ctk.CTkFrame(self.tooltip, corner_radius=5, fg_color=ColorManager.SECONDARY_COLOR)
         tooltip_frame.pack(padx=0, pady=0, fill="both", expand=True)
         
         tooltip_label = ctk.CTkLabel(
@@ -264,7 +249,7 @@ class CodeMemoryView(ctk.CTkFrame):
             height=20,
             wraplength=280,
             justify="left",
-            fg_color="#2c3e50",
+            fg_color=ColorManager.SECONDARY_COLOR,
             text_color="white",
             padx=2,
             pady=2
@@ -310,7 +295,6 @@ class CodeMemoryView(ctk.CTkFrame):
         if self.on_breakpoint_change:
             self.on_breakpoint_change()
     
-    # Make sure to clean up when the widget is destroyed
     def destroy(self):
         """Override destroy to clean up tooltips"""
         self._hide_tooltip()
@@ -340,7 +324,7 @@ class CodeMemoryView(ctk.CTkFrame):
         if old_last_executed_instruction_address is not None and old_last_executed_instruction_address in self.line_widgets:
             self._update_line_appearance(old_last_executed_instruction_address)
         if self.last_executed_instruction is not None and self.last_executed_instruction in self.line_widgets:
-            self._update_line_appearance(self.last_executed_instruction, self.LAST_EXECUTED_INSTRUCTION_COLOR)
+            self._update_line_appearance(self.last_executed_instruction, ColorManager.TERTIARY_COLOR)
             
         # Notify callback if set
         if self.on_pc_change:
@@ -358,33 +342,21 @@ class CodeMemoryView(ctk.CTkFrame):
         breakpoints_copy = self.breakpoints.copy()
         self.breakpoints.clear()
         
-        # Update appearance of all lines that had breakpoints
         for line_num in breakpoints_copy:
             if line_num in self.line_widgets:
                 self._update_line_appearance(line_num)
         
-        # Notify callback if set
         if self.on_breakpoint_change:
             for line_num in breakpoints_copy:
-                self.on_breakpoint_change(line_num, False)
+                self.on_breakpoint_change()
     
     def set_breakpoint_change_callback(self, callback: Callable):
         """
         Set a callback function for breakpoint changes
-        
         Args:
             callback: Function that takes (line_num: int, is_set: bool)
         """
         self.on_breakpoint_change = callback
-    
-    def set_pc_change_callback(self, callback: Callable):
-        """
-        Set a callback function for PC changes
-        
-        Args:
-            callback: Function that takes (pc_value: int, line_num: int)
-        """
-        self.on_pc_change = callback
     
     def current_pc_on_address(self, address: int):
         return True if address == self.current_pc else False
@@ -394,4 +366,8 @@ class CodeMemoryView(ctk.CTkFrame):
         temp_label = ctk.CTkLabel(self)
         self.default_text_color = temp_label.cget("text_color")
         temp_label.destroy()
-        self.scroll_frame.change_appearance_mode()
+        
+        for i in range(len(self.line_widgets)):
+            if i%2 != 0:
+                frame = self.line_widgets[i]['frame']
+                frame.configure(fg_color=ColorManager.get_alternating_colors(self, i))

@@ -1,14 +1,11 @@
-from logic.memories.codememory.codememory import CodeMemory
 from model.virtual_machine import VirtualMachine
 from view.main_view import SimpleStudioView
 from listeners import VirtualMachineListener
 from presenter.utils.presenter_parser import PresenterParser
 
 class SimpleStudioPresenter(VirtualMachineListener):
-    def __init__(self, code_memory: CodeMemory, virtual_machine : VirtualMachine):
-        self.code_memory = code_memory        
-        self.virtual_machine = virtual_machine
-        self.start()   
+    def __init__(self, virtual_machine : VirtualMachine):      
+        self.virtual_machine = virtual_machine  
         
     def start(self):
         self.main_view = SimpleStudioView(self)
@@ -94,6 +91,10 @@ class SimpleStudioPresenter(VirtualMachineListener):
         parsed_heap_memory = PresenterParser.parse_data_heap_memory(self.virtual_machine.get_heap_memory().cell_list)
         label_list = PresenterParser.parse_label_dictionary(self.virtual_machine.get_label_dictionary())
         self.main_view.reset(parsed_data_memory, parsed_heap_memory, label_list)
+        
+    def print_output(self):
+        output_text = self.virtual_machine.get_last_output()
+        self.main_view.print_output(output_text)
         
     def disable_execution(self):
         self.main_view.disable_execution()

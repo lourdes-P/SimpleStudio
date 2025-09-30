@@ -32,7 +32,7 @@ class PresenterParser:
             cell_data = {                
                 'register': cell.generate_register_string(),
                 'address': cell.address, 
-                'value': cell.value if cell.value is not None else '0',
+                'value': cell.value if cell.value is not None else '###',
                 'annotation': cell.annotation_string(),
                 'memory_modified': memory_modified
             }

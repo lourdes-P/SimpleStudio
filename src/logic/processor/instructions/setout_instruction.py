@@ -1,4 +1,7 @@
 from logic.processor.instructions.instruction_simple_arg import InstructionSimpleArg
+from logic.expression_ast.exceptions.datacell_value_notset_exception import DatacellValueNotSetException
+from logic.expression_ast.exceptions.heapcell_value_notset_exception import HeapcellValueNotSetException
+from logic.processor.exceptions.instruction_amalgam_exception import InstructionAmalgamException
 
 class SetOutInstruction(InstructionSimpleArg):
 
@@ -7,8 +10,10 @@ class SetOutInstruction(InstructionSimpleArg):
 
     
     def execute(self, processor):
-        argument = self.argument1.evaluate(processor)
-        print(argument)     # TODO hacer un print en el output de la view
+        try:
+            argument = self.argument1.evaluate(processor)
+        except (HeapcellValueNotSetException, DatacellValueNotSetException) as error_message:
+            raise InstructionAmalgamException(error_message, self.address, self.line)
+        
+        processor.print_output(argument)
         return processor.SUCCESS
-        # TODO un print de un entero. muestra por pantalla 
-    #el resultado de evaluar la expresión Fuente

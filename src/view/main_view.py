@@ -6,6 +6,8 @@ from view.components.labelpanel import LabelPanel
 from view.components.memorypanel import MemoryPanel
 from CTkMessagebox import CTkMessagebox
 
+from view.components.output_panel import OutputPanel
+
 # Set appearance mode and color theme
 ctk.set_appearance_mode("System")  # "System", "Dark", "Light"
 ctk.set_default_color_theme("dark-blue")  # "blue", "green", "dark-blue"
@@ -27,7 +29,6 @@ class SimpleStudioView(ctk.CTk):
         self.presenter = presenter
         
         self.create_widgets()
-        # TODO execution buttons unabled before source load
         
     def create_widgets(self):
         # Create main grid - now with a row for the top sidebar
@@ -45,16 +46,16 @@ class SimpleStudioView(ctk.CTk):
         self.control_panel.grid(row=0, column=0, columnspan=3, sticky="nsew")
         self.control_panel.grid_rowconfigure(0, weight=1)
         self.control_panel.initialize()
-        
-        # Memory frame 
-        # TODO clase de frame de memorias (extiende a customtkinter.CTkFrame)
+
         self.memory_panel = MemoryPanel(self)
         self.memory_panel.grid(row=1, column=0, columnspan=3, padx=5, pady=10, sticky="nsew")
         self.memory_panel.initialize(self.presenter.on_breakpoint_change)
         
         self.label_panel = LabelPanel(self)
         self.label_panel.grid(row=2, column=0, padx=5, pady=(0,10), sticky="sw")
-        #self.label_panel.initialize() de alfuna forma pasarale las labels
+        
+        self._output_panel = OutputPanel(self)
+        self._output_panel.grid(row=2, column=1, columnspan=2, padx=(0,5), pady=(0,10), sticky="nsew")
 
     def set_pc(self, pc, last_executed_instruction_address):
         self.memory_panel.set_pc(pc, last_executed_instruction_address)
@@ -85,20 +86,14 @@ class SimpleStudioView(ctk.CTk):
         
     def update_heap_memory(self, modified_heap_cells):
         self.memory_panel.update_heap_memory(modified_heap_cells)
-            
-    def on_run(self):
-        pass
-    
-    def on_single_step(self):
-        pass
-    
-    def on_n_step(self, n):
-        pass
     
     def reset(self, parsed_data_memory, parsed_heap_memory, label_list):
         self.memory_panel.reset(parsed_data_memory, parsed_heap_memory)
         self.label_panel.reset(label_list)
-        # TODO  reset output panel
+        self._output_panel.reset()
+        
+    def print_output(self, output_text):
+        self._output_panel.append_text_ln(output_text)
     
     def on_browse_file(self):
         file_path = filedialog.askopenfilename(

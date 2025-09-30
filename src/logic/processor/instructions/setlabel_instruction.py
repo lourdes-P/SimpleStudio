@@ -1,4 +1,7 @@
 from logic.processor.instructions.instruction_double_arg import InstructionDoubleArg
+from logic.expression_ast.exceptions.datacell_value_notset_exception import DatacellValueNotSetException
+from logic.expression_ast.exceptions.heapcell_value_notset_exception import HeapcellValueNotSetException
+from logic.processor.exceptions.instruction_amalgam_exception import InstructionAmalgamException
 
 class SetLabelInstruction(InstructionDoubleArg):
 
@@ -8,7 +11,11 @@ class SetLabelInstruction(InstructionDoubleArg):
     
     def execute(self, processor):
         label_token = self.argument1
-        value = self.argument2.evaluate(processor)
+        try:
+            value = self.argument2.evaluate(processor)
+        except (HeapcellValueNotSetException, DatacellValueNotSetException) as error_message:
+            raise InstructionAmalgamException(error_message, self.address, self.line)
+        
         success = processor.define_label(label_token, value)
         
         return success

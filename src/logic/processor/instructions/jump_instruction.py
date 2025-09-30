@@ -1,4 +1,7 @@
 from logic.processor.instructions.instruction_simple_arg import InstructionSimpleArg
+from logic.expression_ast.exceptions.datacell_value_notset_exception import DatacellValueNotSetException
+from logic.expression_ast.exceptions.heapcell_value_notset_exception import HeapcellValueNotSetException
+from logic.processor.exceptions.instruction_amalgam_exception import InstructionAmalgamException
 
 class JumpInstruction(InstructionSimpleArg):
 
@@ -7,7 +10,11 @@ class JumpInstruction(InstructionSimpleArg):
 
     
     def execute(self, processor):
-        address = self.argument1.evaluate(processor)
+        try:
+            address = self.argument1.evaluate(processor)
+        except (HeapcellValueNotSetException, DatacellValueNotSetException) as error_message:
+            raise InstructionAmalgamException(error_message, self.address, self.line)
+        
         processor.set_pc(address)
         return processor.SUCCESS
     

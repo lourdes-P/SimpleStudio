@@ -1,4 +1,5 @@
 from logic.expression_ast.operand_nodes.memoryaccess_nodes.memory_access_node import MemoryAccessNode
+from logic.expression_ast.exceptions.heapcell_value_notset_exception import HeapcellValueNotSetException
 
 class HeapMemoryAccessNode(MemoryAccessNode):
 
@@ -7,4 +8,8 @@ class HeapMemoryAccessNode(MemoryAccessNode):
 
     def evaluate(self, processor=None):
         address = self._sub_expression_node.evaluate(processor)
-        return processor.access_heap_memory(address)
+        value = processor.access_heap_memory(address)
+        if value is not None:
+            return value
+        else:
+            raise HeapcellValueNotSetException(address)

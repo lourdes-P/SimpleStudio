@@ -10,6 +10,7 @@ from logic.memories.codememory.codememory import CodeMemory
 from logic.interpreter.utils import MapManager, OperatorPrecedenceManager
 from logic.memories.datamemory.data_memory import DataMemory
 from logic.memories.heapmemory.heap_memory import HeapMemory
+from logic.processor.exceptions.instruction_amalgam_exception import InstructionAmalgamException
 from logic.processor.processor import Processor
 
 class VirtualMachine:
@@ -37,6 +38,7 @@ class VirtualMachine:
         self._modified_data_cells = {}
         self._modified_heap_cells = {}
         self._last_executed_instruction_address = 0
+        self._last_output_text = ''
         
     def addListener(self, listener) : 
         self._listeners.append(listener)
@@ -122,6 +124,10 @@ class VirtualMachine:
         for listener in self._listeners:
             listener.reset_has_finished()
             
+    def notify_output(self):
+        for listener in self._listeners:
+            listener.print_output()
+            
     def disable_execution(self):
         for listener in self._listeners:
             listener.disable_execution()
@@ -169,6 +175,9 @@ class VirtualMachine:
     def get_last_execution_added_labels(self):
         return self._last_execution_added_labels
     
+    def get_last_output(self):
+        return self._last_output_text
+    
     def get_pc(self):
         return self._processor.pc if self._processor != None else 0
     
@@ -189,10 +198,12 @@ class VirtualMachine:
         return address
     
     def access_data_memory(self, address):
-        return self._data_memory.get_cell(address).value
+        value = self._data_memory.get_cell(address).value
+        return value
     
     def access_heap_memory(self, address):
-        return self._heap_memory.get_cell(address).value
+        value = self._heap_memory.get_cell(address).value
+        return value
     
     def set_data_memory(self, address, data = None, source_instruction_address = None):
         annotation = None
@@ -242,6 +253,10 @@ class VirtualMachine:
             self._error = f"Label with name {label_name} is already defined in the code memory."
             self.notify_error()
             return Processor.FAILURE
+        
+    def print_output(self, text):
+        self._last_output_text = text
+        self.notify_output()
             
     def deliver_user_input(self, input):
         self._last_user_input = input
@@ -271,6 +286,7 @@ class VirtualMachine:
     def _single_step_execution(self):
         self._last_executed_instruction_address = self.get_pc()
         state = self._processor.execute_next_instruction()
+            
         return state
         
     def _n_step_execution(self, steps : int):
@@ -291,9 +307,13 @@ class VirtualMachine:
             
     def _check_execution_state(self, state):
         if state == Processor.COMPLETED:
-            pass # TODO ver si deberia hacer algo mas (ya se deshabilita)
+            pass 
         elif state == Processor.FAILURE:
-            self._error = "Error while executing source code"   
+            error = self._processor.get_error()
+            if error is not None:
+                self._error = error
+            else:
+                self._error = "Error while executing source code"   
             self.notify_error()
             
     def _add_to_modified_cell_dictionary(self, dictionary, key, cell):

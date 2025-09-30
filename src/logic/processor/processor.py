@@ -1,4 +1,4 @@
-
+from logic.processor.exceptions.instruction_amalgam_exception import InstructionAmalgamException
 
 class Processor:
     COMPLETED = 0
@@ -16,6 +16,7 @@ class Processor:
         self._enabled = False
         self.enable()    
         self._next_instruction = None
+        self._error = None
     
     def reset(self):
         self._pc = 0
@@ -24,15 +25,27 @@ class Processor:
         self._po = 0   
         self.enable()
         self._next_instruction = None
+        self._error = None
     
     def execute_next_instruction(self):
         self._next_instruction = self.get_next_instruction()
         if self._next_instruction and self._enabled:
-            success = self._next_instruction.execute(self)
+            exception_caught = False
+            try:
+                success = self._next_instruction.execute(self)
+            except InstructionAmalgamException as error:
+                exception_caught = True
+                self._error = error
+            finally:
+                if exception_caught:
+                    self._enabled = False
+                    return self.FAILURE
+                
             if success == self.SUCCESS and self._former_pc == self._pc:
                 self.increase_pc()
             elif success == self.SUCCESS:
                 self._former_pc = self._pc
+
             return success
         elif not self._enabled:
             return self.DISABLED
@@ -62,14 +75,18 @@ class Processor:
         self._virtual_machine.trigger_user_input()
         
     def deliver_user_input(self):
-        self._next_instruction.on_user_input(self)
-        self.enable()
+        state = self._next_instruction.on_user_input(self)
+        if state == self.SUCCESS:
+            self.enable()
         
     def get_user_input(self):
         return self._virtual_machine.get_user_input()
     
     def define_label(self, label_token, address):
         return self._virtual_machine.define_label(label_token, address)
+    
+    def print_output(self, text):
+        self._virtual_machine.print_output(text)
     
     def disable(self):
         self._enabled = False
@@ -100,6 +117,9 @@ class Processor:
     def increase_pc(self):
         self._pc += 1
         self._former_pc = self._pc
+        
+    def get_error(self):
+        return self._error
     
     @property
     def pc(self):

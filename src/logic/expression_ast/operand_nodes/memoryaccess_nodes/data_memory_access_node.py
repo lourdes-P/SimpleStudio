@@ -1,4 +1,5 @@
 from logic.expression_ast.operand_nodes.memoryaccess_nodes.memory_access_node import MemoryAccessNode
+from logic.expression_ast.exceptions.datacell_value_notset_exception import DatacellValueNotSetException
 
 class DataMemoryAccessNode(MemoryAccessNode):
 
@@ -7,4 +8,8 @@ class DataMemoryAccessNode(MemoryAccessNode):
 
     def evaluate(self, processor=None):
         address = self._sub_expression_node.evaluate(processor)
-        return processor.access_data_memory(address)
+        value = processor.access_data_memory(address)
+        if value is not None:
+            return value
+        else:
+            raise DatacellValueNotSetException(address)

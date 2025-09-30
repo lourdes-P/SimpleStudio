@@ -23,6 +23,10 @@ class VirtualMachineListener(ABC):
         pass
     
     @abstractmethod
+    def print_output(self):
+        pass
+    
+    @abstractmethod
     def disable_execution(self):
         pass
     
