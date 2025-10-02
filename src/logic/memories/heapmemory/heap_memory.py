@@ -7,6 +7,7 @@ class HeapMemory(DataHeapMemory):
         self._heapcell_list = []
         self._po = 0
         self._initial_cell_number = 100
+        self._modified = False
         self.initialize_memory(self._initial_cell_number)
         
     def initialize_memory(self, cell_number):
@@ -16,17 +17,21 @@ class HeapMemory(DataHeapMemory):
         self._heapcell_list[self._po].place_po()
         
     def reset(self):
-        self._po = 0
-        self._heapcell_list.clear()
-        self.initialize_memory(self._initial_cell_number)
+        if self._modified:
+            self._po = 0
+            self._heapcell_list.clear()
+            self.initialize_memory(self._initial_cell_number)
+            self._modified = False
         
     def place_po(self, new_address):
+        self._modified = True
         self._heapcell_list[self._po].remove_po()
         self._po = new_address
         self._heapcell_list[self._po].place_po()
         
     def set_cell(self, address, value = None, annotation = None):
         if (address <= self._initial_cell_number):
+            self._modified = True
             self._heapcell_list[address].set_value(value)
             self._heapcell_list[address].set_annotation(annotation)
             return self._heapcell_list[address]

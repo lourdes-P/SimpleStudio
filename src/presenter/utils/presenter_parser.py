@@ -27,6 +27,7 @@ class PresenterParser:
     
     @staticmethod
     def parse_data_heap_memory(cell_list : list, memory_modified = False):
+        """Returns a list of dictionaries with keys (register, address, value, annotation, memory_modified)"""
         data = []
         for cell in cell_list:
             cell_data = {                
@@ -37,6 +38,23 @@ class PresenterParser:
                 'memory_modified': memory_modified
             }
             data.append(cell_data)
+        return data
+    
+    @staticmethod
+    def parse_reset_data_heap_memory_dictionary(cell_list : list, all_time_modified_cells_addresses):
+        '''Returns a list of dictionaries with keys (register, address, value, annotation), with only the cells that have been modified as stated in all_time_modified_cells_addresses.
+        For reset use.'''
+        data = []
+        for cell in cell_list:
+            address = cell.address
+            if address in all_time_modified_cells_addresses:
+                cell_data = {                
+                    'register': cell.generate_register_string(),
+                    'address': address, 
+                    'value': cell.value if cell.value is not None else '###',
+                    'annotation': cell.annotation_string(),
+                }
+                data.append(cell_data)
         return data
     
     @staticmethod

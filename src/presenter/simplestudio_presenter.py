@@ -2,16 +2,21 @@ from model.virtual_machine import VirtualMachine
 from view.main_view import SimpleStudioView
 from listeners import VirtualMachineListener
 from presenter.utils.presenter_parser import PresenterParser
+import os
+import time
 
 class SimpleStudioPresenter(VirtualMachineListener):
     def __init__(self, virtual_machine : VirtualMachine):      
-        self.virtual_machine = virtual_machine  
+        self.virtual_machine = virtual_machine
         
     def start(self):
         self.main_view = SimpleStudioView(self)
         self.virtual_machine.addListener(self)
-        self.initialize_data_memory_view(self.virtual_machine.get_data_memory())
-        self.initialize_heap_memory_view(self.virtual_machine.get_heap_memory())
+        self._initialize_data_memory_view(self.virtual_machine.get_data_memory())
+        self._initialize_heap_memory_view(self.virtual_machine.get_heap_memory())
+        self._last_file_path = None
+        self._file_last_modification_time = None
+        self._loading_file = False
         self.main_view.mainloop()
     
     def set_virtual_machine(self, virtual_machine : VirtualMachine):
@@ -31,9 +36,15 @@ class SimpleStudioPresenter(VirtualMachineListener):
         try:
             file_path = self.main_view.get_selected_file_path()
             # TODO self.main_view.loading(True)          
+            self._loading_file = True
             self.virtual_machine.load_program(file_path)       # crear hilo? puede ser util si ya hay algo mostrandose?
+            if self._last_file_path is not None:
+                self.virtual_machine.reset()
+            self._last_file_path = file_path
+            self._file_last_modification_time = os.path.getmtime(file_path)
         except Exception as e:
             self.main_view.display_error(f"Error loading file: {str(e)}")
+            self._loading_file = False
             
     def on_user_input(self, input):
         self.virtual_machine.deliver_user_input(input)
@@ -52,7 +63,19 @@ class SimpleStudioPresenter(VirtualMachineListener):
         self.virtual_machine.execute_program(VirtualMachine.N_STEP_EXECUTION_MODE, steps)
     
     def on_reset(self):
-        self.virtual_machine.reset()
+        try:
+            # TODO self.main_view.loading(True)  
+            if self._last_file_path != None:
+                file_modification_time = os.path.getmtime(self._last_file_path)
+                if self._file_last_modification_time == file_modification_time:
+                    self.virtual_machine.reset(on_load=False)
+                else:
+                    self._loading_file = True
+                    self.virtual_machine.load_program(self._last_file_path)
+                    self._file_last_modification_time = file_modification_time
+                    self.virtual_machine.reset()
+        except Exception as e:
+            self.main_view.display_error(f"Error loading file: {str(e)}")
         
     # --------- end user view events      
     
@@ -63,7 +86,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
         self.code_memory = self.virtual_machine.get_code_memory()
         self.update_code_memory_view()
         label_list = PresenterParser.parse_label_dictionary(self.virtual_machine.get_label_dictionary())
-        self.main_view.load_label_panel(label_list)       
+        self.main_view.load_label_panel(label_list)      
         
     def trigger_error(self):
         error = self.virtual_machine.get_last_triggered_error()
@@ -86,11 +109,17 @@ class SimpleStudioPresenter(VirtualMachineListener):
         self._update_memories(modified_data_cells, modified_heap_cells)
         
     def reset_has_finished(self):
-        self.update_code_memory_view()
-        parsed_data_memory = PresenterParser.parse_data_heap_memory(self.virtual_machine.get_data_memory().cell_list)
-        parsed_heap_memory = PresenterParser.parse_data_heap_memory(self.virtual_machine.get_heap_memory().cell_list)
+        if not self._loading_file:
+            self.update_code_memory_view()
+        else:
+            self._loading_file = False
+        all_time_modified_data_cells_addresses = self.virtual_machine.get_all_time_modified_data_cells_addresses()
+        parsed_data_memory = PresenterParser.parse_reset_data_heap_memory_dictionary(self.virtual_machine.get_data_memory().cell_list, all_time_modified_data_cells_addresses)
+        all_time_modified_heap_cells_addresses = self.virtual_machine.get_all_time_modified_heap_cells_addresses()
+        parsed_heap_memory = PresenterParser.parse_reset_data_heap_memory_dictionary(self.virtual_machine.get_heap_memory().cell_list, all_time_modified_heap_cells_addresses)
         label_list = PresenterParser.parse_label_dictionary(self.virtual_machine.get_label_dictionary())
         self.main_view.reset(parsed_data_memory, parsed_heap_memory, label_list)
+        
         
     def print_output(self):
         output_text = self.virtual_machine.get_last_output()
@@ -104,10 +133,10 @@ class SimpleStudioPresenter(VirtualMachineListener):
         
     # --------- end listener methods
     
-    def initialize_data_memory_view(self, data_memory):
+    def _initialize_data_memory_view(self, data_memory):
         self.main_view.load_data_memory(PresenterParser.parse_data_heap_memory(data_memory.cell_list))
     
-    def initialize_heap_memory_view(self, heap_memory):
+    def _initialize_heap_memory_view(self, heap_memory):
         self.main_view.load_heap_memory(PresenterParser.parse_data_heap_memory(heap_memory.cell_list))
         
     def _update_memories(self, modified_data_cells, modified_heap_cells):
@@ -116,7 +145,3 @@ class SimpleStudioPresenter(VirtualMachineListener):
         
         self.main_view.update_data_memory(data_modified)
         self.main_view.update_heap_memory(heap_modified)    
-        
-    def update_pc(self, pc: int):
-        self.code_memory_view.set_current_pc(pc)
-    

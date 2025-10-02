@@ -43,7 +43,7 @@ class ControlPanel(ctk.CTkFrame):
         )
         self.n_step_button.grid(row=0, column=3, padx=(20, 0), pady=(20,5), sticky="ew")
         
-        self.n_step_spinbox = NumeralSpinbox(master=self, command= self.on_step_number_changed)
+        self.n_step_spinbox = NumeralSpinbox(master=self)
         self.n_step_spinbox.grid(row=0, column=4, padx=(0, 20), pady=(20,5))
         self.n_step = self.n_step_spinbox.get()
         
@@ -102,10 +102,9 @@ class ControlPanel(ctk.CTkFrame):
             
     def on_n_step(self):
         if self.n_step_callback:
-            self.n_step_callback(self.n_step)
-            
-    def on_step_number_changed(self):
-        self.n_step = self.n_step_spinbox.get()
+            self.n_step = self.n_step_spinbox.get()
+            if self.n_step > 0:
+                self.n_step_callback(self.n_step)
 
     def change_apparance_mode(self, new_appearance_mode):
         ctk.set_appearance_mode(new_appearance_mode)

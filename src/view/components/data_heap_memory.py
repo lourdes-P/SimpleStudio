@@ -171,13 +171,13 @@ class DataHeapMemoryView(ctk.CTkFrame):
             self._update_last_modified_cell(last_modified_cell_address)
             
     def reset(self, cell_list):
+        """cell_list will be the list that has been parsed only using the cells that have been modified throughout execution."""
         self.last_modified_cell_address = None
         for cell_data in cell_list:
             address = cell_data.get('address', '')
             register = cell_data.get('register', None)
             value = cell_data.get('value', None)
             annotation = cell_data.get('annotation', None)
-            memory_modified = cell_data.get('memory_modified', False)
             self.update_cell_value(address, value, register, annotation)
             
     def _update_last_modified_cell(self, last_modified_cell_address):
@@ -192,23 +192,26 @@ class DataHeapMemoryView(ctk.CTkFrame):
             return
         
         widgets = self.cell_widgets[address]
+        different_value = widgets['value'].cget('text')!= value
+        different_registers = widgets['register'].cget('text') != register
+        different_annotation = widgets['annotation'].cget('text')!= annotation
         
-        if value is not None:
+        if value is not None and different_value:
             widgets['value'].configure(text=value) 
         
-        if register is not None:
+        if register is not None and different_registers:
             widgets['register'].configure(text=register)   
         
-        if annotation is not None:
+        if annotation is not None and different_annotation:
             widgets['annotation'].configure(text=annotation)  
         
         for cell in self.memory_data:
             if cell.get('address') == address:
-                if value is not None:
+                if value is not None and different_value:
                     cell['value'] = value
-                if register is not None:
+                if register is not None and different_registers:
                     cell['register'] = register
-                if annotation is not None:
+                if annotation is not None and different_annotation:
                     cell['annotation'] = annotation
                 break
             

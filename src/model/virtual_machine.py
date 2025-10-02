@@ -36,7 +36,9 @@ class VirtualMachine:
         self._last_execution_added_labels = {}
         self._listeners = []
         self._modified_data_cells = {}
+        self._all_time_modified_data_cells_addresses = []
         self._modified_heap_cells = {}
+        self._all_time_modified_heap_cells_addresses = []
         self._last_executed_instruction_address = 0
         self._last_output_text = ''
         
@@ -45,16 +47,14 @@ class VirtualMachine:
         
     def load_program(self, file_path):        
         self._io_manager = IOManager(file_path)
-        self._code_memory = CodeMemory()
-        self._data_memory.reset()
-        self._heap_memory.reset()     
+        self._code_memory = CodeMemory()   
         lexical_analyzer = LexicalAnalyzer(self._io_manager, self._reserved_word_map)
         syntactic_analyzer = SyntacticAnalyzer(lexical_analyzer, self._code_memory, self._firsts_map, self._nexts_map, self._operator_precedence_manager)
         try:
             syntactic_analyzer.start()
         except (LexicalException, LexicalExceptionInvalidSymbol, 
             LexicalExceptionInvalidOperator, SyntacticException, 
-            SyntacticExceptionNoMatch) as e:
+            SyntacticExceptionNoMatch, SimpleSyntacticException) as e:
             self._error = e
             self.notify_error()
         
@@ -64,16 +64,16 @@ class VirtualMachine:
         
         self.notify_load_finished()
         
-    def reset(self):
+    def reset(self, on_load = True):
         # TODO  have to divide the view methods in threads or something
         if self._code_memory is not None:
             self._data_memory.reset()
             self._heap_memory.reset()
-            self._processor.reset()
-            self._label_dictionary = self._original_label_dictionary.copy()
             self._last_execution_added_labels.clear()
             self._reset_modified_cells()
-            self.enable_execution()
+            if not on_load:
+                self._processor.reset()
+                self._label_dictionary = self._original_label_dictionary.copy()
             self.notify_reset_finished()
         
     def update_breakpoint_list(self, breakpoint_list):
@@ -175,6 +175,12 @@ class VirtualMachine:
     def get_last_execution_added_labels(self):
         return self._last_execution_added_labels
     
+    def get_all_time_modified_data_cells_addresses(self):
+        return self._all_time_modified_data_cells_addresses.copy() 
+    
+    def get_all_time_modified_heap_cells_addresses(self):
+        return self._all_time_modified_heap_cells_addresses.copy() 
+    
     def get_last_output(self):
         return self._last_output_text
     
@@ -211,6 +217,7 @@ class VirtualMachine:
             annotation = self._code_memory.get_codecell(source_instruction_address).annotation
         modified_cell = self._data_memory.set_cell(address, data, annotation)
         self._add_to_modified_cell_dictionary(self._modified_data_cells, self.SET_MEMORY_MODIFIED, modified_cell)
+        self._all_time_modified_data_cells_addresses.append(address)
         
     def set_heap_memory(self, address, data = None, source_instruction_address = None):
         annotation = None
@@ -218,6 +225,7 @@ class VirtualMachine:
             annotation = self._code_memory.get_codecell(source_instruction_address).annotation
         modified_cell = self._heap_memory.set_cell(address, data, annotation)
         self._add_to_modified_cell_dictionary(self._modified_heap_cells, self.SET_MEMORY_MODIFIED, modified_cell)
+        self._all_time_modified_heap_cells_addresses.append(address)
         
     def set_libre(self, former_libre, libre):
         former = self._data_memory.get_cell(former_libre)
@@ -226,6 +234,8 @@ class VirtualMachine:
         new.place_libre()
         self._add_to_modified_cell_dictionary(self._modified_data_cells, self.ONLY_REGISTER_MODIFIED, former)
         self._add_to_modified_cell_dictionary(self._modified_data_cells, self.ONLY_REGISTER_MODIFIED, new)
+        self._all_time_modified_data_cells_addresses.append(new.address)
+        self._all_time_modified_data_cells_addresses.append(former.address)
         
     def set_actual(self, former_actual, actual):
         former = self._data_memory.get_cell(former_actual)
@@ -234,6 +244,8 @@ class VirtualMachine:
         new.place_actual()
         self._add_to_modified_cell_dictionary(self._modified_data_cells, self.ONLY_REGISTER_MODIFIED, former)
         self._add_to_modified_cell_dictionary(self._modified_data_cells, self.ONLY_REGISTER_MODIFIED, new)
+        self._all_time_modified_data_cells_addresses.append(new.address)
+        self._all_time_modified_data_cells_addresses.append(former.address) 
        
     def set_po(self, former_po, po):
         former = self._heap_memory.get_cell(former_po)
@@ -242,6 +254,8 @@ class VirtualMachine:
         new.place_po()
         self._add_to_modified_cell_dictionary(self._modified_heap_cells, self.ONLY_REGISTER_MODIFIED, former)
         self._add_to_modified_cell_dictionary(self._modified_heap_cells, self.ONLY_REGISTER_MODIFIED, new)
+        self._all_time_modified_heap_cells_addresses.append(new.address)
+        self._all_time_modified_heap_cells_addresses.append(former.address)
         
     def define_label(self, label_token, address):
         label_name = str.lower(label_token.lexeme)

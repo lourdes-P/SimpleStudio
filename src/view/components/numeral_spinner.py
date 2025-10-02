@@ -64,12 +64,13 @@ class NumeralSpinbox(ctk.CTkFrame):
             return int(self.entry.get()) if int(self.entry.get())>0 else self.set(1)
         except ValueError:
             self.set(1)
-            return 0
+            return int(0)
 
     def set(self, value: int):
         self.entry.delete(0, "end")
         self.entry.insert(0, str(int(value)))
-        return self.entry.get()
+        return int(self.entry.get())
     
     def validate(self, P):
         return str.isdigit(P) or str(P)==""
+        
