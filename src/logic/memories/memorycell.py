@@ -22,3 +22,11 @@ class MemoryCell(ABC):
     @property
     def annotation(self):
         return self._annotation
+    
+    def clone(self):
+        return MemoryCell(self._address, self._annotation)
+    
+    def copy(self, cell):
+        """Copies passed cell attribute values into self"""
+        self.set_address(cell.address)
+        self.set_annotation(cell.annotation)

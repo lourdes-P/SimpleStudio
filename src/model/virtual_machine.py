@@ -12,13 +12,14 @@ from logic.memories.datamemory.data_memory import DataMemory
 from logic.memories.heapmemory.heap_memory import HeapMemory
 from logic.processor.exceptions.instruction_amalgam_exception import InstructionAmalgamException
 from logic.processor.processor import Processor
+from model.cache.cache import Cache
+from model.utils.modified_cell_manager import ModifiedCellManager
+from model.exceptions.empty_cache_exception import EmptyCacheException
 
 class VirtualMachine:
     COMPLETE_EXECUTION_MODE = 0
     SINGLE_STEP_EXECUTION_MODE = 1
     N_STEP_EXECUTION_MODE = 2
-    ONLY_REGISTER_MODIFIED = False
-    SET_MEMORY_MODIFIED = True
     
     def __init__(self):
         self._reserved_word_map = ReservedWordMap()
@@ -27,7 +28,8 @@ class VirtualMachine:
         self._operator_precedence_manager = OperatorPrecedenceManager()
         self._code_memory = None
         self._data_memory = DataMemory()
-        self._heap_memory = HeapMemory()  
+        self._heap_memory = HeapMemory()
+        self._cache = Cache(30)
         self._processor = None
         self._io_manager = None
         self._error = None
@@ -35,12 +37,12 @@ class VirtualMachine:
         self._label_dictionary = None
         self._last_execution_added_labels = {}
         self._listeners = []
-        self._modified_data_cells = {}
+        self._modified_cell_manager = ModifiedCellManager()
         self._all_time_modified_data_cells_addresses = []
-        self._modified_heap_cells = {}
         self._all_time_modified_heap_cells_addresses = []
-        self._last_executed_instruction_address = 0
+        self._last_executed_instruction_address = None
         self._last_output_text = ''
+        self._deleted_label_name = None
         
     def addListener(self, listener) : 
         self._listeners.append(listener)
@@ -54,7 +56,7 @@ class VirtualMachine:
             syntactic_analyzer.start()
         except (LexicalException, LexicalExceptionInvalidSymbol, 
             LexicalExceptionInvalidOperator, SyntacticException, 
-            SyntacticExceptionNoMatch, SimpleSyntacticException) as e:
+            SyntacticExceptionNoMatch, SimpleSyntacticException) as e:  # TODO ver estas excepciones catcheadas
             self._error = e
             self.notify_error()
         
@@ -67,15 +69,37 @@ class VirtualMachine:
     def reset(self, on_load = True):
         # TODO  have to divide the view methods in threads or something
         if self._code_memory is not None:
+            self._deleted_label_name = None
+            self._last_executed_instruction_address = None
             self._data_memory.reset()
             self._heap_memory.reset()
+            self._cache.reset()
             self._last_execution_added_labels.clear()
-            self._reset_modified_cells()
+            self._modified_cell_manager.reset()
             if not on_load:
                 self._processor.reset()
                 self._label_dictionary = self._original_label_dictionary.copy()
             self.notify_reset_finished()
+            
+    def undo(self):
+        try:
+            cache_entry = self._cache.pop()
+        except EmptyCacheException as e:
+            self._error = e
+            self.notify_error()
+        self._deleted_label_name = None
+        self._last_execution_added_labels.clear()
+        self._modified_cell_manager.reset()
+        self._last_executed_instruction_address = cache_entry.get_last_executed_instruction_address()
+        self._processor.reinstate_pc(cache_entry.get_pc())
+        self._undo_memory_modified_data_cells(cache_entry.get_memory_modified_data_cells())
+        self._undo_register_modified_data_cells(cache_entry.get_register_modified_data_cells())
+        self._undo_memory_modified_heap_cells(cache_entry.get_memory_modified_heap_cells())
+        self._undo_register_modified_heap_cells(cache_entry.get_register_modified_heap_cells())
+        self._undo_label_modification(cache_entry.get_label_added_entry())
         
+        self.notify_undo_finished()
+     
     def update_breakpoint_list(self, breakpoint_list):
         self._breakpoint_list = breakpoint_list
         
@@ -84,27 +108,6 @@ class VirtualMachine:
             self._processor.reset()
         else:
             self._processor = Processor(virtual_machine=self)
-            
-    def _reset_modified_cells(self):
-        if self._modified_data_cells.get(self.SET_MEMORY_MODIFIED) is not None:
-            self._modified_data_cells[self.SET_MEMORY_MODIFIED].clear()
-        else:
-            self._modified_data_cells[self.SET_MEMORY_MODIFIED] = []
-            
-        if self._modified_data_cells.get(self.ONLY_REGISTER_MODIFIED) is not None:
-            self._modified_data_cells[self.ONLY_REGISTER_MODIFIED].clear()
-        else:
-            self._modified_data_cells[self.ONLY_REGISTER_MODIFIED] = []
-        
-        if self._modified_heap_cells.get(self.SET_MEMORY_MODIFIED) is not None:
-            self._modified_heap_cells[self.SET_MEMORY_MODIFIED].clear()
-        else:
-            self._modified_heap_cells[self.SET_MEMORY_MODIFIED] = []
-            
-        if self._modified_heap_cells.get(self.ONLY_REGISTER_MODIFIED) is not None:
-            self._modified_heap_cells[self.ONLY_REGISTER_MODIFIED].clear()
-        else:
-            self._modified_heap_cells[self.ONLY_REGISTER_MODIFIED] = []
             
     # --------- notify listeners
         
@@ -124,6 +127,10 @@ class VirtualMachine:
         for listener in self._listeners:
             listener.reset_has_finished()
             
+    def notify_undo_finished(self):
+        for listener in self._listeners:
+            listener.undo_has_finished()
+            
     def notify_output(self):
         for listener in self._listeners:
             listener.print_output()
@@ -141,67 +148,10 @@ class VirtualMachine:
             listener.trigger_user_input()
             
     # --------- notify listeners (END)
-            
-    def get_last_triggered_error(self):
-        return self._error
     
-    def get_last_executed_instruction_address(self):
-        return self._last_executed_instruction_address
-    
-    def get_instruction(self, address):
-        return self._code_memory.get_instruction(address)
-    
-    def get_code_memory(self):
-        return self._code_memory
-    
-    def get_data_memory(self):
-        return self._data_memory
-    
-    def get_heap_memory(self):
-        return self._heap_memory
-    
-    def get_modified_data_cells(self):
-        return self._modified_data_cells
-    
-    def get_modified_heap_cells(self):
-        return self._modified_heap_cells
-    
-    def get_user_input(self):
-        return self._last_user_input
-    
-    def get_label_dictionary(self):
-        return self._label_dictionary
-    
-    def get_last_execution_added_labels(self):
-        return self._last_execution_added_labels
-    
-    def get_all_time_modified_data_cells_addresses(self):
-        return self._all_time_modified_data_cells_addresses.copy() 
-    
-    def get_all_time_modified_heap_cells_addresses(self):
-        return self._all_time_modified_heap_cells_addresses.copy() 
-    
-    def get_last_output(self):
-        return self._last_output_text
-    
-    def get_pc(self):
-        return self._processor.pc if self._processor != None else 0
-    
-    def get_libre(self):
-        return self._processor.libre if self._processor != None else 0
-    
-    def get_actual(self):
-        return self._processor.actual if self._processor != None else 0
-    
-    def get_po(self):
-        return self._processor.po if self._processor != None else 0
-    
-    def get_label_address(self, label_name):
-        address = self._label_dictionary.get(str.lower(label_name))
-        if address == None:
-            self._error = f"Label with name {label_name} does not exist"
-            self.notify_error()
-        return address
+    def reset_all_time_modified_cells(self):
+        self._all_time_modified_data_cells_addresses.clear()
+        self._all_time_modified_heap_cells_addresses.clear()
     
     def access_data_memory(self, address):
         value = self._data_memory.get_cell(address).value
@@ -215,51 +165,57 @@ class VirtualMachine:
         annotation = None
         if source_instruction_address is not None:
             annotation = self._code_memory.get_codecell(source_instruction_address).annotation
+        cell = self._data_memory.get_cell(address)
+        self._cache.set_last_entry_memory_modified_data_cell_list([cell])
         modified_cell = self._data_memory.set_cell(address, data, annotation)
-        self._add_to_modified_cell_dictionary(self._modified_data_cells, self.SET_MEMORY_MODIFIED, modified_cell)
+        self._modified_cell_manager.add_to_memory_modified_data_cells(modified_cell)
         self._all_time_modified_data_cells_addresses.append(address)
         
     def set_heap_memory(self, address, data = None, source_instruction_address = None):
         annotation = None
         if source_instruction_address is not None:
             annotation = self._code_memory.get_codecell(source_instruction_address).annotation
+        cell = self._heap_memory.get_cell(address)
+        self._cache.set_last_entry_memory_modified_heap_cell_list([cell])
         modified_cell = self._heap_memory.set_cell(address, data, annotation)
-        self._add_to_modified_cell_dictionary(self._modified_heap_cells, self.SET_MEMORY_MODIFIED, modified_cell)
+        self._modified_cell_manager.add_to_memory_modified_heap_cells(modified_cell)
         self._all_time_modified_heap_cells_addresses.append(address)
         
     def set_libre(self, former_libre, libre):
         former = self._data_memory.get_cell(former_libre)
-        former.remove_libre()
         new = self._data_memory.get_cell(libre)
-        new.place_libre()
-        self._add_to_modified_cell_dictionary(self._modified_data_cells, self.ONLY_REGISTER_MODIFIED, former)
-        self._add_to_modified_cell_dictionary(self._modified_data_cells, self.ONLY_REGISTER_MODIFIED, new)
+        self._cache.peek().set_register_modified_data_cell_list([new, former])
+        self._data_memory.place_libre(libre)
+        self._modified_cell_manager.add_to_register_modified_data_cells(former)
+        self._modified_cell_manager.add_to_register_modified_data_cells(new)
         self._all_time_modified_data_cells_addresses.append(new.address)
         self._all_time_modified_data_cells_addresses.append(former.address)
         
     def set_actual(self, former_actual, actual):
         former = self._data_memory.get_cell(former_actual)
-        former.remove_actual()
         new = self._data_memory.get_cell(actual)
-        new.place_actual()
-        self._add_to_modified_cell_dictionary(self._modified_data_cells, self.ONLY_REGISTER_MODIFIED, former)
-        self._add_to_modified_cell_dictionary(self._modified_data_cells, self.ONLY_REGISTER_MODIFIED, new)
+        self._cache.peek().set_register_modified_data_cell_list([new, former])
+        self._data_memory.place_actual(actual)
+        self._modified_cell_manager.add_to_register_modified_data_cells(former)
+        self._modified_cell_manager.add_to_register_modified_data_cells(new)
         self._all_time_modified_data_cells_addresses.append(new.address)
         self._all_time_modified_data_cells_addresses.append(former.address) 
        
     def set_po(self, former_po, po):
         former = self._heap_memory.get_cell(former_po)
-        former.remove_po()
         new = self._heap_memory.get_cell(po)
-        new.place_po()
-        self._add_to_modified_cell_dictionary(self._modified_heap_cells, self.ONLY_REGISTER_MODIFIED, former)
-        self._add_to_modified_cell_dictionary(self._modified_heap_cells, self.ONLY_REGISTER_MODIFIED, new)
+        self._cache.peek().set_register_modified_heap_cell_list([new, former])
+        self._heap_memory.place_po(po)
+        self._modified_cell_manager.add_to_register_modified_heap_cells(former)
+        self._modified_cell_manager.add_to_register_modified_heap_cells(new)
         self._all_time_modified_heap_cells_addresses.append(new.address)
         self._all_time_modified_heap_cells_addresses.append(former.address)
         
     def define_label(self, label_token, address):
         label_name = str.lower(label_token.lexeme)
         if self._original_label_dictionary.get(label_name) == None:  
+            former_address = self._label_dictionary.get(label_name)
+            self._cache.peek().set_label_added_entry({label_name : former_address}) # TODO reponer en logica y en vista
             self._label_dictionary[label_name] = address
             self._last_execution_added_labels[label_name] = address
             return Processor.SUCCESS
@@ -277,7 +233,7 @@ class VirtualMachine:
         self._processor.deliver_user_input()
         
     def execute_program(self, mode, steps : int = None):
-        self._reset_modified_cells()
+        self._modified_cell_manager.reset()
         self._last_execution_added_labels.clear()
         state = Processor.SUCCESS
         
@@ -298,8 +254,10 @@ class VirtualMachine:
         self.notify_execution_finished()
             
     def _single_step_execution(self):
-        self._last_executed_instruction_address = self.get_pc()
+        pc = self.get_pc()
+        self._cache.create_and_push_entry(self._last_executed_instruction_address, pc)
         state = self._processor.execute_next_instruction()
+        self._last_executed_instruction_address = pc
             
         return state
         
@@ -330,9 +288,128 @@ class VirtualMachine:
                 self._error = "Error while executing source code"   
             self.notify_error()
             
-    def _add_to_modified_cell_dictionary(self, dictionary, key, cell):
-        if dictionary.get(key) is not None:
-            dictionary[key].append(cell)
-            
+    def _undo_label_modification(self, label_entry):
+        if label_entry is not None:
+            label_name = label_entry.popitem()[0]
+            former_address = label_entry.get(label_name)
+            if former_address is None:
+                if self._label_dictionary.get(label_name) is not None: 
+                    self._label_dictionary.pop(label_name)
+                    self._deleted_label_name = label_name
+            else:
+                self._label_dictionary[label_name] = former_address
+                self._last_execution_added_labels[label_name] = former_address
+        
+    def _undo_memory_modified_data_cells(self, memory_modified_data_cells):
+        original_data_cells = []
+        if len(memory_modified_data_cells) > 0:
+            undo_modified_cell = memory_modified_data_cells[0]
+            address = undo_modified_cell.address
+            original_data_cells.append(self._data_memory.set_cell(address, undo_modified_cell.value, undo_modified_cell.annotation))
+            for i in range(1,len(memory_modified_data_cells)):
+                original_data_cells.append(self._data_memory.get_cell(memory_modified_data_cells[i].address))
+            self._modified_cell_manager.extend_memory_modified_data_cells(original_data_cells)
+        
+    def _undo_register_modified_data_cells(self, register_modified_data_cells):
+        for undo_modified_cell in register_modified_data_cells:
+            address = undo_modified_cell.address
+            if undo_modified_cell.libre:
+                self._processor.reinstate_libre(address)
+                self._data_memory.place_libre(address)
+            if undo_modified_cell.actual:
+                self._processor.reinstate_actual(address)
+                self._data_memory.place_actual(address)
+        
+        self._modified_cell_manager.extend_register_modified_data_cells(register_modified_data_cells)
+        
+    def _undo_memory_modified_heap_cells(self, memory_modified_heap_cells):
+        original_heap_cells = []
+        if len(memory_modified_heap_cells) > 0:
+            undo_modified_cell = memory_modified_heap_cells[0]
+            address = undo_modified_cell.address
+            original_heap_cells.append(self._heap_memory.set_cell(address, undo_modified_cell.value, undo_modified_cell.annotation))
+            for i in range(1,len(memory_modified_heap_cells)):
+                original_heap_cells.append(self._data_memory.get_cell(memory_modified_heap_cells[i].address))
+            self._modified_cell_manager.extend_memory_modified_data_cells(original_heap_cells)
+        
+    def _undo_register_modified_heap_cells(self, register_modified_heap_cells):
+        for undo_modified_cell in register_modified_heap_cells:
+            address = undo_modified_cell.address
+ 
+            if undo_modified_cell.po:
+                self._processor.reinstate_po(address)
+                self._heap_memory.place_po(address)
+        
+        self._modified_cell_manager.extend_register_modified_data_cells(register_modified_heap_cells)
+       
+    # getters
+         
     def _in_breakpoint_list(self, address : int):
         return self._breakpoint_list != None and address in self._breakpoint_list
+    
+    def get_instruction(self, address):
+        return self._code_memory.get_instruction(address)
+    
+    def get_modified_data_cells(self):
+        return self._modified_cell_manager.get_modified_data_cell_dictionary()
+    
+    def get_modified_heap_cells(self):
+        return self._modified_cell_manager.get_modified_heap_cell_dictionary()
+    
+    def get_all_time_modified_data_cells_addresses(self):
+        return self._all_time_modified_data_cells_addresses.copy() 
+    
+    def get_all_time_modified_heap_cells_addresses(self):
+        return self._all_time_modified_heap_cells_addresses.copy() 
+    
+    def get_pc(self):
+        return self._processor.pc if self._processor != None else 0
+    
+    def get_libre(self):
+        return self._processor.libre if self._processor != None else 0
+    
+    def get_actual(self):
+        return self._processor.actual if self._processor != None else 0
+    
+    def get_po(self):
+        return self._processor.po if self._processor != None else 0
+    
+    def get_label_address(self, label_name):
+        address = self._label_dictionary.get(str.lower(label_name))
+        if address == None:
+            self._error = f"Label with name {label_name} does not exist"
+            self.notify_error()
+        return address
+    
+    def get_last_triggered_error(self):
+        return self._error
+    
+    def get_last_executed_instruction_address(self):
+        return self._last_executed_instruction_address
+    
+    def get_user_input(self):
+        return self._last_user_input
+    
+    def get_label_dictionary(self):
+        return self._label_dictionary
+    
+    def get_last_execution_added_labels(self):
+        return self._last_execution_added_labels
+    
+    def get_last_output(self):
+        return self._last_output_text
+    
+    def get_deleted_label_name(self):
+        return self._deleted_label_name
+    
+    def get_cache_size(self):
+        return self._cache.size()
+    
+    def get_code_memory(self):
+        return self._code_memory
+    
+    def get_data_memory(self):
+        return self._data_memory
+    
+    def get_heap_memory(self):
+        return self._heap_memory

@@ -14,3 +14,19 @@ class HeapCell(DataHeapMemoryCell):
         
     def generate_register_string(self):
         return "" if self._po is False else f"{'PO' if self._po else ''} →"
+    
+    @property
+    def po(self):
+        return self._po
+    
+    def clone(self):
+        cell = HeapCell()
+        cell.copy(self)
+        
+        return cell
+    
+    def copy(self, heap_cell):
+        """Copies passed heap_cell attribute values into self"""
+        super().copy(heap_cell)
+        if heap_cell.po:
+            self.place_po()

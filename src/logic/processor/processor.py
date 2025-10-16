@@ -14,21 +14,22 @@ class Processor:
         self._libre = 0
         self._po = 0   
         self._enabled = False
-        self.enable()    
+        self._enable()    
         self._next_instruction = None
         self._error = None
     
     def reset(self):
         self._pc = 0
+        self._former_pc = self._pc
         self._actual = 0
         self._libre = 0
         self._po = 0   
-        self.enable()
+        self._enable()
         self._next_instruction = None
         self._error = None
     
     def execute_next_instruction(self):
-        self._next_instruction = self.get_next_instruction()
+        self._next_instruction = self._get_next_instruction()
         if self._next_instruction and self._enabled:
             exception_caught = False
             try:
@@ -52,7 +53,7 @@ class Processor:
         else:
             return self.FAILURE
         
-    def get_next_instruction(self):
+    def _get_next_instruction(self):
         return self._virtual_machine.get_instruction(self._pc)
     
     def get_label_address(self, label_name):
@@ -77,7 +78,7 @@ class Processor:
     def deliver_user_input(self):
         state = self._next_instruction.on_user_input(self)
         if state == self.SUCCESS:
-            self.enable()
+            self._enable()
         
     def get_user_input(self):
         return self._virtual_machine.get_user_input()
@@ -87,14 +88,6 @@ class Processor:
     
     def print_output(self, text):
         self._virtual_machine.print_output(text)
-    
-    def disable(self):
-        self._enabled = False
-        self._virtual_machine.disable_execution()
-        
-    def enable(self):
-        self._enabled = True
-        self._virtual_machine.enable_execution()
         
     def set_actual(self, address):
         former = self._actual
@@ -120,6 +113,27 @@ class Processor:
         
     def get_error(self):
         return self._error
+    
+    def reinstate_pc(self, pc):
+        self._former_pc = pc
+        self._pc = pc
+    
+    def reinstate_actual(self, address):
+        self._actual = address
+        
+    def reinstate_libre(self, address):
+        self._libre = address
+        
+    def reinstate_po(self, address):
+        self._po = address
+    
+    def disable(self):
+        self._enabled = False
+        self._virtual_machine.disable_execution()
+        
+    def _enable(self):
+        self._enabled = True
+        self._virtual_machine.enable_execution()
     
     @property
     def pc(self):

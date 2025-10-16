@@ -16,6 +16,7 @@ class LabelPanel(ctk.CTkFrame):
         
     def _create_widgets(self):
         self.line_widgets: Dict[int, dict] = {}
+        self.label_index = {}
         self.line_widget_index = 0
         self.grid_propagate(False)
         
@@ -57,6 +58,7 @@ class LabelPanel(ctk.CTkFrame):
         for widget in self.label_frame.winfo_children():
             widget.destroy()
         self.line_widgets.clear()
+        self.label_index.clear()
         
         for i, label in enumerate(data):
             self._create_line_widget(label, i)
@@ -70,6 +72,11 @@ class LabelPanel(ctk.CTkFrame):
     def add_label_list(self, label_list, color):
         for i, label in enumerate(label_list):
             self.add_label(label, color)
+            
+    def delete_label(self, label_name):
+        index = self.label_index[label_name]
+        line_frame = self.line_widgets[index].get('line_frame')
+        line_frame.destroy()
         
     def _create_line_widget(self, label: dict, index: int, color = None):
         label_name = label['name']
@@ -93,8 +100,10 @@ class LabelPanel(ctk.CTkFrame):
         
         self.line_widgets[index] = {
             'name': label_name,
-            'address': label_value
+            'address': label_value,
+            'line_frame': line_frame
         }
+        self.label_index[label_name] = index
         
         self.line_widget_index = index + 1
         

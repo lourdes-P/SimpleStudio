@@ -23,6 +23,10 @@ class VirtualMachineListener(ABC):
         pass
     
     @abstractmethod
+    def undo_has_finished(self):
+        pass
+    
+    @abstractmethod
     def print_output(self):
         pass
     

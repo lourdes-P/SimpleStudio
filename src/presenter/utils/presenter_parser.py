@@ -1,9 +1,10 @@
-from model.virtual_machine import VirtualMachine
+from model.utils.modified_cell_manager import ModifiedCellManager
 
 class PresenterParser:
     
     @staticmethod
     def parse_code_memory(codecell_list : list):
+        """Returns a list of dictionaries with keys (label, address, instruction, annotation). Values are all strings"""
         code_data = []
         
         for code_cell in codecell_list:
@@ -19,8 +20,8 @@ class PresenterParser:
     
     @staticmethod
     def parse_modified_cells(cell_dictionary : dict):
-        memory_modified = cell_dictionary[VirtualMachine.SET_MEMORY_MODIFIED]
-        only_register_modified = cell_dictionary[VirtualMachine.ONLY_REGISTER_MODIFIED]
+        memory_modified = cell_dictionary[ModifiedCellManager.SET_MEMORY_MODIFIED]
+        only_register_modified = cell_dictionary[ModifiedCellManager.ONLY_REGISTER_MODIFIED]
         modified_cells = PresenterParser.parse_data_heap_memory(memory_modified, True)
         modified_cells.extend(PresenterParser.parse_data_heap_memory(only_register_modified))
         return modified_cells
@@ -41,9 +42,9 @@ class PresenterParser:
         return data
     
     @staticmethod
-    def parse_reset_data_heap_memory_dictionary(cell_list : list, all_time_modified_cells_addresses):
+    def parse_reset_data_heap_memory(cell_list : list, all_time_modified_cells_addresses):
         '''Returns a list of dictionaries with keys (register, address, value, annotation), with only the cells that have been modified as stated in all_time_modified_cells_addresses.
-        For reset use.'''
+        For reset use'''
         data = []
         for cell in cell_list:
             address = cell.address

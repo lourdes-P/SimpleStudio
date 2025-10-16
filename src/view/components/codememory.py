@@ -325,7 +325,6 @@ class CodeMemoryView(ctk.CTkFrame):
             self._update_line_appearance(old_last_executed_instruction_address)
         if self.last_executed_instruction is not None and self.last_executed_instruction in self.line_widgets:
             self._update_line_appearance(self.last_executed_instruction, ColorManager.TERTIARY_COLOR)
-            
         # Notify callback if set
         if self.on_pc_change:
             self.on_pc_change(pc_value, self.current_pc)

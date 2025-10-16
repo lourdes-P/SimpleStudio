@@ -41,6 +41,7 @@ class SimpleStudioView(ctk.CTk):
                                           run_callback= self.presenter.on_complete_execution,
                                           n_step_callback= self.presenter.on_n_step_execution,
                                           reset_callback=self.presenter.on_reset,
+                                          undo_callback= self.presenter.on_undo,
                                           change_appearance_mode= self.change_appearance_mode, 
                                           browse_file= self.on_browse_file)
         self.control_panel.grid(row=0, column=0, columnspan=3, sticky="nsew")
@@ -79,7 +80,10 @@ class SimpleStudioView(ctk.CTk):
         self.label_panel.load_data(label_list)
         
     def add_labels(self, added_labels_list):
-      self.label_panel.add_label_list(added_labels_list, self.SECONDARY_COLOR)  
+        self.label_panel.add_label_list(added_labels_list, self.SECONDARY_COLOR) 
+      
+    def delete_label(self, label_name) :
+        self.label_panel.delete_label(label_name)
         
     def update_data_memory(self, modified_data_cells):
         self.memory_panel.update_data_memory(modified_data_cells)
@@ -132,6 +136,10 @@ class SimpleStudioView(ctk.CTk):
         
     def enable_execution(self):
         self.control_panel.set_buttons_state(True)
+        
+    def set_cache_entry_disponibility(self, number : int):
+        if number >= 0:
+            self.control_panel.set_cache_entry_disponibility(number)
 
 if __name__ == "__main__":
     app = SimpleStudioView()

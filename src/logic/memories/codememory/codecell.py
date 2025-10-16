@@ -32,3 +32,15 @@ class CodeCell(MemoryCell):
     @property
     def instruction(self):
         return self._instruction
+    
+    def clone(self):
+        cell = CodeCell()
+        cell.copy(self)
+        
+        return cell
+        
+    def copy(self, code_cell):
+        """Copies passed code_cell attribute values into self"""
+        super().copy(code_cell)
+        self.set_label_token(code_cell.label_token)
+        self.set_instruction(code_cell.instruction)

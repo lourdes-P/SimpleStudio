@@ -21,3 +21,7 @@ class DataHeapMemoryCell(MemoryCell, ABC):
     def generate_register_string(self):
         pass
         
+    def copy(self, data_heap_cell):
+        """Copies passed cell attribute values into self"""
+        super().copy(data_heap_cell)
+        self.set_value(data_heap_cell.value)

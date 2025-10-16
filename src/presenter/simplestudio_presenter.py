@@ -76,6 +76,9 @@ class SimpleStudioPresenter(VirtualMachineListener):
                     self.virtual_machine.reset()
         except Exception as e:
             self.main_view.display_error(f"Error loading file: {str(e)}")
+            
+    def on_undo(self):
+        self.virtual_machine.undo()
         
     # --------- end user view events      
     
@@ -86,7 +89,8 @@ class SimpleStudioPresenter(VirtualMachineListener):
         self.code_memory = self.virtual_machine.get_code_memory()
         self.update_code_memory_view()
         label_list = PresenterParser.parse_label_dictionary(self.virtual_machine.get_label_dictionary())
-        self.main_view.load_label_panel(label_list)      
+        self.main_view.load_label_panel(label_list)  
+        self._loading_file = False    
         
     def trigger_error(self):
         error = self.virtual_machine.get_last_triggered_error()
@@ -107,6 +111,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
         if added_labels is not None and len(added_labels) > 0:
             self.main_view.add_labels(PresenterParser.parse_label_dictionary(added_labels))
         self._update_memories(modified_data_cells, modified_heap_cells)
+        self.main_view.set_cache_entry_disponibility(self.virtual_machine.get_cache_size())
         
     def reset_has_finished(self):
         if not self._loading_file:
@@ -114,12 +119,28 @@ class SimpleStudioPresenter(VirtualMachineListener):
         else:
             self._loading_file = False
         all_time_modified_data_cells_addresses = self.virtual_machine.get_all_time_modified_data_cells_addresses()
-        parsed_data_memory = PresenterParser.parse_reset_data_heap_memory_dictionary(self.virtual_machine.get_data_memory().cell_list, all_time_modified_data_cells_addresses)
+        parsed_data_memory = PresenterParser.parse_reset_data_heap_memory(self.virtual_machine.get_data_memory().cell_list, all_time_modified_data_cells_addresses)
         all_time_modified_heap_cells_addresses = self.virtual_machine.get_all_time_modified_heap_cells_addresses()
-        parsed_heap_memory = PresenterParser.parse_reset_data_heap_memory_dictionary(self.virtual_machine.get_heap_memory().cell_list, all_time_modified_heap_cells_addresses)
+        parsed_heap_memory = PresenterParser.parse_reset_data_heap_memory(self.virtual_machine.get_heap_memory().cell_list, all_time_modified_heap_cells_addresses)
         label_list = PresenterParser.parse_label_dictionary(self.virtual_machine.get_label_dictionary())
+        self.virtual_machine.reset_all_time_modified_cells()
         self.main_view.reset(parsed_data_memory, parsed_heap_memory, label_list)
-        
+        self.main_view.set_cache_entry_disponibility(self.virtual_machine.get_cache_size())
+       
+    def undo_has_finished(self):
+        pc = self.virtual_machine.get_pc()
+        last_executed_instruction_address = self.virtual_machine.get_last_executed_instruction_address()
+        modified_data_cells = self.virtual_machine.get_modified_data_cells()
+        modified_heap_cells = self.virtual_machine.get_modified_heap_cells()
+        added_labels = self.virtual_machine.get_last_execution_added_labels()
+        deleted_label_name = self.virtual_machine.get_deleted_label_name()
+        self.main_view.set_pc(pc, last_executed_instruction_address)
+        if added_labels is not None and len(added_labels) > 0:
+            self.main_view.add_labels(PresenterParser.parse_label_dictionary(added_labels))
+        elif deleted_label_name is not None:
+            self.main_view.delete_label(deleted_label_name)
+        self._update_memories(modified_data_cells, modified_heap_cells)
+        self.main_view.set_cache_entry_disponibility(self.virtual_machine.get_cache_size())
         
     def print_output(self):
         output_text = self.virtual_machine.get_last_output()
