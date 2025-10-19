@@ -25,10 +25,11 @@ class SimpleStudioPresenter(VirtualMachineListener):
     def set_code_memory_view(self, code_memory_view):
         self.code_memory_view = code_memory_view
     
-    def update_code_memory_view(self):        
+    def update_code_memory_view(self):       
+        # TODO sacarle el codememory al presentador 
         code_data = PresenterParser.parse_code_memory(self.code_memory.codecell_list)
         
-        self.main_view.load_code_onto_c_memory(code_data)
+        self.main_view.load_code_onto_c_memory(code_data, self.main_view.get_selected_file_path())
        
     # --------- user view events    
      

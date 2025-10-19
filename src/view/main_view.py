@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from tkinter import filedialog
+from view.components.code_editor import CodeEditor
 from view.components.controlpanel import ControlPanel
 from view.components.input_dialog import InputDialog
 from view.components.labelpanel import LabelPanel
@@ -7,14 +8,13 @@ from view.components.memorypanel import MemoryPanel
 from CTkMessagebox import CTkMessagebox
 
 from view.components.output_panel import OutputPanel
+from view.utils.color_manager import ColorManager
 
 # Set appearance mode and color theme
 ctk.set_appearance_mode("System")  # "System", "Dark", "Light"
 ctk.set_default_color_theme("dark-blue")  # "blue", "green", "dark-blue"
 
 class SimpleStudioView(ctk.CTk):
-    SECONDARY_COLOR = '#2c3e50'
-    TERTIARY_COLOR = '#4b8bab'
         
     def __init__(self, presenter):
         super().__init__()
@@ -67,8 +67,8 @@ class SimpleStudioView(ctk.CTk):
     def get_breakpoints(self):
         return self.memory_panel.get_breakpoints()
     
-    def load_code_onto_c_memory(self, code_data):
-        self.memory_panel.load_code_onto_c_memory(code_data)
+    def load_code_onto_c_memory(self, code_data, file_path):
+        self.memory_panel.load_code_onto_c_memory(code_data, file_path)
         
     def load_data_memory(self, data):
         self.memory_panel.load_data_memory(data)
@@ -80,7 +80,7 @@ class SimpleStudioView(ctk.CTk):
         self.label_panel.load_data(label_list)
         
     def add_labels(self, added_labels_list):
-        self.label_panel.add_label_list(added_labels_list, self.SECONDARY_COLOR) 
+        self.label_panel.add_label_list(added_labels_list, ColorManager.SECONDARY_COLOR) 
       
     def delete_label(self, label_name) :
         self.label_panel.delete_label(label_name)

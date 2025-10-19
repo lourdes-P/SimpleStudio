@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from tkinter import ttk
 import tkinter as tk
+from view.components.code_editor import CodeEditor
 from view.components.codememory import CodeMemoryView
 from view.components.data_heap_memory import DataHeapMemoryView
 from view.utils.color_manager import ColorManager
@@ -13,8 +14,11 @@ class MemoryPanel(ctk.CTkFrame):
         self.paned_memory = None
         
         self.code_memory_view = None
+        self.cmem_label = None
         self.data_memory_view = None
         self.heap_memory_view = None
+        
+        self.code_editor = None
         
     def initialize(self, on_breakpoint_change_callback):
         """self.grid_rowconfigure(1, weight=1)  # Make the code memory expand
@@ -33,8 +37,12 @@ class MemoryPanel(ctk.CTkFrame):
         self.cmem_container.grid_rowconfigure(1, weight=1)
         self.cmem_container.grid_columnconfigure(0, weight=1)
         
-        cmem_label = ctk.CTkLabel(self.cmem_container, text="C", font=ctk.CTkFont(weight="bold"))
-        cmem_label.grid(row=0, column=0, padx=2, pady=(1,0), sticky="sw")
+        self.code_editor = CodeEditor(self.cmem_container)
+        self.code_editor.grid(row=0, rowspan=2, column=0, padx=1, pady=1, sticky="nsew")
+        self.code_editor.grid_remove()
+        
+        self.cmem_label = ctk.CTkLabel(self.cmem_container, text="C", font=ctk.CTkFont(weight="bold"))
+        self.cmem_label.grid(row=0, column=0, padx=2, pady=(1,0), sticky="sw")
         self.code_memory_view = CodeMemoryView(self.cmem_container)
         self.code_memory_view.grid(row=1, column=0, padx=(0,0), pady=1, sticky="nsew")
         
@@ -74,14 +82,32 @@ class MemoryPanel(ctk.CTkFrame):
         self.data_memory_view.reset(parsed_data_memory)
         self.heap_memory_view.reset(parsed_heap_memory)
         
-    def load_code_onto_c_memory(self, code_data):
+    def load_code_onto_c_memory(self, code_data, file_path):
+        # TODO probablemente pasar por aca la ruta del archivo para el code editor
         self.code_memory_view.load_code(code_data)
+        self.code_editor.load_file(file_path)
         
     def load_data_memory(self, data):
         self.data_memory_view.load_memory(data)
         
     def load_heap_memory(self, data):
         self.heap_memory_view.load_memory(data)
+        
+    def show_code_editor(self, line_number = None):
+        # code editor necesita de padre a cmemcontainer (que tiene de padre a paned window)
+        # tengo que entonces crear al code editor en este componente.
+        # TODO ver como pasar la ruta del archivo
+        if self.code_editor:
+            if self.code_memory_view.grid_info():
+                self.code_memory_view.grid_remove()
+            self.code_editor.grid()
+            self.code_editor.open_editor(line_number)
+        
+    def show_code_memory_view(self):
+        if self.code_editor.grid_info():
+            self.code_editor.grid_remove()
+        self.cmem_label.grid()
+        self.code_memory_view.grid()
         
     def set_pc(self, pc, last_executed_instruction_address):
         self.code_memory_view.set_current_pc(pc, last_executed_instruction_address)
