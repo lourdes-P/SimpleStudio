@@ -42,6 +42,7 @@ class SimpleStudioView(ctk.CTk):
                                           n_step_callback= self.presenter.on_n_step_execution,
                                           reset_callback=self.presenter.on_reset,
                                           undo_callback= self.presenter.on_undo,
+                                          switch_code_editor_callback=self.presenter.on_switch_code_editor,
                                           change_appearance_mode= self.change_appearance_mode, 
                                           browse_file= self.on_browse_file)
         self.control_panel.grid(row=0, column=0, columnspan=3, sticky="nsew")
@@ -96,13 +97,16 @@ class SimpleStudioView(ctk.CTk):
         self.label_panel.reset(label_list)
         self._output_panel.reset()
         
+    def switch_code_editor(self, line_number= None):
+        self.memory_panel.switch_code_editor(line_number)
+        
     def print_output(self, output_text):
         self._output_panel.append_text_ln(output_text)
     
     def on_browse_file(self):
         file_path = filedialog.askopenfilename(
             title="Select Source File",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            filetypes=[("All files", "*.*"),("Text files", "*.txt"),("SimpleSem files", "*.SimpleSem")]
         )
         
         if file_path:
@@ -111,6 +115,9 @@ class SimpleStudioView(ctk.CTk):
             
     def get_selected_file_path(self):
         return self.control_panel.get_file_path()
+        
+    def get_selected_code_line(self):
+        return None # TODO get selected line number
         
     def change_appearance_mode(self, new_appearance_mode):
         if new_appearance_mode != ctk.get_appearance_mode():

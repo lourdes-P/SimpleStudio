@@ -15,6 +15,7 @@ class MemoryPanel(ctk.CTkFrame):
         
         self.code_memory_view = None
         self.cmem_label = None
+        self.code_editor_open = False
         self.data_memory_view = None
         self.heap_memory_view = None
         
@@ -93,19 +94,27 @@ class MemoryPanel(ctk.CTkFrame):
     def load_heap_memory(self, data):
         self.heap_memory_view.load_memory(data)
         
-    def show_code_editor(self, line_number = None):
+    def switch_code_editor(self, line_number = None):
+        if self.code_editor_open:
+            self._show_code_memory_view()
+        else:
+            self._show_code_editor(line_number)
+        
+    def _show_code_editor(self, line_number = None):
         # code editor necesita de padre a cmemcontainer (que tiene de padre a paned window)
         # tengo que entonces crear al code editor en este componente.
         # TODO ver como pasar la ruta del archivo
         if self.code_editor:
             if self.code_memory_view.grid_info():
                 self.code_memory_view.grid_remove()
+                self.cmem_label.grid_remove()
+            self.code_editor_open = True
             self.code_editor.grid()
             self.code_editor.open_editor(line_number)
         
-    def show_code_memory_view(self):
-        if self.code_editor.grid_info():
-            self.code_editor.grid_remove()
+    def _show_code_memory_view(self):
+        self.code_editor.grid_remove()
+        self.code_editor_open = False
         self.cmem_label.grid()
         self.code_memory_view.grid()
         

@@ -2,9 +2,6 @@ import tkinter as tk
 import customtkinter as ctk
 from tkinter import scrolledtext
 from tkinter import font
-# possible fonts
-# consolas
-# JetBrains mono
 
 class CodeEditor(ctk.CTkFrame):
     def __init__(self, parent, **kwargs):
@@ -104,6 +101,168 @@ class CodeEditor(ctk.CTkFrame):
         self.text_area.bind("<Button-5>", self._on_mousewheel)
         self.text_area.bind("<Shift-MouseWheel>", self._on_shift_mousewheel)
         self.text_area.bind("<Configure>", self._on_configure)
+        # Enhanced key bindings
+        self.text_area.bind("<Control-Key-BackSpace>", self._ctrl_backspace)
+        self.text_area.bind("<Control-Key-Delete>", self._ctrl_delete)
+        self.text_area.bind("<Control-Key-c>", self._ctrl_c)
+        self.text_area.bind("<Control-Key-x>", self._ctrl_x)
+        self.text_area.bind("<Control-Key-C>", self._ctrl_c)
+        self.text_area.bind("<Control-Key-X>", self._ctrl_x)
+    
+    def _ctrl_backspace(self, event):
+        """Delete from cursor to previous word boundary (space, special char, or start of word)"""
+        # Get current cursor position
+        cursor_pos = self.text_area.index(tk.INSERT)
+        
+        # Get the text from start of line to cursor
+        line_start = self.text_area.index(f"{cursor_pos} linestart")
+        text_before_cursor = self.text_area.get(line_start, cursor_pos)
+        
+        if not text_before_cursor:  # If we're at the start of line, nothing to delete
+            return "break"
+        
+        # Find the previous boundary (space, special character, or different character type)
+        delete_length = 0
+        # Check characters backwards from cursor
+        for i in range(len(text_before_cursor) - 1, -1, -1):
+            char = text_before_cursor[i]
+            
+            if i == len(text_before_cursor) - 1:
+                # This is the character immediately before cursor
+                if char.isspace():
+                    # Delete all consecutive whitespace backwards
+                    delete_length += 1
+                    continue
+                elif char.isalnum():
+                    # Delete until non-alphanumeric or space
+                    delete_length += 1
+                    continue
+                else:
+                    # Delete until different type of character or space
+                    delete_length += 1
+                    continue
+            
+            # Check if we should continue deleting
+            prev_char = text_before_cursor[i + 1]  # The character we were previously checking
+            current_char = text_before_cursor[i]   # The character we're currently checking
+            
+            if prev_char.isspace():
+                # If we were deleting whitespace, stop at non-whitespace
+                if not current_char.isspace():
+                    break
+                delete_length += 1
+            elif prev_char.isalnum():
+                # If we were deleting alphanumeric, stop at non-alphanumeric
+                if not current_char.isalnum():
+                    break
+                delete_length += 1
+            else:
+                # If we were deleting special chars, stop at different type or alphanumeric
+                if current_char.isspace() or current_char.isalnum():
+                    break
+                delete_length += 1
+        
+        # Delete the calculated range
+        if delete_length > 0:
+            delete_start = self.text_area.index(f"{cursor_pos}-{delete_length}c")
+            self.text_area.delete(delete_start, cursor_pos)
+        
+        return "break"  # Prevent default behavior
+    
+    def _ctrl_delete(self, event):
+        """Delete from cursor to next word boundary (space, special char, or end of word)"""
+        # Get current cursor position
+        cursor_pos = self.text_area.index(tk.INSERT)
+        
+        # Get the text from cursor to end of line
+        line_end = self.text_area.index(f"{cursor_pos} lineend")
+        text_after_cursor = self.text_area.get(cursor_pos, line_end)
+        
+        if not text_after_cursor:  # If we're at the end of line, nothing to delete
+            return "break"
+        
+        # Find the next boundary (space, special character, or different character type)
+        delete_length = 0
+        first_char = text_after_cursor[0]
+        
+        # Check if we're starting with whitespace
+        if first_char.isspace():
+            # Delete all consecutive whitespace
+            for char in text_after_cursor:
+                if char.isspace():
+                    delete_length += 1
+                else:
+                    break
+        else:
+            # Check if first character is alphanumeric
+            if first_char.isalnum():
+                # Delete until non-alphanumeric or space
+                for char in text_after_cursor:
+                    if char.isalnum():
+                        delete_length += 1
+                    else:
+                        break
+            else:
+                # Delete until different type of character or space
+                for char in text_after_cursor:
+                    if not char.isspace() and not char.isalnum():
+                        delete_length += 1
+                    else:
+                        break
+        
+        # Delete the calculated range
+        if delete_length > 0:
+            delete_end = self.text_area.index(f"{cursor_pos}+{delete_length}c")
+            self.text_area.delete(cursor_pos, delete_end)
+        
+        return "break"  # Prevent default behavior
+    
+    def _ctrl_c(self, event):
+        """Enhanced Ctrl+C: if no selection, copy from cursor to end of line"""
+        try:
+            # Check if there's a selection
+            if self.text_area.tag_ranges(tk.SEL):
+                # Use default copy behavior if there's a selection
+                self.text_area.event_generate("<<Copy>>")
+            else:
+                # No selection - copy from cursor to end of line
+                cursor_pos = self.text_area.index(tk.INSERT)
+                line_end = self.text_area.index(f"{cursor_pos} lineend")
+                text_to_copy = self.text_area.get(cursor_pos, line_end)
+                
+                if text_to_copy:
+                    self.clipboard_clear()
+                    self.clipboard_append(text_to_copy)
+            
+            return "break"
+        except tk.TclError:
+            # Fallback to default behavior if something goes wrong
+            self.text_area.event_generate("<<Copy>>")
+            return "break"
+    
+    def _ctrl_x(self, event):
+        """Enhanced Ctrl+X: if no selection, cut from cursor to end of line"""
+        try:
+            # Check if there's a selection
+            if self.text_area.tag_ranges(tk.SEL):
+                # Use default cut behavior if there's a selection
+                self.text_area.event_generate("<<Cut>>")
+            else:
+                # No selection - cut from cursor to end of line
+                cursor_pos = self.text_area.index(tk.INSERT)
+                line_end = self.text_area.index(f"{cursor_pos} lineend")
+                text_to_cut = self.text_area.get(cursor_pos, line_end)
+                
+                if text_to_cut:
+                    self.clipboard_clear()
+                    self.clipboard_append(text_to_cut)
+                    self.text_area.delete(cursor_pos, line_end)
+            
+            return "break"
+        except tk.TclError:
+            # Fallback to default behavior if something goes wrong
+            self.text_area.event_generate("<<Cut>>")
+            return "break"
     
     def _on_vertical_scroll(self, *args):
         """Handle vertical scrolling for both text and line numbers"""
@@ -182,8 +341,23 @@ class CodeEditor(ctk.CTkFrame):
         except Exception as e:
             print(f"Error calculating line width: {e}")
             return 0
+    """
+    def on_text_change(self, event=None):
+        self._update_line_numbers()
+        self.after(10, self._update_horizontal_scrollbar_visibility)"""
     
     def on_text_change(self, event=None):
+        """Handle text changes, but don't interfere with special keys"""
+        # Ignore special keys that don't actually change text
+        if event and event.keysym in ['Left', 'Right', 'Up', 'Down', 'Prior', 'Next', 
+                                    'Home', 'End', 'Delete', 'BackSpace']:
+            return
+        
+        # Also ignore control key combinations that don't change text
+        if event and event.state & 0x0004:  # Control key pressed
+            if event.keysym in ['c', 'C', 'x', 'X', 'v', 'V', 'a', 'A']:
+                return
+        
         self._update_line_numbers()
         self.after(10, self._update_horizontal_scrollbar_visibility)
     

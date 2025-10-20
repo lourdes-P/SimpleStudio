@@ -81,6 +81,10 @@ class SimpleStudioPresenter(VirtualMachineListener):
     def on_undo(self):
         self.virtual_machine.undo()
         
+    def on_switch_code_editor(self):
+        selected_line_number = self.main_view.get_selected_code_line()
+        self.main_view.switch_code_editor(selected_line_number)
+        
     # --------- end user view events      
     
     # --------- listener methods

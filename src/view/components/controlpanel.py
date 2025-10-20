@@ -5,7 +5,8 @@ class ControlPanel(ctk.CTkFrame):
     """Component for execution controls"""
     def __init__(self, master, step_callback=None, run_callback=None,
                  reset_callback=None, n_step_callback=None, undo_callback = None, 
-                 change_appearance_mode = None, browse_file = None, **kwargs):
+                 switch_code_editor_callback = None, change_appearance_mode = None, 
+                 browse_file = None, **kwargs):
         super().__init__(master, height=140, corner_radius=0, **kwargs)
         
         self._step_callback = step_callback
@@ -14,6 +15,7 @@ class ControlPanel(ctk.CTkFrame):
         self._reset_callback = reset_callback
         self._change_appearance_mode_callback = change_appearance_mode
         self._undo_callback = undo_callback
+        self._switch_code_editor_callback = switch_code_editor_callback
         self._browse_files_callback = browse_file
         self._n_step = 1
         self._cache_entry_disponibility = 0
@@ -72,6 +74,14 @@ class ControlPanel(ctk.CTkFrame):
         )
         self.upload_button.grid(row=0, column=7, padx=(20,0), pady=(20,5))  
         
+        self.code_editor_button = ctk.CTkButton(
+            self, 
+            text="Open Code Editor",
+            command=self._switch_code_editor,
+            width=self._calculate_button_width("Open Code Editor", 5)
+        )
+        self.code_editor_button.grid(row=1, column=7, padx=(20,0), pady=(0,10))
+        
         # Appearance mode option menu
         self.appearance_mode_label = ctk.CTkLabel(
             self, 
@@ -93,7 +103,7 @@ class ControlPanel(ctk.CTkFrame):
             text="No file selected",
             compound="left"
         )
-        self.file_path_label.grid(row=1, column=0, columnspan=9, padx=20, pady=(0,1), sticky="w")
+        self.file_path_label.grid(row=1, column=0, columnspan=7, padx=20, pady=(0,1), sticky="w")
         
         self.set_buttons_state(False)
             
@@ -102,7 +112,17 @@ class ControlPanel(ctk.CTkFrame):
             self._n_step = self.n_step_spinbox.get()
             if self._n_step > 0:
                 self._n_step_callback(self._n_step)
-
+    
+    def _switch_code_editor(self):
+        self._toggle_code_editor_button()
+        self._switch_code_editor_callback()
+        
+    def _toggle_code_editor_button(self):
+        if self.code_editor_button.cget("text") == "Open Code Editor":
+            self.code_editor_button.configure(text="Open Code Memory", width=self._calculate_button_width("Open Code Memory", 5))
+        else:
+            self.code_editor_button.configure(text="Open Code Editor", width=self._calculate_button_width("Open Code Editor", 5))
+            
     def set_cache_entry_disponibility(self, number : int):
         self._cache_entry_disponibility = number
         self.undo_button.configure(
