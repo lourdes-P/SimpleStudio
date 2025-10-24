@@ -145,6 +145,7 @@ class MemoryPanel(ctk.CTkFrame):
     def _change_paned_window_appearance(self, new_appearance_mode):
         bg_color = ColorManager.get_single_color(self.cget("fg_color"))
         self.paned_memory.configure(bg=bg_color, proxybackground=bg_color, background=bg_color)
+        self.code_editor.update_theme(new_appearance_mode)
         self.code_memory_view.change_appearance_mode(new_appearance_mode)
         self.data_memory_view.change_appearance_mode(new_appearance_mode)
         self.heap_memory_view.change_appearance_mode(new_appearance_mode)  

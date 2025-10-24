@@ -6,7 +6,7 @@ class HeapMemory(DataHeapMemory):
     def __init__(self):
         self._heapcell_list = []
         self._po = 0
-        self._initial_cell_number = 100
+        self._initial_cell_number = 200
         self._modified = False
         self.initialize_memory(self._initial_cell_number)
         

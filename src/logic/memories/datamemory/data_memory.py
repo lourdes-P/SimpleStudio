@@ -7,7 +7,7 @@ class DataMemory(DataHeapMemory):
         self._datacell_list = []
         self._actual = 0
         self._libre = 0
-        self._initial_cell_number = 100
+        self._initial_cell_number = 200
         self._modified = False
         # TODO encontrar una manera de renderizar mas celdas
         self.initialize_memory(self._initial_cell_number)

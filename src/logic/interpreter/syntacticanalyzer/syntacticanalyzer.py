@@ -381,13 +381,13 @@ class SyntacticAnalyzer:
         return self._operator_precedence_manager.get_precedence(binary_operator_token.token_name)
     
     def check_string_operand_validity_binary(self, left_side, binary_operator_token, right_side):
-        if self.check_if_string(left_side) and left_side.__class__.__name__ == right_side.__class__.__name__ and (binary_operator_token.token_name == 'equals' or binary_operator_token.token_name == 'different'):
+        if self.check_if_string(left_side) and left_side.__class__.__name__ == right_side.__class__.__name__ and (binary_operator_token.token_name == 'equals' or binary_operator_token.token_name == 'different' or binary_operator_token.token_name == 'plus'):
             pass
-        elif self.check_if_string(left_side) and left_side.__class__.__name__ == right_side.__class__.__name__ and (binary_operator_token.token_name != 'equals' and binary_operator_token.token_name != 'different'):
+        elif self.check_if_string(left_side) and left_side.__class__.__name__ == right_side.__class__.__name__ and (binary_operator_token.token_name != 'equals' and binary_operator_token.token_name != 'different' and binary_operator_token.token_name == 'plus'):
             raise StringInvalidOperatorSyntacticException(binary_operator_token)
-        elif self.check_if_string(right_side) and left_side.__class__.__name__ != right_side.__class__.__name__:
+        elif self.check_if_string(right_side) and left_side.__class__.__name__ != right_side.__class__.__name__ and (binary_operator_token.token_name == 'equals' and binary_operator_token.token_name == 'different'):
             raise StringInvalidComparationSyntacticException(left_side.token)
-        elif self.check_if_string(left_side) and left_side.__class__.__name__ != right_side.__class__.__name__:
+        elif self.check_if_string(left_side) and left_side.__class__.__name__ != right_side.__class__.__name__ and (binary_operator_token.token_name == 'equals' and binary_operator_token.token_name == 'different'):
             raise StringInvalidComparationSyntacticException(right_side.token)
         else:
             pass

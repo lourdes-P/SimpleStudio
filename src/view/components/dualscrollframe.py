@@ -15,7 +15,7 @@ class DualScrollFrame(ctk.CTkFrame):
         self.h_scrollbar = ctk.CTkScrollbar(self, orientation="horizontal", command=self.canvas.xview)
         self.v_scrollbar = ctk.CTkScrollbar(self, orientation="vertical", command=self.canvas.yview)
         
-        self.scrollable_frame = ctk.CTkFrame(self.canvas, fg_color=ColorManager.get_single_color(self._fg_color), corner_radius=0, height=100, width=150)
+        self.scrollable_frame = ctk.CTkFrame(self.canvas, fg_color=ColorManager.get_single_color(self._fg_color), corner_radius=0)
         self.scrollable_frame.pack(fill="both", expand=True)
   
         ctk.AppearanceModeTracker.add(self.change_appearance_mode)
@@ -28,7 +28,27 @@ class DualScrollFrame(ctk.CTkFrame):
         self.v_scrollbar.grid(row=0, column=1, sticky="ns")
         self.h_scrollbar.grid(row=1, column=0, sticky="ew")        
         
-        # Bind events for dynamic resizing
+        self.set_bindings()
+        
+    def set_scrollable_frame(self, frame):
+        self.scrollable_frame.destroy()
+        self.scrollable_frame= frame
+        #self.scrollable_frame.pack(fill="both", expand=True)
+        self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.set_bindings()
+        
+    def set_canvas(self, canvas):
+        self.canvas = canvas
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        self.scrollable_frame = ctk.CTkFrame(self.canvas, fg_color=ColorManager.get_single_color(self._fg_color), corner_radius=0)
+        self.scrollable_frame.pack(fill="both", expand=True)
+        self.canvas_window.destroy()
+        self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.configure(xscrollcommand=self.h_scrollbar.set, yscrollcommand=self.v_scrollbar.set)
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        self.set_bindings()
+    
+    def set_bindings(self):
         self.scrollable_frame.bind("<Configure>", self.on_frame_configure)
         self.canvas.bind("<Configure>", self.on_canvas_configure)
         
@@ -37,7 +57,9 @@ class DualScrollFrame(ctk.CTkFrame):
         
     def on_frame_configure(self, event):
         """Update scrollregion when the size of the inner frame changes"""
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        bbox = self.canvas.bbox("all")
+        if bbox:
+            self.canvas.configure(scrollregion=bbox)
         self.update_scrollbars()
         
     def on_canvas_configure(self, event):

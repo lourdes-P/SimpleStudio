@@ -8,4 +8,8 @@ class AdditionNode(BinaryOpNode):
     def evaluate(self, processor=None):
         left_side_evaluation = self.left_side.evaluate(processor)
         right_side_evaluation = self.right_side.evaluate(processor)
-        return int(left_side_evaluation) + int(right_side_evaluation)
+        try:
+            result = int(left_side_evaluation) + int(right_side_evaluation)
+        except ValueError:
+            result = f"{left_side_evaluation}{right_side_evaluation}"
+        return result

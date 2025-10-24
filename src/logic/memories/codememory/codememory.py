@@ -15,7 +15,10 @@ class CodeMemory:
         return self._codecell_list[address]
     
     def get_instruction(self, address):
-        return self._codecell_list[address].instruction
+        if address < len(self._codecell_list):
+            return self._codecell_list[address].instruction
+        else:
+            return None
 
     # debug function
     def print_memory(self):

@@ -1,6 +1,9 @@
+import sys
 import customtkinter as ctk
+import tkinter as tk
+from tkinter import ttk
 from typing import List
-from view.components.dualscrollframe import DualScrollFrame
+import tkinter.font as tkfont
 from view.utils.color_manager import ColorManager
 
 class DataHeapMemoryView(ctk.CTkFrame):
@@ -9,169 +12,17 @@ class DataHeapMemoryView(ctk.CTkFrame):
         
         self.memory_data = []
         self.current_register = None
-        self.default_text_color = None
-        self.cell_widgets = {}
+        self.tree_items = {}  # Map addresses to treeview item IDs
         self.last_modified_cell_address = None
-        
-        
-        self.column_widths = {
-            'register': 80,
-            'address': 80,
-            'value': 80,
-            'annotation': 150
-        }
-        
+                
+        self._initialize_column_width_dictionaries()
         self._create_widgets()
+        self._setup_styles()
         self._setup_layout()
-        
-    def _create_widgets(self):
-        """Create all the widgets for the memory view"""
-        # Header frame
-        self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
-        
-        # Configure header frame grid
-        self.header_frame.grid_columnconfigure(0, minsize=self.column_widths['register'])
-        self.header_frame.grid_columnconfigure(1, minsize=self.column_widths['address'])
-        self.header_frame.grid_columnconfigure(2, minsize=self.column_widths['value'])
-        self.header_frame.grid_columnconfigure(3, minsize=self.column_widths['annotation'])
-        
-        # Column headers 
-        self.register_header = ctk.CTkLabel(self.header_frame, text="Register", 
-                                           width=self.column_widths['register'], anchor="w")
-        self.address_header = ctk.CTkLabel(self.header_frame, text="Address", 
-                                          width=self.column_widths['address'], anchor="w")
-        self.value_header = ctk.CTkLabel(self.header_frame, text="Value", 
-                                        width=self.column_widths['value'], anchor="w")
-        self.annotation_header = ctk.CTkLabel(self.header_frame, text="Annotation", 
-                                             width=self.column_widths['annotation'], anchor="w")
-        
-        # Scrollable frame for memory cells
-        self.scroll_frame = DualScrollFrame(self)
-        self.memory_cells_frame = ctk.CTkFrame(self.scroll_frame.get_scrollable_frame(), fg_color="transparent")
-        self.memory_cells_frame.pack(fill="both", expand=True)
-        
-    def _setup_layout(self):
-        """Set up the layout of the widgets"""
-        # Configure grid weights
-        self.grid_rowconfigure(1, weight=1)
-        self.grid_columnconfigure(0, weight=1)
-        
-        # Header layout
-        self.header_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=(2, 0))
-        self.register_header.grid(row=0, column=0, padx=2, pady=2, sticky="w")
-        self.address_header.grid(row=0, column=1, padx=2, pady=2, sticky="w")
-        self.value_header.grid(row=0, column=2, padx=2, pady=2, sticky="w")
-        self.annotation_header.grid(row=0, column=3, padx=2, pady=2, sticky="w")
-        
-        # Scroll frame layout
-        self.scroll_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=(0, 5))
-        
-    def load_memory(self, memory_data: List[dict]):
-        """
-        Load memory data into the view
-        
-        Args:
-            memory_data: List of dictionaries with keys: 
-                    'register', 'address', 'value', 'annotation'
-        """
-        # Clear existing widgets
-        for widget in self.memory_cells_frame.winfo_children():
-            widget.destroy()
-            
-        self.cell_widgets.clear()
-        self.memory_data = memory_data
-        
-        # Create new cell widgets
-        for i, cell_data in enumerate(memory_data):
-            self._create_cell_widget(cell_data, i)
+        self._setup_bindings()
     
-    def _create_cell_widget(self, cell_data: dict, index: int):
-        """Create a single cell widget for a memory cell"""
-        address = cell_data.get('address', '')
-        register = cell_data.get('register', '')
-        value = cell_data.get('value','###')
-        annotation = cell_data.get('annotation', '')
-        
-        # Create frame for the cell
-        cell_frame = ctk.CTkFrame(self.memory_cells_frame, height=15, corner_radius=0, border_width=0, fg_color=ColorManager.get_alternating_colors(self, index))
-        cell_frame.pack(fill="x")
-        
-        # Create labels for each column
-        register_label = ctk.CTkLabel(cell_frame, text=register, 
-                                     width=self.column_widths['register'], height=20, anchor="w")
-        address_label = ctk.CTkLabel(cell_frame, text=address, 
-                                    width=self.column_widths['address'], height=20, anchor="w")
-        value_label = ctk.CTkLabel(cell_frame, text=value, 
-                                  width=self.column_widths['value'], height=20, anchor="w")
-        annotation_label = ctk.CTkLabel(cell_frame, text=annotation, 
-                                       width=self.column_widths['annotation'], height=20, anchor="w")
-        
-        # Layout widgets
-        register_label.grid(row=0, column=0, padx=2, pady=2, sticky="w")
-        address_label.grid(row=0, column=1, padx=2, pady=2, sticky="w")
-        value_label.grid(row=0, column=2, padx=2, pady=2, sticky="w")
-        annotation_label.grid(row=0, column=3, padx=2, pady=2, sticky="w")
-        
-        # Store reference to widgets
-        self.cell_widgets[address] = {
-            'frame': cell_frame,
-            'register': register_label,
-            'address': address_label,
-            'value': value_label,
-            'annotation': annotation_label
-        }
-        
-        # Set initial appearance
-        self._update_cell_appearance(address)
-    
-    def _update_cell_appearance(self, address: str):
-        """Update the visual appearance of a cell based on its state"""        
-        if address not in self.cell_widgets:
-            return        
-        
-        widgets = self.cell_widgets[address]
-        frame = widgets['frame']
-        
-        # Reset text colors for all label widgets
-        label_widgets = ['register', 'address', 'value', 'annotation']
-        register_text = widgets['register'].cget('text')
-             
-        for widget_key in label_widgets:
-            if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                widgets[widget_key].configure(text_color=self.default_text_color)
-        
-        if self.last_modified_cell_address is not None and int(self.last_modified_cell_address) == int(address):
-            frame.configure(fg_color=ColorManager.TERTIARY_COLOR)
-            for widget_key in label_widgets:
-                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                    widgets[widget_key].configure(text_color="black")
-        elif register_text and register_text.strip():
-            # Apply register highlighting if this cell has a register
-            frame.configure(fg_color=ColorManager.SECONDARY_COLOR)
-            for widget_key in label_widgets:
-                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                    widgets[widget_key].configure(text_color="white")
-        else:
-            frame.configure(fg_color=ColorManager.get_alternating_colors(self, address))
-                    
-    
-    def update_memory(self, modified_cells):
-        last_modified_cell_address = None
-        for cell_data in modified_cells:
-            address = cell_data.get('address', '')
-            register = cell_data.get('register', None)
-            value = cell_data.get('value', None)
-            annotation = cell_data.get('annotation', None)
-            memory_modified = cell_data.get('memory_modified', False)
-            self.update_cell_value(address, value, register, annotation)
-            if memory_modified:
-                last_modified_cell_address = address
-        
-        if last_modified_cell_address is not None:
-            self._update_last_modified_cell(last_modified_cell_address)
-            
     def reset(self, cell_list):
-        """cell_list will be the list that has been parsed only using the cells that have been modified throughout execution."""
+        """Reset modified cells"""
         self.last_modified_cell_address = None
         for cell_data in cell_list:
             address = cell_data.get('address', '')
@@ -180,54 +31,334 @@ class DataHeapMemoryView(ctk.CTkFrame):
             annotation = cell_data.get('annotation', None)
             self.update_cell_value(address, value, register, annotation)
             
-    def _update_last_modified_cell(self, last_modified_cell_address):
-        former_last_modified_cell_address = self.last_modified_cell_address
-        self.last_modified_cell_address = last_modified_cell_address
-        self._update_cell_appearance(former_last_modified_cell_address)
-        self._update_cell_appearance(self.last_modified_cell_address)
+    def load_memory(self, memory_data: List[dict]):
+        """
+        Load memory data into the treeview
+        """
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+            
+        self.tree_items.clear()
+        self.memory_data = memory_data
+        
+        for i, cell_data in enumerate(memory_data):
+            self._create_tree_item(cell_data, i)
+            
+        #self.tree.configure(height=f"{len(memory_data)}")
+        self._auto_size_columns()
+        
+    def update_memory(self, modified_cells):
+        """Update multiple memory cells"""
+        last_modified_cell_address = None
+        for cell_data in modified_cells:
+            address = cell_data.get('address', '')
+            register = cell_data.get('register', None)
+            value = cell_data.get('value', None)
+            annotation = cell_data.get('annotation', None)
+            memory_modified = cell_data.get('memory_modified', False)
+            
+            self.update_cell_value(address, value, register, annotation)
+            
+            if memory_modified:
+                last_modified_cell_address = address
+        
+        if last_modified_cell_address is not None:
+            self._update_last_modified_cell(last_modified_cell_address)
+        
+        self._auto_size_columns()
+            
+    def _initialize_column_width_dictionaries(self):
+        self.column_widths = {
+            'register': 80,
+            'address': 80,
+            'value': 80,
+            'annotation': 150
+        }
+        
+        self.broader_column_widths = {
+            'register': { 'width': 80,
+                         'address': 0
+                        },
+            'address': { 'width': 80,
+                         'address': 0
+                        },
+            'value': { 'width': 80,
+                         'address': 0
+                        },
+            'annotation': { 'width': 150,
+                         'address': 0
+                        }
+        }
+        
+    def _setup_styles(self):
+        """Configure ttk styles for the treeview"""
+        if not hasattr(self, "style"):
+            self.style = ttk.Style()
+            self.style.layout("Treeview", [
+            ('Treeview.treearea', {'sticky': 'nswe'})
+            ])
+            
+        available_themes = self.style.theme_names()
+        if 'clam' in available_themes:
+            self.style.theme_use('clam')
+        elif 'alt' in available_themes:
+            self.style.theme_use('alt')
+        else:
+            self.style.theme_use(available_themes[0])
+        
+        font= ctk.CTkFont()
+        self.style.configure("Treeview", font=(font.actual("family"), font.actual("size")))
+        self.style.configure("Treeview.Heading", font=(font.actual("family"), font.actual("size"), "bold"))
+
+        bg_color_master = ColorManager.get_theme_background_color(self.master)
+        bg_color = ColorManager.get_theme_background_color(self)
+        text_color = ColorManager.get_theme_text_color()
+        self.style.configure("Treeview", 
+                           background=bg_color_master,
+                           foreground=text_color,
+                           fieldbackground=bg_color_master,
+                           rowheight=25, 
+                           borderwidth=0,
+                           highlightthickness=0, 
+                           bd=0,
+                           indent=0,
+                           relief="flat")
+        
+        self.style.configure("Treeview.Heading",
+                           background=bg_color,
+                           foreground=text_color,
+                           relief="flat",
+                           )
+        
+        self.style.map('Treeview.Heading',
+                      background=[('active', bg_color_master),
+                                ('pressed', bg_color_master)],
+                      relief=[('pressed', 'flat')])
+        
+        self._define_tree_tag_configurations()
+
+        self.tree.update_idletasks()
+        
+    def _create_widgets(self):
+        """Create all the widgets for the memory view"""
+        
+        # Create Treeview for memory cells
+        self.tree_frame = ctk.CTkFrame(self)
+        self.tree = ttk.Treeview(
+            self.tree_frame,
+            columns=('register', 'address', 'value', 'annotation'),
+            show='tree headings',  # Hide the first empty column
+            height=25,# Show 25 rows by default
+            padding=0,
+            selectmode="none",
+            style='Treeview'
+        )
+        
+        # Configure columns
+        self.tree.column('#0', width=0, stretch=False)  # Hide first column
+        self.tree.column('register', width=self.column_widths['register'], anchor='w', stretch=False)
+        self.tree.column('address', width=self.column_widths['address'], anchor='w', stretch=False)
+        self.tree.column('value', width=self.column_widths['value'], anchor='w', stretch=False)
+        self.tree.column('annotation', width=self.column_widths['annotation'], anchor='w', stretch=False)
+        # Configure headings
+        self.tree.heading('register', text='Register', anchor='w')
+        self.tree.heading('address', text='Address', anchor='w')
+        self.tree.heading('value', text='Value', anchor='w')
+        self.tree.heading('annotation', text='Annotation', anchor='w')
+        
+        self.v_scrollbar = ctk.CTkScrollbar(self.tree_frame, orientation="vertical", command=self.tree.yview)
+        self.h_scrollbar = ctk.CTkScrollbar(self.tree_frame, orientation="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=self.v_scrollbar.set, xscrollcommand=self.h_scrollbar.set)
+        
+    def _setup_layout(self):
+        """Set up the layout of the widgets"""
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        
+        self.tree_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=(5, 5))
+        self.tree_frame.grid_rowconfigure(0, weight=1)
+        self.tree_frame.grid_columnconfigure(0, weight=1)
+        
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        self.v_scrollbar.grid(row=0, column=1, sticky="ns")
+        self.h_scrollbar.grid(row=1, column=0, sticky="ew")
+        self.v_scrollbar.grid_remove()
+        self.h_scrollbar.grid_remove()
+        
+    def _define_tree_tag_configurations(self):
+        self.tree.tag_configure('modified', background=ColorManager.TERTIARY_COLOR, foreground='black')
+        self.tree.tag_configure('register', background=ColorManager.SECONDARY_COLOR, foreground='white')
+        self.tree.tag_configure('even', background=self._get_non_transparent_color(ColorManager.get_alternating_colors(self, 0)))
+        self.tree.tag_configure('odd', background=self._get_non_transparent_color(ColorManager.get_alternating_colors(self, 1)))
+        
+    def _setup_bindings(self):
+        self.tree_frame.bind('<Configure>', lambda e: self._update_scrollbar_visibility())
+        self.tree.bind("<Shift-MouseWheel>", lambda e: self._on_shift_scroll(event=e))
+        self.tree.bind("<Shift-Button-4>", lambda e: self.tree.xview_scroll(-3, "units"))
+        self.tree.bind("<Shift-Button-5>", lambda e: self.tree.xview_scroll(3, "units"))
+        
+    def _on_shift_scroll(self, event):
+        if sys.platform == "darwin":  # macOS
+            delta = event.delta 
+        else:  # Windows
+            delta = int(event.delta / 20)
+            
+        self.tree.xview_scroll(-delta, "units")
+        
+    def _update_scrollbar_visibility(self):
+        """Show/hide scrollbars based on content size"""
+        self.tree.update_idletasks()
+        
+        yview = self.tree.yview()
+        if yview == (0.0, 1.0):
+            self.v_scrollbar.grid_remove()
+        else:
+            self.v_scrollbar.grid()
+        
+        xview = self.tree.xview()
+        if xview == (0.0, 1.0):  
+            self.h_scrollbar.grid_remove()
+        else:
+            self.h_scrollbar.grid()
+
+    def _auto_size_columns(self):
+        """Automatically size columns based on content"""
+        if self.tree.column('register')['width'] != self.broader_column_widths['register']['width']:
+            self.tree.column('register', width=self.broader_column_widths['register']['width'])
+            
+        if self.tree.column('value')['width'] != self.broader_column_widths['value']['width']:
+            self.tree.column('value', width=self.broader_column_widths['value']['width'])
+            
+        if self.tree.column('annotation')['width'] != self.broader_column_widths['annotation']['width']:
+            self.tree.column('annotation', width=self.broader_column_widths['annotation']['width'])
+            
+        self._update_scrollbar_visibility()
+    
+    def _create_tree_item(self, cell_data: dict, index: int):
+        """Create a single treeview item for a memory cell"""
+        address = cell_data.get('address', '')
+        register = cell_data.get('register', '')
+        value = cell_data.get('value', '###')
+        annotation = cell_data.get('annotation', '')
+     
+        item_id = self.tree.insert('', 'end', 
+                                  values=(register, address, value, annotation),
+                                  tags=(address,))
+        
+        self.tree_items[address] = item_id
+        
+        self._update_cell_appearance(address)
+    
+    def _update_cell_appearance(self, address: str):
+        """Update the visual appearance of a cell based on its state"""
+        if address not in self.tree_items:
+            return
+        
+        row_item_id = self.tree_items[address]
+        
+        values = self.tree.item(row_item_id, 'values')
+        register_text = values[0] if values else ''
+        
+        row_item_tags = []
+        
+        if self.last_modified_cell_address is not None and int(self.last_modified_cell_address) == int(address):
+            row_item_tags.append('modified')
+        elif register_text and register_text.strip():
+            row_item_tags.append('register')
+        else:
+            # Alternate row coloring
+            if int(address) % 2 == 0:
+                row_item_tags.append('even')
+            else:
+                row_item_tags.append('odd')
+        
+        self.tree.item(row_item_id, tags=row_item_tags)
     
     def update_cell_value(self, address: str, value: str = None, register: str = None, annotation: str = None):
         """Update the value of a specific memory cell"""
-        if address not in self.cell_widgets:
+        if address not in self.tree_items:
             return
         
-        widgets = self.cell_widgets[address]
-        different_value = widgets['value'].cget('text')!= value
-        different_registers = widgets['register'].cget('text') != register
-        different_annotation = widgets['annotation'].cget('text')!= annotation
+        item_id = self.tree_items[address]
+        current_values = list(self.tree.item(item_id, 'values'))
         
-        if value is not None and different_value:
-            widgets['value'].configure(text=value) 
+        updated = False
+        if value is not None and current_values[2] != value:
+            self._check_column_width(text=f"{value}", column_name='value', address= address)
+            current_values[2] = value
+            updated = True
         
-        if register is not None and different_registers:
-            widgets['register'].configure(text=register)   
-        
-        if annotation is not None and different_annotation:
-            widgets['annotation'].configure(text=annotation)  
-        
-        for cell in self.memory_data:
-            if cell.get('address') == address:
-                if value is not None and different_value:
-                    cell['value'] = value
-                if register is not None and different_registers:
-                    cell['register'] = register
-                if annotation is not None and different_annotation:
-                    cell['annotation'] = annotation
-                break
+        if register is not None and current_values[0] != register:
+            self._check_column_width(text=str(register), column_name='register', address= address)
+            current_values[0] = register
+            updated = True
             
-        self._update_cell_appearance(address)
+        if annotation is not None and current_values[3] != annotation:
+            self._check_column_width(text=str(annotation), column_name='annotation', address= address)
+            current_values[3] = annotation
+            updated = True
+        
+        if updated:
+            self.tree.item(item_id, values=current_values)
+            
+            # Update data model
+            for cell in self.memory_data:
+                if cell.get('address') == address:
+                    if value is not None:
+                        cell['value'] = value
+                    if register is not None:
+                        cell['register'] = register
+                    if annotation is not None:
+                        cell['annotation'] = annotation
+                    break
+            
+            self._update_cell_appearance(address)
+    
+    def _update_last_modified_cell(self, last_modified_cell_address):
+        """Update the last modified cell highlight"""
+        former_last_modified_cell_address = self.last_modified_cell_address
+        self.last_modified_cell_address = last_modified_cell_address
+        
+        if former_last_modified_cell_address is not None:
+            self._update_cell_appearance(former_last_modified_cell_address)
+        if self.last_modified_cell_address is not None:
+            self._update_cell_appearance(self.last_modified_cell_address)
+    
+    def _check_column_width(self, text, column_name, address):
+        text_width = self._calculate_text_width(text)
+        if self.broader_column_widths[column_name]['address'] == address and self.column_widths[column_name] < text_width:
+            self.broader_column_widths[column_name]['width'] = text_width
+        elif self.broader_column_widths[column_name]['width'] < text_width:
+            self.broader_column_widths[column_name]['address'] = address
+            self.broader_column_widths[column_name]['width'] = text_width
+
+    def _calculate_text_width(self, text):
+        """Calculate appropriate width based on text length"""
+        font = ctk.CTkFont()
+        font_metrics = tkfont.Font(font=font)
+        padding = 20
+        return font_metrics.measure(text) + padding
     
     def change_appearance_mode(self, new_appearance_mode):
         """Update appearance based on the selected mode"""
         ctk.set_appearance_mode(new_appearance_mode)
         
-        temp_label = ctk.CTkLabel(self)
-        self.default_text_color = temp_label.cget("text_color")
-        temp_label.destroy()
-        for i in range(len(self.cell_widgets)):
-            if i%2 != 0:
-                frame = self.cell_widgets[i]['frame']
-                frame.configure(fg_color=ColorManager.get_alternating_colors(self, i))
-        self.scroll_frame.change_appearance_mode()
+        self._setup_styles()
         
-        
+        for address in self.tree_items:
+            self._update_cell_appearance(address)
+                
+    def _get_non_transparent_color(self, color):
+        if color == "transparent":
+            # Get the actual background color from the master or use default
+            try:
+                # Try to get the background color from parent
+                color = ColorManager.get_single_color(self.master.cget("fg_color"))
+            except:
+                # Fallback colors based on appearance mode
+                if ctk.get_appearance_mode().lower() == "dark":
+                    color = "#2b2b2b"  
+                else:
+                    color = "#f0f0f0"  
+                    
+        return color

@@ -95,7 +95,7 @@ class CodeEditor(ctk.CTkFrame):
         self._update_line_numbers()
     
     def _setup_bindings(self):
-        self.text_area.bind("<KeyRelease>", self.on_text_change)
+        self.text_area.bind("<KeyRelease>", self._on_text_change)
         self.text_area.bind("<MouseWheel>", self._on_mousewheel)
         self.text_area.bind("<Button-4>", self._on_mousewheel)
         self.text_area.bind("<Button-5>", self._on_mousewheel)
@@ -108,6 +108,42 @@ class CodeEditor(ctk.CTkFrame):
         self.text_area.bind("<Control-Key-x>", self._ctrl_x)
         self.text_area.bind("<Control-Key-C>", self._ctrl_c)
         self.text_area.bind("<Control-Key-X>", self._ctrl_x)
+        
+    def load_file(self, file_path):
+        """Load file content into editor"""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                content = file.read()
+            self.text_area.delete("1.0", "end")
+            self.text_area.insert("1.0", content)
+            self._update_line_numbers()
+        except Exception as e:
+            print(f"Error loading file: {e}")
+    
+    def open_editor(self, line_number = None):
+        if line_number:
+            self._move_cursor_to_line_end(line_number)
+        else: 
+            pass # TODO open editor if not line number
+        
+    def get_content(self):
+        return self.text_area.get("1.0", "end-1c")
+    
+    def update_theme(self, theme):
+        """Update colors when appearance mode changes"""
+        self.appearance_mode = theme
+        self._setup_colors()
+        self.text_area.configure(
+            bg=self.bg_color,
+            fg=self.fg_color,
+            insertbackground=self.fg_color,
+            selectbackground=self.highlight_color
+        )
+        self.line_numbers.configure(
+            bg=self.line_bg,
+            fg=self.line_fg
+        )
+        self.main_container.configure(bg=self.bg_color)
     
     def _ctrl_backspace(self, event):
         """Delete from cursor to previous word boundary (space, special char, or start of word)"""
@@ -341,23 +377,8 @@ class CodeEditor(ctk.CTkFrame):
         except Exception as e:
             print(f"Error calculating line width: {e}")
             return 0
-    """
-    def on_text_change(self, event=None):
-        self._update_line_numbers()
-        self.after(10, self._update_horizontal_scrollbar_visibility)"""
     
-    def on_text_change(self, event=None):
-        """Handle text changes, but don't interfere with special keys"""
-        # Ignore special keys that don't actually change text
-        if event and event.keysym in ['Left', 'Right', 'Up', 'Down', 'Prior', 'Next', 
-                                    'Home', 'End', 'Delete', 'BackSpace']:
-            return
-        
-        # Also ignore control key combinations that don't change text
-        if event and event.state & 0x0004:  # Control key pressed
-            if event.keysym in ['c', 'C', 'x', 'X', 'v', 'V', 'a', 'A']:
-                return
-        
+    def _on_text_change(self, event=None):
         self._update_line_numbers()
         self.after(10, self._update_horizontal_scrollbar_visibility)
     
@@ -396,42 +417,6 @@ class CodeEditor(ctk.CTkFrame):
         self.text_area.mark_set("insert", index)
         self.text_area.see(index)
         self.text_area.focus_set()
-    
-    def load_file(self, file_path):
-        """Load file content into editor"""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                content = file.read()
-            self.text_area.delete("1.0", "end")
-            self.text_area.insert("1.0", content)
-            self._update_line_numbers()
-        except Exception as e:
-            print(f"Error loading file: {e}")
-    
-    def open_editor(self, line_number = None):
-        if line_number:
-            self._move_cursor_to_line_end(line_number)
-        else: 
-            pass # TODO open editor if not line number
-        
-    def get_content(self):
-        return self.text_area.get("1.0", "end-1c")
-    
-    def update_theme(self, theme):
-        """Update colors when appearance mode changes"""
-        self.appearance_mode = theme
-        self._setup_colors()
-        self.text_area.configure(
-            bg=self.bg_color,
-            fg=self.fg_color,
-            insertbackground=self.fg_color,
-            selectbackground=self.highlight_color
-        )
-        self.line_numbers.configure(
-            bg=self.line_bg,
-            fg=self.line_fg
-        )
-        self.main_container.configure(bg=self.bg_color)
         
 class App(ctk.CTk):
     def __init__(self):

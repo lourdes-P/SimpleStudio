@@ -1,6 +1,9 @@
+import sys
 import customtkinter as ctk
-from customtkinter import ThemeManager
+import tkinter as tk
+from tkinter import ttk
 from typing import List, Dict, Optional, Callable
+from view.components.breakpoint import Breakpoint, BreakpointCanvas
 from view.components.dualscrollframe import DualScrollFrame
 from view.utils.color_manager import ColorManager
 
@@ -15,59 +18,220 @@ class CodeMemoryView(ctk.CTkFrame):
         self.default_text_color = None
         self.codecell_list = None
         self.last_executed_instruction = None
+        self.tree_items_address_to_treeview_ID = {}
         
-        # for annotations
+        self.annotations = {}
         self.tooltip = None
         self.current_hover_line = None
         self.tooltip_scheduled_id = None
         
+        self._initialize_column_width_dictionaries()
+        self._create_widgets()
+        self._setup_styles()
+        self._setup_layout()
+        self._setup_bindings()
+        
+    def _initialize_column_width_dictionaries(self):
         self.column_widths = {
-            'pc': 40,
+            'breakpoint': 20,
+            'pc': 30,
             'label': 80,
-            'line': 80,
+            'address': 80,
             'instruction': 200,
         }
         
-        self._create_widgets()
-        self._setup_layout()
+        self.broader_column_widths = {
+            'breakpoint': {'width': 20, 'address': 0},
+            'pc': {'width': 30, 'address': 0},
+            'label': {'width': 80, 'address': 0},
+            'address': {'width': 80, 'address': 0},
+            'instruction': {'width': 200, 'address': 0}
+        }
         
     def _create_widgets(self):
         """Create all the widgets for the code memory view"""  
-        self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.tree_frame = ctk.CTkFrame(self)
+        self.tree = ttk.Treeview(
+            self.tree_frame,
+            columns=('pc', 'label', 'address', 'instruction'),
+            show='tree headings',
+            height=25,
+            padding=0,
+            selectmode="none"
+        )
         
-        self.header_frame.grid_columnconfigure(0, minsize=self.column_widths['pc'])
-        self.header_frame.grid_columnconfigure(1, minsize=self.column_widths['label'])
-        self.header_frame.grid_columnconfigure(2, minsize=self.column_widths['line'])
-        self.header_frame.grid_columnconfigure(3, minsize=self.column_widths['instruction'])
+        canvas_width = self.column_widths['breakpoint']
+        self.breakpoint_canvas = BreakpointCanvas(
+            self.tree_frame, 
+            width=canvas_width, 
+            height=400,
+            on_breakpoint_click_callback=self._toggle_breakpoint,
+            bg=ColorManager.get_theme_background_color(self.master)
+        )
         
-        self.pc_header = ctk.CTkLabel(self.header_frame, text="PC", width=self.column_widths['pc'], anchor="w")
-        self.label_header = ctk.CTkLabel(self.header_frame, text="Label", width=self.column_widths['label'], anchor="w")
-        self.line_header = ctk.CTkLabel(self.header_frame, text="Line", width=self.column_widths['line'], anchor="w")
-        self.instruction_header = ctk.CTkLabel(self.header_frame, text="Instruction", width=self.column_widths['instruction'], anchor="w")
+        self.tree.column('#0', width=0, stretch=False)
+        self.tree.column('pc', width=self.column_widths['pc'], anchor='center', stretch=False, minwidth=self.column_widths['pc'])
+        self.tree.column('label', width=self.column_widths['label'], anchor='w', stretch=False, minwidth=self.column_widths['label'])
+        self.tree.column('address', width=self.column_widths['address'], anchor='w', stretch=False, minwidth=self.column_widths['address'])
+        self.tree.column('instruction', width=self.column_widths['instruction'], anchor='w', stretch=False, minwidth=self.column_widths['instruction'])
         
-        self.scroll_frame = DualScrollFrame(self)
+        self.tree.heading('pc', text='PC', anchor='w')
+        self.tree.heading('label', text='Label', anchor='w')
+        self.tree.heading('address', text='Address', anchor='w')
+        self.tree.heading('instruction', text='Instruction', anchor='w')
         
-        self.code_lines_frame = ctk.CTkFrame(self.scroll_frame.get_scrollable_frame(), fg_color="transparent")
-        self.code_lines_frame.pack(fill="both", expand=True)
+        self.v_scrollbar = ctk.CTkScrollbar(self.tree_frame, orientation="vertical", command=self.tree.yview)
+        self.h_scrollbar = ctk.CTkScrollbar(self.tree_frame, orientation="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=self._on_tree_vertical_scroll, xscrollcommand=self.h_scrollbar.set)
         
-        # dictionary to store line widgets
-        self.line_widgets: Dict[int, dict] = {}  # key: line number
+    def _setup_styles(self):
+        """Configure ttk styles for the treeview"""
+        if not hasattr(self, "style"):
+            self.style = ttk.Style()
+            
+        available_themes = self.style.theme_names()
+        if 'clam' in available_themes:
+            self.style.theme_use('clam')
+        elif 'alt' in available_themes:
+            self.style.theme_use('alt')
+        else:
+            self.style.theme_use(available_themes[0])
+        
+        font = ctk.CTkFont()
+
+        bg_color_master = ColorManager.get_theme_background_color(self.master)
+        bg_color = ColorManager.get_theme_background_color(self)
+        text_color = ColorManager.get_theme_text_color()
+        self.style.configure("Treeview", 
+                           font=(font.actual("family"), font.actual("size")),
+                           background=bg_color_master,
+                           foreground=text_color,
+                           fieldbackground=bg_color_master,
+                           rowheight=25, 
+                           borderwidth=0,
+                           highlightthickness=0)
+        
+        self.style.configure("Treeview.Heading",
+                           font=(font.actual("family"), font.actual("size"), "bold"),
+                           background=bg_color,
+                           foreground=text_color,
+                           relief="flat")
+        
+        self.style.map('Treeview.Heading',
+                      background=[('active', bg_color_master),
+                                ('pressed', bg_color_master)],
+                      relief=[('pressed', 'flat')])
+        
+        self._define_tree_tag_configurations()
+        self.breakpoint_canvas.configure(background=bg_color)
+        
+        self.tree.update_idletasks()
+        
+    def _define_tree_tag_configurations(self):
+        self.tree.tag_configure('current_pc', background=ColorManager.SECONDARY_COLOR, foreground='white')
+        self.tree.tag_configure('last_executed', background=ColorManager.TERTIARY_COLOR, foreground='black')
+        self.tree.tag_configure('even', background=self._get_non_transparent_color(ColorManager.get_alternating_colors(self, 0)))
+        self.tree.tag_configure('odd', background=self._get_non_transparent_color(ColorManager.get_alternating_colors(self, 1)))
+        self.tree.tag_configure('has_annotation', font=ctk.CTkFont(weight="bold"))
         
     def _setup_layout(self):
         """Set up the layout of the widgets"""
-        # Configure grid weights
-        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         
-        # Header layout
-        self.header_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=(2, 0))
-        self.pc_header.grid(row=0, column=0, padx=2, pady=2, sticky="w")
-        self.label_header.grid(row=0, column=1, padx=2, pady=2, sticky="w")
-        self.line_header.grid(row=0, column=2, padx=2, pady=2, sticky="w")
-        self.instruction_header.grid(row=0, column=3, padx=2, pady=2, sticky="w")
+        self.tree_frame.grid(row=0, column=0, sticky="nsew", padx=(0,5), pady=5)
+        self.tree_frame.grid_rowconfigure(0, weight=1)
+        self.tree_frame.grid_rowconfigure(1, weight=0)
+        self.tree_frame.grid_columnconfigure((0,2), weight=0)
+        self.tree_frame.grid_columnconfigure(1,weight=1)
         
-        # Scroll frame layout
-        self.scroll_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=(0, 5))
+        self.breakpoint_canvas.grid(row=0,column=0, sticky="ns")
+        self.tree.grid(row=0, column=1, sticky="nsew")
+        self.v_scrollbar.grid(row=0, column=2, sticky="ns")
+        self.h_scrollbar.grid(row=1, column=1, sticky="ew")
+        
+        self.v_scrollbar.grid_remove()
+        self.h_scrollbar.grid_remove()
+        
+    def _setup_bindings(self):
+        self.tree_frame.bind('<Configure>', lambda e: self._on_configure(e))
+        self.tree.bind("<Shift-MouseWheel>", lambda e: self._on_shift_scroll(event=e))
+
+        self.tree.bind("<Motion>", self._on_tree_motion)
+        self.tree.bind("<Leave>", self._on_tree_leave)
+        
+        self.tree.bind("<Shift-Button-4>", lambda e: self.tree.xview_scroll(-3, "units"))
+        self.tree.bind("<Shift-Button-5>", lambda e: self.tree.xview_scroll(3, "units"))
+        self.tree.bind('<Configure>', lambda e: self._on_configure(e))
+        self.bind('<Configure>', lambda e: self._on_configure(e))
+        
+    def _on_configure(self, event):
+        self._update_scrollbar_visibility()
+        self._update_breakpoint_canvas()
+        
+    def _on_tree_vertical_scroll(self, *args):
+        self.v_scrollbar.set(*args)
+        self.after_idle(self._update_breakpoint_canvas)
+        
+    def _update_scrollbar_visibility(self):
+        """Show/hide scrollbars based on content size"""
+        self.tree.update_idletasks()
+        
+        yview = self.tree.yview()
+        if yview == (0.0, 1.0):
+            self.v_scrollbar.grid_remove()
+        else:
+            self.v_scrollbar.grid()
+        
+        xview = self.tree.xview()
+        if xview == (0.0, 1.0):
+            self.h_scrollbar.grid_remove()
+        else:
+            self.h_scrollbar.grid()
+            
+    def _on_shift_scroll(self, event):
+        if sys.platform == "darwin":  # macOS
+            delta = event.delta 
+        else:  # Windows
+            delta = int(event.delta / 10)
+            
+        self.tree.xview_scroll(-delta, "units")
+        self._update_breakpoint_canvas()
+        return "break"
+        
+    def _on_tree_motion(self, event):
+        """Handle mouse motion in treeview for tooltips"""
+        item = self.tree.identify_row(event.y)
+        if item:
+            column = self.tree.identify_column(event.x)
+            instruction_column = '#4'
+            if column == instruction_column:
+                address = self._get_address_from_item(item)
+                if address and address in self.annotations and self.annotations[address]:
+                    annotation = self.annotations[address]
+                    # TODO obtener x de row, y de column
+                    self._schedule_tooltip(row=item, column=column, annotation=annotation)
+                else:
+                    self._hide_tooltip()
+            else:
+                self._hide_tooltip()
+        else:
+            self._hide_tooltip()
+    
+    def _get_address_from_item(self, item):
+        """Extract address from treeview item"""
+        values = self.tree.item(item, 'values')
+        if values and len(values) >= 4:
+            address_column_index = 2
+            try:
+                return int(values[address_column_index])
+            except (ValueError, IndexError):
+                return None
+        return None
+            
+    def _on_tree_leave(self, event):
+        """Handle mouse leaving treeview"""
+        self._hide_tooltip()
         
     def load_code(self, code_data: List[dict]):
         """
@@ -77,155 +241,111 @@ class CodeMemoryView(ctk.CTkFrame):
             code_data: List of dictionaries with keys: 
                     'label', 'address', 'instruction', 'annotation'
         """
-        # Clear existing widgets and mappings
-        for widget in self.code_lines_frame.winfo_children():
-            widget.destroy()
-        self.line_widgets.clear()
+        for item in self.tree.get_children():
+            self.tree.delete(item)
         
+        self.breakpoints.clear()
+        if self.breakpoint_canvas:
+            self.breakpoint_canvas.clear()
+        
+        self.tree_items_address_to_treeview_ID.clear()
+        self.annotations.clear()
         self.codecell_list = code_data
         self.current_pc = 0
-        
-        # Create new line widgets
+
         for i, instruction in enumerate(code_data):
-            self._create_line_widget(instruction, i)  
+            self._create_tree_item(instruction, i)  
             
-    def _create_line_widget(self, instruction: dict, index: int):
+        self._auto_size_columns()
+        self.after_idle(self._update_breakpoint_canvas)
+            
+    def _create_tree_item(self, instruction: dict, index: int):
         """Create a single line widget for an instruction"""
-        line_num = instruction['address']
+        address = instruction['address']
+        label = instruction.get('label', '')
+        instruction_text = instruction.get('instruction', '')
         annotation = instruction.get('annotation', '')
         
-        # Create frame for the line
-        line_frame = ctk.CTkFrame(self.code_lines_frame, height=15, corner_radius=0, 
-                                  border_width=0, fg_color=ColorManager.get_alternating_colors(self, index))
-        line_frame.pack(fill="x", expand=True)
+        if label is not None:
+            self._check_column_width(text=f"{label}", column_name='label', address= address)
         
-        # Create PC column with only arrow indicator (no PC value displayed)
-        pc_frame = ctk.CTkFrame(line_frame, width=40, height=20, fg_color='transparent', bg_color="transparent")
-        pc_frame.pack_propagate(False)  
-        pc_arrow = ctk.CTkLabel(pc_frame, text="", width=30, anchor="center")
-        pc_arrow.pack(fill="both", expand=True)
-        
-        pc_frame.grid(row=0, column=0, padx=2, sticky="w")
-        
-        # Create other labels
-        label_label = ctk.CTkLabel(line_frame, text=str(instruction.get('label', '')), 
-                                width=80, height=20, anchor="w")
-        address_label = ctk.CTkLabel(line_frame, text=str(line_num), 
-                                width=80, height=20, anchor="w")
-        instruction_label = ctk.CTkLabel(line_frame, text=str(instruction.get('instruction', '')), 
-                                height=20, anchor="w")
-        
-        # Layout widgets
-        label_label.grid(row=0, column=1, padx=2, pady=2, sticky="w")
-        address_label.grid(row=0, column=2, padx=2, pady=2, sticky="w")
-        instruction_label.grid(row=0, column=3, padx=2, pady=2, sticky="w")
-        
-        pc_frame.bind("<Button-1>", lambda e, ln=line_num: self._toggle_breakpoint(ln))
-        pc_arrow.bind("<Button-1>", lambda e, ln=line_num: self._toggle_breakpoint(ln))
-        
-        # Make the line clickable for breakpoints
-        """line_frame.bind("<Button-1>", lambda e, ln=line_num: self._toggle_breakpoint(ln))
-        for widget in [pc_frame, label_label, address_label, instruction_label]:
-            widget.bind("<Button-1>", lambda e, ln=line_num: self._toggle_breakpoint(ln))"""
-        
-        # Add hover events for instruction column to show annotation tooltip
-        if annotation:  # Only add hover events if there's an annotation
-            instruction_label.bind("<Enter>", lambda e, ln=line_num, ann=annotation: self._on_instruction_hover(e, ln, ann, instruction_label))
-            instruction_label.bind("<Leave>", lambda e: self._on_instruction_leave(e))
-        
-        # Store reference to widgets
-        self.line_widgets[line_num] = {
-            'frame': line_frame,
-            'pc_frame': pc_frame,
-            'pc_arrow': pc_arrow,
-            'label': label_label,
-            'address': address_label,
-            'instruction': instruction_label,
-            'has_annotation': bool(annotation)
-        }
-        
-        # Set initial appearance
-        self._update_line_appearance(line_num)  
-    
-    def _update_line_appearance(self, line_num: int, color = None):
-        """Update the visual appearance of a line based on its state"""        
-        if line_num not in self.line_widgets:
-            return        
-        
-        widgets = self.line_widgets[line_num]
-        frame = widgets['frame']
-        pc_frame = widgets['pc_frame']
-        pc_arrow = widgets['pc_arrow']
-        
-        pc_arrow.configure(text="")
-        
-        label_widgets = ['pc_arrow', 'label', 'address', 'instruction']
-        
-        if line_num in self.breakpoints:
-            pc_frame.configure(fg_color=ColorManager.BREAKPOINT_COLOR)
-            pc_arrow.configure(text_color="white")
-        else:
-            pc_frame.configure(fg_color="transparent")
-        
-        if color is not None:
-            if self.current_pc_on_address(line_num):
-                pc_arrow.configure(text="→", text_color="black", font=ctk.CTkFont(weight="bold", size=14))
-            frame.configure(fg_color=color)
-            for widget_key in label_widgets:
-                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                    widgets[widget_key].configure(text_color="black")
-        elif self.current_pc_on_address(line_num):
-            frame.configure(fg_color=ColorManager.SECONDARY_COLOR)
-            pc_arrow.configure(text="→", text_color="white", font=ctk.CTkFont(weight="bold", size=14))
-            for widget_key in label_widgets:
-                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                    widgets[widget_key].configure(text_color="white")
-        else:
-            frame.configure(fg_color=ColorManager.get_alternating_colors(self, line_num))
-            for widget_key in label_widgets:
-                if widget_key in widgets and hasattr(widgets[widget_key], 'configure'):
-                    widgets[widget_key].configure(text_color=self.default_text_color)
-        
-        if widgets['has_annotation']:
-            widgets['instruction'].configure(
-                font=ctk.CTkFont(weight="bold")
-            )
+        if instruction_text is not None:
+            self._check_column_width(text=str(instruction_text), column_name='instruction', address= address)
             
-    def _update_breakpoint_frame(self, line_num):
-        if line_num not in self.line_widgets:
-            return        
+        if annotation is not None:
+            self.annotations[address] = annotation
+            
+        pc_indicator = ""
         
-        widgets = self.line_widgets[line_num]
-        pc_frame = widgets['pc_frame']
-        pc_arrow = widgets['pc_arrow']
-        frame = widgets['frame']
+        item_id = self.tree.insert('', 'end', 
+                                  values=(pc_indicator, label, address, instruction_text),
+                                  tags=(str(address),))
         
-        if line_num in self.breakpoints:
-            pc_frame.configure(fg_color=ColorManager.BREAKPOINT_COLOR)
-            pc_arrow.configure(text_color="white")
-        else:
-            pc_frame.configure(fg_color="transparent")
-            if frame.cget('fg_color') == ColorManager.SECONDARY_COLOR:
-                pc_arrow.configure(text_color="white")
-            elif frame.cget('fg_color') == ColorManager.TERTIARY_COLOR:
-                pc_arrow.configure(text_color="black")
-            else:
-                pc_arrow.configure(text_color=self.default_text_color)
+        self.tree_items_address_to_treeview_ID[address] = item_id
+        self._update_line_appearance(address)
     
-    def _create_tooltip(self, text, widget : ctk.CTkLabel):
+    def _update_line_appearance(self, address: int, color = None):
+        """Update the visual appearance of a line based on its state"""       
+        if address not in self.tree_items_address_to_treeview_ID:
+            return
+        
+        item_id = self.tree_items_address_to_treeview_ID[address]
+        
+        # values = (pc, label, address, instruction)
+        values = list(self.tree.item(item_id, 'values'))
+        
+        values[0] = "→" if self.current_pc_on_address(address) else ""
+        
+        tags = [str(address)]
+        if self.current_pc_on_address(address):
+            tags.append('current_pc')
+        elif self.last_executed_instruction is not None and address == self.last_executed_instruction:
+            tags.append('last_executed')
+        else:
+            # Alternate row coloring
+            if address % 2 == 0:
+                tags.append('even')
+            else:
+                tags.append('odd')
+        
+        if address in self.annotations and self.annotations[address]:
+            tags.append('has_annotation')
+        
+        # Update the treeview item
+        self.tree.item(item_id, values=values, tags=tags)
+            
+    def _update_breakpoint_canvas(self):
+        if not self.breakpoint_canvas:
+            return
+            
+        self.breakpoint_canvas.clear()
+        
+        canvas_height = self.tree.winfo_height()
+        if canvas_height > 1:  # Only update if treeview has valid height
+            self.breakpoint_canvas.configure(height=canvas_height)
+        
+        for address in self.tree_items_address_to_treeview_ID:
+            item_id = self.tree_items_address_to_treeview_ID[address]
+            bbox = self.tree.bbox(item_id)
+            if bbox:
+                # Calculate position in the breakpoint column
+                x = self.column_widths['breakpoint'] // 2
+                y = bbox[1] + bbox[3] // 2  # Center vertically in the row
+                bp = Breakpoint(x=x, y=y, address= address, active=address in self.breakpoints)
+                self.breakpoint_canvas.add_breakpoint(bp)
+        
+        self.breakpoint_canvas.update_idletasks()
+    
+    def _create_tooltip(self, row, column, annotation):
         """Create a tooltip with the annotation text"""
-        if self.tooltip:
-            self.tooltip.destroy()
-        
-        self.tooltip = ctk.CTkToplevel(self)
-        self.tooltip.wm_overrideredirect(True)
-        self.tooltip.wm_attributes("-topmost", True)
-        
+        tooltip = ctk.CTkToplevel(self)
+        tooltip.wm_overrideredirect(True)
+        tooltip.wm_attributes("-topmost", True)
         # widget position (assign to right of instruction)
-        x = widget.winfo_rootx() + widget.winfo_width()
-        y = widget.winfo_rooty() 
+        x = self.tree.winfo_rootx() + self.tree.winfo_width()
+        y = (row-1) * self.tree['style']['rowheight']
         
-        screen_width = self.scroll_frame.winfo_width()
+        screen_width = self.tree_frame.winfo_width()
         screen_height = self.winfo_screenheight()
         
         # adjust if tooltip would go off frame on x axis
@@ -236,16 +356,16 @@ class CodeMemoryView(ctk.CTkFrame):
         # adjust if tooltip would go off screen bottom (estimated)
         tooltip_height = 20  
         if y + tooltip_height > screen_height:
-            y = widget.winfo_rooty() - tooltip_height - 5
+            y = y - tooltip_height - 5
         
-        self.tooltip.wm_geometry(f"+{x}+{y}")
+        tooltip.wm_geometry(f"+{x}+{y}")
         
-        tooltip_frame = ctk.CTkFrame(self.tooltip, corner_radius=5, fg_color=ColorManager.SECONDARY_COLOR)
+        tooltip_frame = ctk.CTkFrame(tooltip, corner_radius=5, fg_color=ColorManager.SECONDARY_COLOR)
         tooltip_frame.pack(padx=0, pady=0, fill="both", expand=True)
         
         tooltip_label = ctk.CTkLabel(
             tooltip_frame, 
-            text=text, 
+            text=annotation, 
             height=20,
             wraplength=280,
             justify="left",
@@ -255,6 +375,12 @@ class CodeMemoryView(ctk.CTkFrame):
             pady=2
         )
         tooltip_label.pack(fill="both", expand=True)
+        if self.tooltip:
+            self.tooltip.destroy()
+        self.tooltip = tooltip
+    
+    def _get_y_from_item_bbox(self, bbox):
+        return bbox[1] + bbox[3]
     
     def _hide_tooltip(self):
         """Hide the tooltip"""
@@ -263,35 +389,31 @@ class CodeMemoryView(ctk.CTkFrame):
             self.tooltip = None
         self.current_hover_line = None
         
-        # Cancel any scheduled tooltip show
         if self.tooltip_scheduled_id:
             self.after_cancel(self.tooltip_scheduled_id)
             self.tooltip_scheduled_id = None
     
-    def _schedule_tooltip(self, widget, annotation):
+    def _schedule_tooltip(self, row, column, annotation):
         """Schedule tooltip to appear after delay"""
-        self.tooltip_scheduled_id = self.after(100, lambda: self._create_tooltip(annotation, widget))
+        if self.tooltip_scheduled_id:
+            self.after_cancel(self.tooltip_scheduled_id)
+        self.tooltip_scheduled_id = self.after(100, lambda: self._create_tooltip(row, column, annotation))
     
-    def _on_instruction_hover(self, event, line_num, annotation, widget):
-        """Handle mouse entering instruction column"""
-        self.current_hover_line = line_num
-        self._schedule_tooltip(widget, annotation)
-    
-    def _on_instruction_leave(self, event):
-        """Handle mouse leaving instruction column"""
-        self._hide_tooltip()
+    def _auto_size_columns(self):
+        """Automatically size columns based on content"""
+        for column_name in ['label', 'address', 'instruction']:
+            if self.tree.column(column_name)['width'] != self.broader_column_widths[column_name]['width']:
+                self.tree.column(column_name, width=self.broader_column_widths[column_name]['width'])
+                
+        self._update_scrollbar_visibility()
     
     def _toggle_breakpoint(self, address: int):
         """Toggle breakpoint for a specific line"""
-        if address in self.breakpoints:
+        if address in self.breakpoints.copy():
             self.breakpoints.remove(address)
         else:
             self.breakpoints.add(address)
         
-        # Update appearance
-        self._update_breakpoint_frame(address)
-        
-        # Notify callback if set
         if self.on_breakpoint_change:
             self.on_breakpoint_change()
     
@@ -310,24 +432,28 @@ class CodeMemoryView(ctk.CTkFrame):
         old_pc_line = self.current_pc
         old_last_executed_instruction_address = self.last_executed_instruction
         self.last_executed_instruction = last_executed_instruction_address
-        # Find the line number for this PC value
+        
         if pc_value is not None and self.codecell_list is not None and pc_value < len(self.codecell_list):
             self.current_pc = pc_value
         else:
             self.current_pc = None
 
-        if old_pc_line is not None and old_pc_line in self.line_widgets:
-            self._update_line_appearance(old_pc_line)
-        if self.current_pc is not None and self.current_pc in self.line_widgets:
-            self._update_line_appearance(self.current_pc)
+        addresses_to_update = set()
+        if old_pc_line is not None:
+            addresses_to_update.add(old_pc_line)
+        if self.current_pc is not None:
+            addresses_to_update.add(self.current_pc)
+        if old_last_executed_instruction_address is not None:
+            addresses_to_update.add(old_last_executed_instruction_address)
+        if self.last_executed_instruction is not None:
+            addresses_to_update.add(self.last_executed_instruction)
         
-        if old_last_executed_instruction_address is not None and old_last_executed_instruction_address in self.line_widgets:
-            self._update_line_appearance(old_last_executed_instruction_address)
-        if self.last_executed_instruction is not None and self.last_executed_instruction in self.line_widgets:
-            self._update_line_appearance(self.last_executed_instruction, ColorManager.TERTIARY_COLOR)
-        # Notify callback if set
+        for address in addresses_to_update:
+            if address in self.tree_items_address_to_treeview_ID:
+                self._update_line_appearance(address)
+        
         if self.on_pc_change:
-            self.on_pc_change(pc_value, self.current_pc)
+            self.on_pc_change(pc_value, self.current_pc)    
     
     def get_current_pc_value(self):
         return self.current_pc
@@ -338,16 +464,8 @@ class CodeMemoryView(ctk.CTkFrame):
     
     def clear_breakpoints(self):
         """Clear all breakpoints"""
-        breakpoints_copy = self.breakpoints.copy()
         self.breakpoints.clear()
-        
-        for line_num in breakpoints_copy:
-            if line_num in self.line_widgets:
-                self._update_line_appearance(line_num)
-        
-        if self.on_breakpoint_change:
-            for line_num in breakpoints_copy:
-                self.on_breakpoint_change()
+        self.breakpoint_canvas.clear()
     
     def set_breakpoint_change_callback(self, callback: Callable):
         """
@@ -362,11 +480,33 @@ class CodeMemoryView(ctk.CTkFrame):
 
     def change_appearance_mode(self, new_appearance_mode):
         ctk.set_appearance_mode(new_appearance_mode)
-        temp_label = ctk.CTkLabel(self)
-        self.default_text_color = temp_label.cget("text_color")
-        temp_label.destroy()
+        self._setup_styles()
         
-        for i in range(len(self.line_widgets)):
-            if i%2 != 0:
-                frame = self.line_widgets[i]['frame']
-                frame.configure(fg_color=ColorManager.get_alternating_colors(self, i))
+        for address in self.tree_items_address_to_treeview_ID:
+            self._update_line_appearance(address)
+            
+    def _get_non_transparent_color(self, color):
+        if color == "transparent":
+            try:
+                color = ColorManager.get_single_color(self.master.cget("fg_color"))
+            except:
+                if ctk.get_appearance_mode().lower() == "dark":
+                    color = "#2b2b2b"  
+                else:
+                    color = "#f0f0f0"  
+        return color
+
+    def _check_column_width(self, text, column_name, address):
+        text_width = self._calculate_text_width(text)
+        if self.broader_column_widths[column_name]['address'] == address and self.column_widths[column_name] < text_width:
+            self.broader_column_widths[column_name]['width'] = text_width
+        elif self.broader_column_widths[column_name]['width'] < text_width:
+            self.broader_column_widths[column_name]['address'] = address
+            self.broader_column_widths[column_name]['width'] = text_width
+
+    def _calculate_text_width(self, text):
+        """Calculate appropriate width based on text length"""
+        font = ctk.CTkFont(weight='bold')
+        font_metrics = tk.font.Font(font=font)
+        padding = 5
+        return font_metrics.measure(text) + padding

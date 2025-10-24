@@ -49,8 +49,13 @@ class Processor:
 
             return success
         elif not self._enabled:
+            self._error = "Error in instruction execution: processor is not enabled."
             return self.DISABLED
+        elif self._next_instruction is None:
+            self._error = "No instruction under current PC. Make sure to not try accessing an address out of code memory's range, and to halt execution properly with the HALT instruction."
+            return self.FAILURE
         else:
+            self._error = "ERROR in processor instruction execution."
             return self.FAILURE
         
     def _get_next_instruction(self):

@@ -19,7 +19,7 @@ class ColorManager:
     @staticmethod         
     def get_single_color(color_tuple):
         """Convert CTk color tuple to single color string based on current appearance mode"""
-        if ctk.get_appearance_mode() == "Light":
+        if ctk.get_appearance_mode().lower() == "light":
             return color_tuple[0]  
         else:
             return color_tuple[1]
@@ -27,3 +27,16 @@ class ColorManager:
     @staticmethod
     def get_text_color(widget):
         return widget.cget("text_color")
+    
+    @staticmethod
+    def get_theme_background_color(widget):
+        return ColorManager.get_single_color(widget.cget("fg_color"))
+    
+    @staticmethod
+    def get_theme_text_color():
+        label = ctk.CTkLabel(None)
+        text_color = label.cget("text_color")
+        label.destroy()
+        return ColorManager.get_single_color(text_color)
+        
+            
