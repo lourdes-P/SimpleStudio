@@ -76,8 +76,8 @@ class SimpleStudioPresenter(VirtualMachineListener):
         self.virtual_machine.undo()
         
     def on_switch_code_editor(self):
-        selected_line_number = self.main_view.get_selected_code_line()
-        self.main_view.switch_code_editor(selected_line_number)
+        selected_address = self.main_view.get_selected_code_address()
+        self.main_view.switch_code_editor(self._get_code_line_number_from_address(selected_address))
         
     # --------- end user view events      
     
@@ -165,3 +165,10 @@ class SimpleStudioPresenter(VirtualMachineListener):
         
         self.main_view.update_data_memory(data_modified)
         self.main_view.update_heap_memory(heap_modified)    
+        
+    def _get_code_line_number_from_address(self, address):
+        if address is not None:
+            instruction = self.virtual_machine.get_instruction(address)
+            return instruction.line
+        else:
+            return None

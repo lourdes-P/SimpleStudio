@@ -121,7 +121,7 @@ class CodeEditor(ctk.CTkFrame):
             print(f"Error loading file: {e}")
     
     def open_editor(self, line_number = None):
-        if line_number:
+        if line_number is not None:
             self._move_cursor_to_line_end(line_number)
         else: 
             pass # TODO open editor if not line number

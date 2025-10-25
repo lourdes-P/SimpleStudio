@@ -10,7 +10,6 @@ from logic.memories.codememory.codememory import CodeMemory
 from logic.interpreter.utils import MapManager, OperatorPrecedenceManager
 from logic.memories.datamemory.data_memory import DataMemory
 from logic.memories.heapmemory.heap_memory import HeapMemory
-from logic.processor.exceptions.instruction_amalgam_exception import InstructionAmalgamException
 from logic.processor.processor import Processor
 from model.cache.cache import Cache
 from model.utils.modified_cell_manager import ModifiedCellManager
@@ -29,7 +28,7 @@ class VirtualMachine:
         self._code_memory = None
         self._data_memory = DataMemory()
         self._heap_memory = HeapMemory()
-        self._cache = Cache(30)
+        self._cache = Cache(10)
         self._processor = None
         self._io_manager = None
         self._error = None
@@ -79,7 +78,7 @@ class VirtualMachine:
                 self._processor.reset()
                 self._label_dictionary = self._original_label_dictionary.copy()
             else:
-                self._breakpoint_list.clear()
+                self._breakpoint_list = None
             self.notify_reset_finished()
             
     def undo(self):

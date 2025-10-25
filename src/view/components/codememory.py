@@ -11,13 +11,15 @@ class CodeMemoryView(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         
-        self.breakpoints = set()
-        self.current_pc = None
         self.on_breakpoint_change: Optional[Callable] = None
         self.on_pc_change: Optional[Callable] = None
-        self.codecell_list = None
+        
+        self.breakpoints = set()
+        self.current_pc = None
+        self.codecell_list_length = None
         self.last_executed_instruction = None
         self.tree_items_address_to_treeview_ID = {}
+        self._currently_selected_address = None
         
         self.annotations = {}
         self.tooltip_list = []
@@ -48,7 +50,7 @@ class CodeMemoryView(ctk.CTkFrame):
         
         self.tree_items_address_to_treeview_ID.clear()
         self.annotations.clear()
-        self.codecell_list = code_data
+        self.codecell_list_length = len(code_data)
         self.current_pc = 0
         self.last_executed_instruction = None
 
@@ -68,7 +70,7 @@ class CodeMemoryView(ctk.CTkFrame):
         old_last_executed_instruction_address = self.last_executed_instruction
         self.last_executed_instruction = last_executed_instruction_address
         
-        if pc_value is not None and self.codecell_list is not None and pc_value < len(self.codecell_list):
+        if pc_value is not None and self.codecell_list_length > 0 and pc_value < self.codecell_list_length:
             self.current_pc = pc_value
         else:
             self.current_pc = None
@@ -92,6 +94,9 @@ class CodeMemoryView(ctk.CTkFrame):
         
     def reset(self):
         self.after_idle(lambda: self._update_breakpoint_canvas())
+        
+    def get_selected_address(self):
+        return self._currently_selected_address
     
     def _initialize_column_width_dictionaries(self):
         self.column_widths = {
@@ -119,7 +124,7 @@ class CodeMemoryView(ctk.CTkFrame):
             show='tree headings',
             height=25,
             padding=0,
-            selectmode="none"
+            selectmode="browse"
         )
         
         canvas_width = self.column_widths['breakpoint']
@@ -218,14 +223,25 @@ class CodeMemoryView(ctk.CTkFrame):
     def _setup_bindings(self):
         self.tree_frame.bind('<Configure>', lambda e: self._on_configure(e))
         self.tree.bind("<Shift-MouseWheel>", lambda e: self._on_shift_scroll(event=e))
+        self.tree.bind("<Shift-Button-4>", lambda e: self._on_shift_scroll_horizontal(e, -3))
+        self.tree.bind("<Shift-Button-5>", lambda e: self._on_shift_scroll_horizontal(e, 3))
 
         self.tree.bind("<Motion>", self._on_tree_motion)
         self.tree.bind("<Leave>", self._on_tree_leave)
+        self.tree.bind("<<TreeviewSelect>>", self._on_selection)
         
-        self.tree.bind("<Shift-Button-4>", lambda e: self._on_shift_scroll_horizontal(e, -3))
-        self.tree.bind("<Shift-Button-5>", lambda e: self._on_shift_scroll_horizontal(e, 3))
         self.tree.bind('<Configure>', lambda e: self._on_configure(e))
         self.bind('<Configure>', lambda e: self._on_configure(e))
+        
+    def _on_selection(self, event):
+        selected_row_item = self.tree.selection()
+        if len(selected_row_item) > 0:
+            selected_address = self._get_address_from_item(selected_row_item[0])
+            if selected_address != self._currently_selected_address:
+                self._currently_selected_address = self._get_address_from_item(selected_row_item)
+            else:
+                self.tree.selection_remove(selected_row_item)
+                self._currently_selected_address = None
         
     def _on_tree_vertical_scroll(self, *args):
         self.v_scrollbar.set(*args)

@@ -130,6 +130,9 @@ class MemoryPanel(ctk.CTkFrame):
             self._change_paned_window_appearance(new_appearance_mode)
         ) 
       
+    def get_selected_code_address(self):
+        return self.code_memory_view.get_selected_address()
+      
     def get_code_memory_view(self):
         return self.code_memory_view        
             

@@ -116,8 +116,8 @@ class SimpleStudioView(ctk.CTk):
     def get_selected_file_path(self):
         return self.control_panel.get_file_path()
         
-    def get_selected_code_line(self):
-        return None # TODO get selected line number
+    def get_selected_code_address(self):
+        return self.memory_panel.get_selected_code_address()
         
     def change_appearance_mode(self, new_appearance_mode):
         if new_appearance_mode != ctk.get_appearance_mode():
