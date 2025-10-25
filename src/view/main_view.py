@@ -92,8 +92,8 @@ class SimpleStudioView(ctk.CTk):
     def update_heap_memory(self, modified_heap_cells):
         self.memory_panel.update_heap_memory(modified_heap_cells)
     
-    def reset(self, parsed_data_memory, parsed_heap_memory, label_list):
-        self.memory_panel.reset(parsed_data_memory, parsed_heap_memory)
+    def reset(self, parsed_data_memory, parsed_heap_memory, label_list, reset_code_memory = False):
+        self.memory_panel.reset(parsed_data_memory, parsed_heap_memory, reset_code_memory)
         self.label_panel.reset(label_list)
         self._output_panel.reset()
         

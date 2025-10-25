@@ -30,7 +30,6 @@ class CodeMemoryView(ctk.CTkFrame):
         self._setup_layout()
         self._setup_bindings()
         
-        
     def load_code(self, code_data: List[dict]):
         """
         Load code into the memory view
@@ -50,6 +49,7 @@ class CodeMemoryView(ctk.CTkFrame):
         self.annotations.clear()
         self.codecell_list = code_data
         self.current_pc = 0
+        self.last_executed_instruction = None
 
         for i, instruction in enumerate(code_data):
             self._create_tree_item(instruction, i)  
@@ -89,6 +89,9 @@ class CodeMemoryView(ctk.CTkFrame):
         if self.on_pc_change:
             self.on_pc_change(pc_value, self.current_pc)
         
+    def reset(self):
+        self.after_idle(lambda: self._update_breakpoint_canvas())
+    
     def _initialize_column_width_dictionaries(self):
         self.column_widths = {
             'breakpoint': 20,

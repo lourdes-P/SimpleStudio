@@ -22,12 +22,8 @@ class SimpleStudioPresenter(VirtualMachineListener):
     def set_virtual_machine(self, virtual_machine : VirtualMachine):
         self.virtual_machine = virtual_machine
     
-    def set_code_memory_view(self, code_memory_view):
-        self.code_memory_view = code_memory_view
-    
     def update_code_memory_view(self):       
-        # TODO sacarle el codememory al presentador 
-        code_data = PresenterParser.parse_code_memory(self.code_memory.codecell_list)
+        code_data = PresenterParser.parse_code_memory(self.virtual_machine.get_code_memory().codecell_list)
         
         self.main_view.load_code_onto_c_memory(code_data, self.main_view.get_selected_file_path())
        
@@ -35,10 +31,9 @@ class SimpleStudioPresenter(VirtualMachineListener):
      
     def on_file_selected(self):
         try:
-            file_path = self.main_view.get_selected_file_path()
-            # TODO self.main_view.loading(True)          
+            file_path = self.main_view.get_selected_file_path()         
             self._loading_file = True
-            self.virtual_machine.load_program(file_path)       # crear hilo? puede ser util si ya hay algo mostrandose?
+            self.virtual_machine.load_program(file_path)
             if self._last_file_path is not None:
                 self.virtual_machine.reset()
             self._last_file_path = file_path
@@ -64,8 +59,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
         self.virtual_machine.execute_program(VirtualMachine.N_STEP_EXECUTION_MODE, steps)
     
     def on_reset(self):
-        try:
-            # TODO self.main_view.loading(True)  
+        try: 
             if self._last_file_path != None:
                 file_modification_time = os.path.getmtime(self._last_file_path)
                 if self._file_last_modification_time == file_modification_time:
@@ -90,8 +84,6 @@ class SimpleStudioPresenter(VirtualMachineListener):
     # --------- listener methods
     
     def load_has_finished(self):
-        # TODO self.main_view.loading(False)
-        self.code_memory = self.virtual_machine.get_code_memory()
         self.update_code_memory_view()
         label_list = PresenterParser.parse_label_dictionary(self.virtual_machine.get_label_dictionary())
         self.main_view.load_label_panel(label_list)  
@@ -119,17 +111,19 @@ class SimpleStudioPresenter(VirtualMachineListener):
         self.main_view.set_cache_entry_disponibility(self.virtual_machine.get_cache_size())
         
     def reset_has_finished(self):
+        reset_code_memory = True
         if not self._loading_file:
             self.update_code_memory_view()
         else:
             self._loading_file = False
+            reset_code_memory = False
         all_time_modified_data_cells_addresses = self.virtual_machine.get_all_time_modified_data_cells_addresses()
         parsed_data_memory = PresenterParser.parse_reset_data_heap_memory(self.virtual_machine.get_data_memory().cell_list, all_time_modified_data_cells_addresses)
         all_time_modified_heap_cells_addresses = self.virtual_machine.get_all_time_modified_heap_cells_addresses()
         parsed_heap_memory = PresenterParser.parse_reset_data_heap_memory(self.virtual_machine.get_heap_memory().cell_list, all_time_modified_heap_cells_addresses)
         label_list = PresenterParser.parse_label_dictionary(self.virtual_machine.get_label_dictionary())
         self.virtual_machine.reset_all_time_modified_cells()
-        self.main_view.reset(parsed_data_memory, parsed_heap_memory, label_list)
+        self.main_view.reset(parsed_data_memory, parsed_heap_memory, label_list, reset_code_memory)
         self.main_view.set_cache_entry_disponibility(self.virtual_machine.get_cache_size())
        
     def undo_has_finished(self):
