@@ -11,8 +11,7 @@ class Breakpoint:
     active: bool = False
     fill_on: str = ColorManager.BREAKPOINT_COLOR
     fill_off: str = ''
-    fill_hover: str = "#ffcccc"  # Light red for hover
-    outline: str = ''
+    fill_hover: str = ColorManager.HOVER_BREAKPOINT_COLOR
     hover: bool = False
 
     def contains(self, px: int, py: int) -> bool:
@@ -29,30 +28,33 @@ class BreakpointCanvas(tk.Canvas):
         self.bind("<Motion>", self._on_motion)
         self.bind("<Leave>", self._on_leave)
 
-    def add_breakpoint(self, bp: Breakpoint):
-        self.breakpoints.append(bp)
-        self._draw_one(bp)
+    def add_breakpoint(self, x=None, y=None, address=None, active=False, breakpoint: Breakpoint=None):
+        """If breakpoint is None, creates a new Breakpoint with the rest of the arguments (which then are all MANDATORY), and appends it to the breakpoint list"""
+        if breakpoint is None:
+            breakpoint = Breakpoint(x=x, y=y, address=address, active=active)
+        self.breakpoints.append(breakpoint)
+        self._draw_one(breakpoint)
 
-    def _draw_one(self, bp: Breakpoint):
-        r = bp.radius
-        x, y = bp.x, bp.y
-        # Determine fill color based on state
-        if bp.active:
-            fill = bp.fill_on
-        elif bp.hover:
-            fill = bp.fill_hover
-        else:
-            fill = bp.fill_off
-
-        circle = self.create_oval(x - r, y - r, x + r, y + r, fill=fill, outline='',)
+    def _draw_one(self, breakpoint: Breakpoint):
+        r = breakpoint.radius
+        x, y = breakpoint.x, breakpoint.y
         
-        self.items_map[circle] = bp
+        if breakpoint.active:
+            fill_color = breakpoint.fill_on
+        elif breakpoint.hover:
+            fill_color = breakpoint.fill_hover
+        else:
+            fill_color = breakpoint.fill_off
+
+        circle = self.create_oval(x - r, y - r, x + r, y + r, fill=fill_color, outline='',)
+        
+        self.items_map[circle] = breakpoint
 
     def redraw(self):
         self.delete("all")
         self.items_map.clear()
-        for bp in self.breakpoints:
-            self._draw_one(bp)
+        for breakpoint in self.breakpoints:
+            self._draw_one(breakpoint)
 
     def clear(self):
         self.delete("all")
@@ -62,32 +64,31 @@ class BreakpointCanvas(tk.Canvas):
     def _on_click(self, event):
         items = self.find_overlapping(event.x-2, event.y-2, event.x+2, event.y+2)
         for iid in items:
-            bp = self.items_map.get(iid)
-            if bp:
-                bp.active = not bp.active
+            breakpoint = self.items_map.get(iid)
+            if breakpoint:
+                breakpoint.active = not breakpoint.active
                 self.redraw()
-                self._on_breakpoint_click_callback(bp.address)
+                self._on_breakpoint_click_callback(breakpoint.address)
                 return
 
     def _on_motion(self, event):
-        hover_found = False
-        for bp in self.breakpoints:
-            old_hover = bp.hover
-            bp.hover = bp.contains(event.x, event.y)
-            if old_hover != bp.hover:
+        hover_found_over_breakpoint = False
+        for breakpoint in self.breakpoints:
+            old_hover = breakpoint.hover
+            breakpoint.hover = breakpoint.contains(event.x, event.y)
+            if old_hover != breakpoint.hover:
                 self.redraw()
-            if bp.hover:
-                hover_found = True
+            if breakpoint.hover:
+                hover_found_over_breakpoint = True
         
-        # Change cursor to hand when hovering over breakpoints
-        if hover_found:
+        if hover_found_over_breakpoint:
             self.config(cursor="hand2")
         else:
             self.config(cursor="")
 
     def _on_leave(self, event):
-        for bp in self.breakpoints:
-            if bp.hover:
-                bp.hover = False
+        for breakpoint in self.breakpoints:
+            if breakpoint.hover:
+                breakpoint.hover = False
                 self.redraw()
         self.config(cursor="")

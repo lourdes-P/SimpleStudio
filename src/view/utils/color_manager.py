@@ -5,6 +5,7 @@ class ColorManager:
     SECONDARY_COLOR = '#2c3e50'
     TERTIARY_COLOR = '#4b8bab'
     BREAKPOINT_COLOR = '#c4160a'
+    HOVER_BREAKPOINT_COLOR = "#ffcccc"
     
     @staticmethod
     def get_alternating_colors(parent, index: int):
@@ -38,5 +39,15 @@ class ColorManager:
         text_color = label.cget("text_color")
         label.destroy()
         return ColorManager.get_single_color(text_color)
-        
-            
+    
+    @staticmethod
+    def get_non_transparent_color(widget, color):
+        if color == "transparent":
+            try:
+                color = ColorManager.get_single_color(widget.cget("fg_color"))
+            except:
+                if ctk.get_appearance_mode().lower() == "dark":
+                    color = "#2b2b2b"  
+                else:
+                    color = "#f0f0f0"  
+        return color

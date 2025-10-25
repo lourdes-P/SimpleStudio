@@ -4,8 +4,8 @@ import tkinter as tk
 from tkinter import ttk
 from typing import List, Dict, Optional, Callable
 from view.components.breakpoint import Breakpoint, BreakpointCanvas
-from view.components.dualscrollframe import DualScrollFrame
 from view.utils.color_manager import ColorManager
+from view.utils.time import debounce
 
 class CodeMemoryView(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -15,21 +15,79 @@ class CodeMemoryView(ctk.CTkFrame):
         self.current_pc = None
         self.on_breakpoint_change: Optional[Callable] = None
         self.on_pc_change: Optional[Callable] = None
-        self.default_text_color = None
         self.codecell_list = None
         self.last_executed_instruction = None
         self.tree_items_address_to_treeview_ID = {}
         
         self.annotations = {}
-        self.tooltip = None
-        self.current_hover_line = None
-        self.tooltip_scheduled_id = None
+        self.tooltip_list = []
+        self.current_hover_row = None
+        self.tooltip_scheduled_id_list = []
         
         self._initialize_column_width_dictionaries()
         self._create_widgets()
         self._setup_styles()
         self._setup_layout()
         self._setup_bindings()
+        
+        
+    def load_code(self, code_data: List[dict]):
+        """
+        Load code into the memory view
+        
+        Args:
+            code_data: List of dictionaries with keys: 
+                    'label', 'address', 'instruction', 'annotation'
+        """
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        
+        self.breakpoints.clear()
+        if self.breakpoint_canvas:
+            self.breakpoint_canvas.clear()
+        
+        self.tree_items_address_to_treeview_ID.clear()
+        self.annotations.clear()
+        self.codecell_list = code_data
+        self.current_pc = 0
+
+        for i, instruction in enumerate(code_data):
+            self._create_tree_item(instruction, i)  
+            
+        self._auto_size_columns()
+        self.after_idle(lambda: self._update_breakpoint_canvas)
+        
+    def set_current_pc(self, pc_value: int, last_executed_instruction_address: int):
+        """
+        Set the current program counter by PC value
+        Args:
+            pc_value: PC value to highlight as current, or None to clear
+        """
+        old_pc_line = self.current_pc
+        old_last_executed_instruction_address = self.last_executed_instruction
+        self.last_executed_instruction = last_executed_instruction_address
+        
+        if pc_value is not None and self.codecell_list is not None and pc_value < len(self.codecell_list):
+            self.current_pc = pc_value
+        else:
+            self.current_pc = None
+
+        addresses_to_update = set()
+        if old_pc_line is not None:
+            addresses_to_update.add(old_pc_line)
+        if self.current_pc is not None:
+            addresses_to_update.add(self.current_pc)
+        if old_last_executed_instruction_address is not None:
+            addresses_to_update.add(old_last_executed_instruction_address)
+        if self.last_executed_instruction is not None:
+            addresses_to_update.add(self.last_executed_instruction)
+        
+        for address in addresses_to_update:
+            if address in self.tree_items_address_to_treeview_ID:
+                self._update_line_appearance(address)
+        
+        if self.on_pc_change:
+            self.on_pc_change(pc_value, self.current_pc)
         
     def _initialize_column_width_dictionaries(self):
         self.column_widths = {
@@ -130,8 +188,8 @@ class CodeMemoryView(ctk.CTkFrame):
     def _define_tree_tag_configurations(self):
         self.tree.tag_configure('current_pc', background=ColorManager.SECONDARY_COLOR, foreground='white')
         self.tree.tag_configure('last_executed', background=ColorManager.TERTIARY_COLOR, foreground='black')
-        self.tree.tag_configure('even', background=self._get_non_transparent_color(ColorManager.get_alternating_colors(self, 0)))
-        self.tree.tag_configure('odd', background=self._get_non_transparent_color(ColorManager.get_alternating_colors(self, 1)))
+        self.tree.tag_configure('even', background=ColorManager.get_non_transparent_color(self.master, ColorManager.get_alternating_colors(self, 0)))
+        self.tree.tag_configure('odd', background=ColorManager.get_non_transparent_color(self.master, ColorManager.get_alternating_colors(self, 1)))
         self.tree.tag_configure('has_annotation', font=ctk.CTkFont(weight="bold"))
         
     def _setup_layout(self):
@@ -160,18 +218,58 @@ class CodeMemoryView(ctk.CTkFrame):
         self.tree.bind("<Motion>", self._on_tree_motion)
         self.tree.bind("<Leave>", self._on_tree_leave)
         
-        self.tree.bind("<Shift-Button-4>", lambda e: self.tree.xview_scroll(-3, "units"))
-        self.tree.bind("<Shift-Button-5>", lambda e: self.tree.xview_scroll(3, "units"))
+        self.tree.bind("<Shift-Button-4>", lambda e: self._on_shift_scroll_horizontal(e, -3))
+        self.tree.bind("<Shift-Button-5>", lambda e: self._on_shift_scroll_horizontal(e, 3))
         self.tree.bind('<Configure>', lambda e: self._on_configure(e))
         self.bind('<Configure>', lambda e: self._on_configure(e))
         
-    def _on_configure(self, event):
-        self._update_scrollbar_visibility()
-        self._update_breakpoint_canvas()
-        
     def _on_tree_vertical_scroll(self, *args):
         self.v_scrollbar.set(*args)
-        self.after_idle(self._update_breakpoint_canvas)
+        self.after_idle(lambda: self._update_breakpoint_canvas())
+        self._hide_tooltips()
+    
+    def _on_configure(self, event):
+        self._update_scrollbar_visibility()
+        self.after_idle(lambda: self._update_breakpoint_canvas())
+    
+    def _on_shift_scroll(self, event):
+        if sys.platform == "darwin":  # macOS
+            delta = event.delta 
+        else:  # Windows
+            delta = int(event.delta / 10)
+            
+        self.tree.xview_scroll(-delta, "units")
+        self.after_idle(lambda: self._update_breakpoint_canvas())
+        self.after_idle(lambda: self._on_tree_motion(event))
+        return "break"
+    
+    @debounce(timeout=0.02)
+    def _on_tree_motion(self, event):
+        """Handle mouse motion in treeview for tooltips"""
+        item = self.tree.identify_row(event.y)
+        if item:
+            column = self.tree.identify_column(event.x)
+            instruction_column = '#4'
+            if column == instruction_column:
+                address = self._get_address_from_item(item)
+                if address is not None and address>=0 and address in self.annotations and self.annotations[address]:
+                    annotation = self.annotations[address]
+                    self._schedule_tooltip(row=item, column=column, annotation=annotation)
+                else:
+                    self.after_idle(lambda: self._hide_tooltips())
+            else:
+                self.after_idle(lambda: self._hide_tooltips())
+        else:
+            self.after_idle(lambda: self._hide_tooltips())
+    
+    def _on_tree_leave(self, event):
+        """Handle mouse leaving treeview"""
+        self.after(200, lambda: self._hide_tooltips())
+    
+    def _on_tree_horizontal_scroll(self, event, units):
+        self.tree.xview_scroll(units, "units")
+        self.after_idle(lambda: self._update_breakpoint_canvas())
+        self.after_idle(lambda: self._on_tree_motion(event))
         
     def _update_scrollbar_visibility(self):
         """Show/hide scrollbars based on content size"""
@@ -188,76 +286,6 @@ class CodeMemoryView(ctk.CTkFrame):
             self.h_scrollbar.grid_remove()
         else:
             self.h_scrollbar.grid()
-            
-    def _on_shift_scroll(self, event):
-        if sys.platform == "darwin":  # macOS
-            delta = event.delta 
-        else:  # Windows
-            delta = int(event.delta / 10)
-            
-        self.tree.xview_scroll(-delta, "units")
-        self._update_breakpoint_canvas()
-        return "break"
-        
-    def _on_tree_motion(self, event):
-        """Handle mouse motion in treeview for tooltips"""
-        item = self.tree.identify_row(event.y)
-        if item:
-            column = self.tree.identify_column(event.x)
-            instruction_column = '#4'
-            if column == instruction_column:
-                address = self._get_address_from_item(item)
-                if address and address in self.annotations and self.annotations[address]:
-                    annotation = self.annotations[address]
-                    # TODO obtener x de row, y de column
-                    self._schedule_tooltip(row=item, column=column, annotation=annotation)
-                else:
-                    self._hide_tooltip()
-            else:
-                self._hide_tooltip()
-        else:
-            self._hide_tooltip()
-    
-    def _get_address_from_item(self, item):
-        """Extract address from treeview item"""
-        values = self.tree.item(item, 'values')
-        if values and len(values) >= 4:
-            address_column_index = 2
-            try:
-                return int(values[address_column_index])
-            except (ValueError, IndexError):
-                return None
-        return None
-            
-    def _on_tree_leave(self, event):
-        """Handle mouse leaving treeview"""
-        self._hide_tooltip()
-        
-    def load_code(self, code_data: List[dict]):
-        """
-        Load code into the memory view
-        
-        Args:
-            code_data: List of dictionaries with keys: 
-                    'label', 'address', 'instruction', 'annotation'
-        """
-        for item in self.tree.get_children():
-            self.tree.delete(item)
-        
-        self.breakpoints.clear()
-        if self.breakpoint_canvas:
-            self.breakpoint_canvas.clear()
-        
-        self.tree_items_address_to_treeview_ID.clear()
-        self.annotations.clear()
-        self.codecell_list = code_data
-        self.current_pc = 0
-
-        for i, instruction in enumerate(code_data):
-            self._create_tree_item(instruction, i)  
-            
-        self._auto_size_columns()
-        self.after_idle(self._update_breakpoint_canvas)
             
     def _create_tree_item(self, instruction: dict, index: int):
         """Create a single line widget for an instruction"""
@@ -302,17 +330,20 @@ class CodeMemoryView(ctk.CTkFrame):
         elif self.last_executed_instruction is not None and address == self.last_executed_instruction:
             tags.append('last_executed')
         else:
-            # Alternate row coloring
-            if address % 2 == 0:
-                tags.append('even')
-            else:
-                tags.append('odd')
+            self._append_color_tag(address, tags)
         
         if address in self.annotations and self.annotations[address]:
             tags.append('has_annotation')
         
-        # Update the treeview item
         self.tree.item(item_id, values=values, tags=tags)
+        
+    def _auto_size_columns(self):
+        """Automatically size columns based on content"""
+        for column_name in ['label', 'address', 'instruction']:
+            if self.tree.column(column_name)['width'] != self.broader_column_widths[column_name]['width']:
+                self.tree.column(column_name, width=self.broader_column_widths[column_name]['width'])
+                
+        self._update_scrollbar_visibility()
             
     def _update_breakpoint_canvas(self):
         if not self.breakpoint_canvas:
@@ -328,85 +359,12 @@ class CodeMemoryView(ctk.CTkFrame):
             item_id = self.tree_items_address_to_treeview_ID[address]
             bbox = self.tree.bbox(item_id)
             if bbox:
-                # Calculate position in the breakpoint column
                 x = self.column_widths['breakpoint'] // 2
-                y = bbox[1] + bbox[3] // 2  # Center vertically in the row
-                bp = Breakpoint(x=x, y=y, address= address, active=address in self.breakpoints)
-                self.breakpoint_canvas.add_breakpoint(bp)
+                y = self._get_y_root_from_item_boundingbox(bbox) + self._get_height_of_item(bbox) // 2
+                self.breakpoint_canvas.add_breakpoint(x=x, y=y, address= address, active=address in self.breakpoints)
         
         self.breakpoint_canvas.update_idletasks()
-    
-    def _create_tooltip(self, row, column, annotation):
-        """Create a tooltip with the annotation text"""
-        tooltip = ctk.CTkToplevel(self)
-        tooltip.wm_overrideredirect(True)
-        tooltip.wm_attributes("-topmost", True)
-        # widget position (assign to right of instruction)
-        x = self.tree.winfo_rootx() + self.tree.winfo_width()
-        y = (row-1) * self.tree['style']['rowheight']
         
-        screen_width = self.tree_frame.winfo_width()
-        screen_height = self.winfo_screenheight()
-        
-        # adjust if tooltip would go off frame on x axis
-        default_scrollbar_width = 16
-        if x > self.scroll_frame.winfo_rootx() + screen_width - default_scrollbar_width:
-            x = self.scroll_frame.winfo_rootx() + screen_width - default_scrollbar_width
-        
-        # adjust if tooltip would go off screen bottom (estimated)
-        tooltip_height = 20  
-        if y + tooltip_height > screen_height:
-            y = y - tooltip_height - 5
-        
-        tooltip.wm_geometry(f"+{x}+{y}")
-        
-        tooltip_frame = ctk.CTkFrame(tooltip, corner_radius=5, fg_color=ColorManager.SECONDARY_COLOR)
-        tooltip_frame.pack(padx=0, pady=0, fill="both", expand=True)
-        
-        tooltip_label = ctk.CTkLabel(
-            tooltip_frame, 
-            text=annotation, 
-            height=20,
-            wraplength=280,
-            justify="left",
-            fg_color=ColorManager.SECONDARY_COLOR,
-            text_color="white",
-            padx=2,
-            pady=2
-        )
-        tooltip_label.pack(fill="both", expand=True)
-        if self.tooltip:
-            self.tooltip.destroy()
-        self.tooltip = tooltip
-    
-    def _get_y_from_item_bbox(self, bbox):
-        return bbox[1] + bbox[3]
-    
-    def _hide_tooltip(self):
-        """Hide the tooltip"""
-        if self.tooltip:
-            self.tooltip.destroy()
-            self.tooltip = None
-        self.current_hover_line = None
-        
-        if self.tooltip_scheduled_id:
-            self.after_cancel(self.tooltip_scheduled_id)
-            self.tooltip_scheduled_id = None
-    
-    def _schedule_tooltip(self, row, column, annotation):
-        """Schedule tooltip to appear after delay"""
-        if self.tooltip_scheduled_id:
-            self.after_cancel(self.tooltip_scheduled_id)
-        self.tooltip_scheduled_id = self.after(100, lambda: self._create_tooltip(row, column, annotation))
-    
-    def _auto_size_columns(self):
-        """Automatically size columns based on content"""
-        for column_name in ['label', 'address', 'instruction']:
-            if self.tree.column(column_name)['width'] != self.broader_column_widths[column_name]['width']:
-                self.tree.column(column_name, width=self.broader_column_widths[column_name]['width'])
-                
-        self._update_scrollbar_visibility()
-    
     def _toggle_breakpoint(self, address: int):
         """Toggle breakpoint for a specific line"""
         if address in self.breakpoints.copy():
@@ -417,43 +375,81 @@ class CodeMemoryView(ctk.CTkFrame):
         if self.on_breakpoint_change:
             self.on_breakpoint_change()
     
+    def _schedule_tooltip(self, row, column, annotation):
+        self._clear_tooltip_schedule_list()
+        self.tooltip_scheduled_id_list.append(self.after_idle(lambda: self._create_tooltip(row, column, annotation)))
+    
+    def _create_tooltip(self, row_item, column, annotation):
+        """Create a tooltip with the annotation text next to the instruction column"""
+        instruction_boundingbox = self.tree.bbox(row_item, column)
+        
+        if instruction_boundingbox:
+            tree_width = self.tree_frame.winfo_width()
+            screen_height = self.winfo_screenheight()
+            default_scrollbar_width = 16    
+            tooltip_height = self.style.configure("Treeview")['rowheight']
+            tree_x_root = self.tree.winfo_rootx()
+            tree_y_root = self.tree.winfo_rooty()
+            
+            x = tree_x_root + self._get_x_root_from_item_boundingbox(instruction_boundingbox) + self._get_width_of_item(instruction_boundingbox)
+            y = tree_y_root + self._get_y_root_from_item_boundingbox(instruction_boundingbox)
+            if len(self.tooltip_list) > 0 and self.current_hover_row != row_item or len(self.tooltip_list) == 0:
+                self.current_hover_row = row_item
+                tree_x_end = self.tree_frame.winfo_rootx() + tree_width + self.column_widths['breakpoint'] - default_scrollbar_width
+                if x > tree_x_end:
+                    x = tree_x_end
+                 
+                if y + tooltip_height > screen_height:
+                    y = y - tooltip_height - 5
+                
+                tooltip = ctk.CTkToplevel(self)
+                tooltip.wm_overrideredirect(True)
+                tooltip.wm_attributes("-topmost", True)
+                tooltip.wm_geometry(f"+{x}+{y}")
+                
+                tooltip_frame = ctk.CTkFrame(tooltip, corner_radius=5, fg_color=ColorManager.SECONDARY_COLOR)
+                tooltip_frame.pack(padx=0, pady=0, fill="both", expand=True)
+                
+                tooltip_label = ctk.CTkLabel(
+                    tooltip_frame, 
+                    text=annotation, 
+                    height=tooltip_height,
+                    wraplength=280,
+                    justify="left",
+                    fg_color=ColorManager.SECONDARY_COLOR,
+                    text_color="white",
+                    padx=2,
+                    pady=2
+                )
+                tooltip_label.pack(fill="both", expand=True)
+                if len(self.tooltip_list) > 0:
+                    self._destroy_tooltips()
+                self._clear_tooltip_schedule_list()
+                self.tooltip_list.append(tooltip)
+      
+    def _destroy_tooltips(self):
+        tooltip_list_copy = self.tooltip_list.copy()
+        self.tooltip_list = []
+        for tooltip in tooltip_list_copy:
+            tooltip.destroy()
+    
+    def _hide_tooltips(self):
+        self.update_idletasks()
+        self._clear_tooltip_schedule_list()
+        self._destroy_tooltips()
+        self.current_hover_row = None
+    
+    def _clear_tooltip_schedule_list(self):
+        tooltip_id_list_copy = self.tooltip_scheduled_id_list.copy()
+        if len(tooltip_id_list_copy) > 0:
+            self.tooltip_scheduled_id_list = []
+        for tooltip_id in tooltip_id_list_copy:
+            self.after_cancel(tooltip_id)
+    
     def destroy(self):
         """Override destroy to clean up tooltips"""
-        self._hide_tooltip()
-        super().destroy()            
-    
-    def set_current_pc(self, pc_value: int, last_executed_instruction_address: int):
-        """
-        Set the current program counter by PC value
-        
-        Args:
-            pc_value: PC value to highlight as current, or None to clear
-        """
-        old_pc_line = self.current_pc
-        old_last_executed_instruction_address = self.last_executed_instruction
-        self.last_executed_instruction = last_executed_instruction_address
-        
-        if pc_value is not None and self.codecell_list is not None and pc_value < len(self.codecell_list):
-            self.current_pc = pc_value
-        else:
-            self.current_pc = None
-
-        addresses_to_update = set()
-        if old_pc_line is not None:
-            addresses_to_update.add(old_pc_line)
-        if self.current_pc is not None:
-            addresses_to_update.add(self.current_pc)
-        if old_last_executed_instruction_address is not None:
-            addresses_to_update.add(old_last_executed_instruction_address)
-        if self.last_executed_instruction is not None:
-            addresses_to_update.add(self.last_executed_instruction)
-        
-        for address in addresses_to_update:
-            if address in self.tree_items_address_to_treeview_ID:
-                self._update_line_appearance(address)
-        
-        if self.on_pc_change:
-            self.on_pc_change(pc_value, self.current_pc)    
+        self._hide_tooltips()
+        super().destroy()                
     
     def get_current_pc_value(self):
         return self.current_pc
@@ -484,17 +480,23 @@ class CodeMemoryView(ctk.CTkFrame):
         
         for address in self.tree_items_address_to_treeview_ID:
             self._update_line_appearance(address)
-            
-    def _get_non_transparent_color(self, color):
-        if color == "transparent":
+
+    def _append_color_tag(self, address, tag_list):
+        if address % 2 == 0:
+            tag_list.append('even')
+        else:
+            tag_list.append('odd')
+
+    def _get_address_from_item(self, item):
+        """Extract address from treeview item"""
+        values = self.tree.item(item, 'values')
+        if values and len(values) >= 4:
+            address_column_index = 2
             try:
-                color = ColorManager.get_single_color(self.master.cget("fg_color"))
-            except:
-                if ctk.get_appearance_mode().lower() == "dark":
-                    color = "#2b2b2b"  
-                else:
-                    color = "#f0f0f0"  
-        return color
+                return int(values[address_column_index])
+            except (ValueError, IndexError):
+                return None
+        return None
 
     def _check_column_width(self, text, column_name, address):
         text_width = self._calculate_text_width(text)
@@ -510,3 +512,15 @@ class CodeMemoryView(ctk.CTkFrame):
         font_metrics = tk.font.Font(font=font)
         padding = 5
         return font_metrics.measure(text) + padding
+
+    def _get_x_root_from_item_boundingbox(self,bbox):
+        return bbox[0]
+    
+    def _get_y_root_from_item_boundingbox(self, bbox):
+        return bbox[1]
+    
+    def _get_height_of_item(self, bbox):
+        return bbox[3]
+    
+    def _get_width_of_item(self, bbox):
+        return bbox[2]
