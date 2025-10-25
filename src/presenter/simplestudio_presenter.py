@@ -22,10 +22,10 @@ class SimpleStudioPresenter(VirtualMachineListener):
     def set_virtual_machine(self, virtual_machine : VirtualMachine):
         self.virtual_machine = virtual_machine
     
-    def update_code_memory_view(self):       
+    def update_code_memory_view(self, clear_breakpoints = True):       
         code_data = PresenterParser.parse_code_memory(self.virtual_machine.get_code_memory().codecell_list)
         
-        self.main_view.load_code_onto_c_memory(code_data, self.main_view.get_selected_file_path())
+        self.main_view.load_code_onto_c_memory(code_data, self.main_view.get_selected_file_path(), clear_breakpoints)
        
     # --------- user view events    
      
@@ -113,7 +113,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
     def reset_has_finished(self):
         reset_code_memory = True
         if not self._loading_file:
-            self.update_code_memory_view()
+            self.update_code_memory_view(clear_breakpoints=False)
         else:
             self._loading_file = False
             reset_code_memory = False

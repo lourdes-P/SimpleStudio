@@ -67,7 +67,6 @@ class VirtualMachine:
         self.notify_load_finished()
         
     def reset(self, on_load = True):
-        # TODO  have to divide the view methods in threads or something
         if self._code_memory is not None:
             self._deleted_label_name = None
             self._last_executed_instruction_address = None
@@ -79,6 +78,8 @@ class VirtualMachine:
             if not on_load:
                 self._processor.reset()
                 self._label_dictionary = self._original_label_dictionary.copy()
+            else:
+                self._breakpoint_list.clear()
             self.notify_reset_finished()
             
     def undo(self):

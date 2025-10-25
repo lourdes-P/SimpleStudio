@@ -30,7 +30,7 @@ class CodeMemoryView(ctk.CTkFrame):
         self._setup_layout()
         self._setup_bindings()
         
-    def load_code(self, code_data: List[dict]):
+    def load_code(self, code_data: List[dict], clear_breakpoints = True):
         """
         Load code into the memory view
         
@@ -41,7 +41,8 @@ class CodeMemoryView(ctk.CTkFrame):
         for item in self.tree.get_children():
             self.tree.delete(item)
         
-        self.breakpoints.clear()
+        if clear_breakpoints:
+            self.breakpoints.clear()
         if self.breakpoint_canvas:
             self.breakpoint_canvas.clear()
         

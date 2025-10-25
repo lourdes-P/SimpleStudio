@@ -68,8 +68,8 @@ class SimpleStudioView(ctk.CTk):
     def get_breakpoints(self):
         return self.memory_panel.get_breakpoints()
     
-    def load_code_onto_c_memory(self, code_data, file_path):
-        self.memory_panel.load_code_onto_c_memory(code_data, file_path)
+    def load_code_onto_c_memory(self, code_data, file_path, clear_breakpoints = True):
+        self.memory_panel.load_code_onto_c_memory(code_data, file_path, clear_breakpoints)
         
     def load_data_memory(self, data):
         self.memory_panel.load_data_memory(data)
