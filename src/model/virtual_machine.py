@@ -49,21 +49,19 @@ class VirtualMachine:
     def load_program(self, file_path):        
         self._io_manager = IOManager(file_path)
         self._code_memory = CodeMemory()   
-        lexical_analyzer = LexicalAnalyzer(self._io_manager, self._reserved_word_map)
-        syntactic_analyzer = SyntacticAnalyzer(lexical_analyzer, self._code_memory, self._firsts_map, self._nexts_map, self._operator_precedence_manager)
         try:
+            lexical_analyzer = LexicalAnalyzer(self._io_manager, self._reserved_word_map)
+            syntactic_analyzer = SyntacticAnalyzer(lexical_analyzer, self._code_memory, self._firsts_map, self._nexts_map, self._operator_precedence_manager)
             syntactic_analyzer.start()
+            self._original_label_dictionary = syntactic_analyzer.get_label_dictionary()
+            self._label_dictionary = syntactic_analyzer.get_label_dictionary()
+            self.initialize_processor()
+            self.notify_load_finished()
         except (LexicalException, LexicalExceptionInvalidSymbol, 
             LexicalExceptionInvalidOperator, SyntacticException, 
             SyntacticExceptionNoMatch, SimpleSyntacticException) as e:  # TODO ver estas excepciones catcheadas
             self._error = e
             self.notify_error()
-        
-        self._original_label_dictionary = syntactic_analyzer.get_label_dictionary()
-        self._label_dictionary = syntactic_analyzer.get_label_dictionary()
-        self.initialize_processor()
-        
-        self.notify_load_finished()
         
     def reset(self, on_load = True):
         if self._code_memory is not None:
@@ -97,6 +95,7 @@ class VirtualMachine:
         self._undo_memory_modified_heap_cells(cache_entry.get_memory_modified_heap_cells())
         self._undo_register_modified_heap_cells(cache_entry.get_register_modified_heap_cells())
         self._undo_label_modification(cache_entry.get_label_added_entry())
+        self._processor.enable()
         
         self.notify_undo_finished()
      

@@ -37,9 +37,9 @@ class NumeralSpinbox(ctk.CTkFrame):
 
     def add_button_callback(self):
         try:
-            value = int(self.entry.get())
-            value = value + self.step_size if value > 0 else +self.step_size
-            self.entry.delete(0, "end")
+            value = self.get()
+            value = value + self.step_size if value > 0 else + self.step_size
+            self.entry.delete(0, "end") 
             self.entry.insert(0, value)
         except ValueError:
             return
@@ -48,7 +48,7 @@ class NumeralSpinbox(ctk.CTkFrame):
 
     def subtract_button_callback(self):
         try:
-            value = int(self.entry.get()) - self.step_size
+            value = self.get() - self.step_size
             value = value if value > 0 else 1
             self.entry.delete(0, "end")
             self.entry.insert(0, value)

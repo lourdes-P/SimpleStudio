@@ -8,15 +8,15 @@ class Processor:
     
     def __init__(self, virtual_machine = None):
         self._virtual_machine = virtual_machine
+        self._enabled = False
         self._former_pc = 0
         self._pc = self._former_pc
         self._actual = 0
         self._libre = 0
         self._po = 0   
-        self._enabled = False
-        self._enable()    
         self._next_instruction = None
         self._error = None
+        self.enable()
     
     def reset(self):
         self._pc = 0
@@ -24,9 +24,9 @@ class Processor:
         self._actual = 0
         self._libre = 0
         self._po = 0   
-        self._enable()
         self._next_instruction = None
         self._error = None
+        self.enable()
     
     def execute_next_instruction(self):
         self._next_instruction = self._get_next_instruction()
@@ -49,12 +49,13 @@ class Processor:
 
             return success
         elif not self._enabled:
-            self._error = "Error in instruction execution: processor is not enabled."
             return self.DISABLED
         elif self._next_instruction is None:
             self._error = "No instruction under current PC. Make sure to not try accessing an address out of code memory's range, and to halt execution properly with the HALT instruction."
+            self._enabled = False
             return self.FAILURE
         else:
+            self._enabled = False
             self._error = "ERROR in processor instruction execution."
             return self.FAILURE
         
@@ -83,7 +84,7 @@ class Processor:
     def deliver_user_input(self):
         state = self._next_instruction.on_user_input(self)
         if state == self.SUCCESS:
-            self._enable()
+            self.enable()
         
     def get_user_input(self):
         return self._virtual_machine.get_user_input()
@@ -136,7 +137,7 @@ class Processor:
         self._enabled = False
         self._virtual_machine.disable_execution()
         
-    def _enable(self):
+    def enable(self):
         self._enabled = True
         self._virtual_machine.enable_execution()
     

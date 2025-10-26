@@ -19,32 +19,32 @@ class ControlPanel(ctk.CTkFrame):
         self._browse_files_callback = browse_file
         self._n_step = 1
         self._cache_entry_disponibility = 0
+        self._button_x_padding = 20
         
     def initialize(self):
-        self.grid_columnconfigure((1, 2, 3, 4, 5, 6, 7, 9), weight=0, minsize=5)
-        self.grid_columnconfigure((0,8), weight=1)
+        self._create_widgets()
+        self._setup_layout()
+        self._setup_bindings()
         
+    def _create_widgets(self):
         self.undo_button = ctk.CTkButton(
             self, 
             text=f"Undo ({self._cache_entry_disponibility})",
             command=self._undo_callback,
             width=self._calculate_button_width(f"Undo ({self._cache_entry_disponibility})", padding = 10)
         )
-        self.undo_button.grid(row=0, column=1, padx=20, pady=(20,5), sticky="ew")
         self.run_button = ctk.CTkButton(
             self, 
             text="Run",
             command=self._run_callback,
             width=self._calculate_button_width("Run")
         )
-        self.run_button.grid(row=0, column=2, padx=20, pady=(20,5), sticky="ew")
         self.step_button = ctk.CTkButton(
             self, 
             text="Step",
             command=self._step_callback,
             width=self._calculate_button_width("Step")
         )
-        self.step_button.grid(row=0, column=3, padx=20, pady=(20,5), sticky="ew")
         
         self.n_step_button = ctk.CTkButton(
             self, 
@@ -52,10 +52,8 @@ class ControlPanel(ctk.CTkFrame):
             command=self.on_n_step,
             width=self._calculate_button_width("N-step")
         )
-        self.n_step_button.grid(row=0, column=4, padx=(20, 0), pady=(20,5), sticky="ew")
         
         self.n_step_spinbox = NumeralSpinbox(master=self)
-        self.n_step_spinbox.grid(row=0, column=5, padx=(0, 20), pady=(20,5))
         self._n_step = self.n_step_spinbox.get()
         
         self.reset_button = ctk.CTkButton(
@@ -64,7 +62,6 @@ class ControlPanel(ctk.CTkFrame):
             command=self._reset_callback,
             width=self._calculate_button_width("Reset")
         )
-        self.reset_button.grid(row=0, column=6, padx=20, pady=(20,5), sticky="ew")
         
         self.upload_button = ctk.CTkButton(
             self,
@@ -72,7 +69,13 @@ class ControlPanel(ctk.CTkFrame):
             command=self._browse_files_callback,
             width=self._calculate_button_width("Upload Source")
         )
-        self.upload_button.grid(row=0, column=7, padx=(20,0), pady=(20,5))  
+        
+        self.file_managing_menu = ctk.CTkOptionMenu(
+            self, 
+            values=["Upload Source", "Save", "Save As"],
+            command=self._change_appearance_mode_callback,
+            width=self._calculate_button_width("System")
+        )
         
         self.code_editor_button = ctk.CTkButton(
             self, 
@@ -80,7 +83,6 @@ class ControlPanel(ctk.CTkFrame):
             command=self._switch_code_editor,
             width=self._calculate_button_width("Open Code Editor", 5)
         )
-        self.code_editor_button.grid(row=1, column=7, padx=(20,0), pady=(0,10))
         
         # Appearance mode option menu
         self.appearance_mode_label = ctk.CTkLabel(
@@ -88,7 +90,6 @@ class ControlPanel(ctk.CTkFrame):
             text="Appearance:",
             anchor="sw"
         )
-        self.appearance_mode_label.grid(row=0, column=9, padx=20, pady=(20,5), sticky="ne")
         
         self.appearance_mode_optionemenu = ctk.CTkOptionMenu(
             self, 
@@ -96,17 +97,33 @@ class ControlPanel(ctk.CTkFrame):
             command=self._change_appearance_mode_callback,
             width=self._calculate_button_width("System")
         )
-        self.appearance_mode_optionemenu.grid(row=1, column=9, padx=20, pady=(0,10), sticky="se")
         
         self.file_path_label = ctk.CTkLabel(
             self, 
             text="No file selected",
             compound="left"
         )
-        self.file_path_label.grid(row=1, column=0, columnspan=7, padx=20, pady=(0,1), sticky="w")
         
-        self.set_buttons_state(False)
+        self.set_buttons_state(False) 
             
+    def _setup_layout(self):
+        self.grid_columnconfigure((1, 2, 3, 4, 5, 6, 7, 9), weight=0, minsize=5)
+        self.grid_columnconfigure((0,8), weight=1)
+        self.undo_button.grid(row=0, column=1, padx=self._button_x_padding, pady=(20,5), sticky="ew")
+        self.run_button.grid(row=0, column=2, padx=self._button_x_padding, pady=(20,5), sticky="ew")
+        self.step_button.grid(row=0, column=3, padx=self._button_x_padding, pady=(20,5), sticky="ew")
+        self.n_step_button.grid(row=0, column=4, padx=(self._button_x_padding, 0), pady=(20,5), sticky="ew")
+        self.n_step_spinbox.grid(row=0, column=5, padx=(0, self._button_x_padding), pady=(20,5))
+        self.reset_button.grid(row=0, column=6, padx=self._button_x_padding, pady=(20,5), sticky="ew")
+        self.upload_button.grid(row=0, column=7, padx=(self._button_x_padding,0), pady=(20,5))  
+        self.code_editor_button.grid(row=1, column=7, padx=(self._button_x_padding,0), pady=(0,10))
+        self.appearance_mode_label.grid(row=0, column=9, padx=self._button_x_padding, pady=(20,5), sticky="ne")
+        self.appearance_mode_optionemenu.grid(row=1, column=9, padx=self._button_x_padding, pady=(0,10), sticky="se")
+        self.file_path_label.grid(row=1, column=0, columnspan=7, padx=self._button_x_padding, pady=(0,1), sticky="w")
+
+    def _setup_bindings(self):
+        self.bind("<Configure>", self._on_window_resize)
+
     def on_n_step(self):
         if self._n_step_callback:
             self._n_step = self.n_step_spinbox.get()
@@ -129,7 +146,7 @@ class ControlPanel(ctk.CTkFrame):
             text=f"Undo ({self._cache_entry_disponibility})",
             width=self._calculate_button_width(f"Undo ({self._cache_entry_disponibility})", padding = 10)
             )
-        if number > 0 and self.step_button.cget('state') == 'normal':  
+        if number > 0:  
             self.undo_button.configure(state='normal')
         else:
             self.undo_button.configure(state='disabled')
@@ -164,3 +181,19 @@ class ControlPanel(ctk.CTkFrame):
         """Calculate appropriate width based on text length"""
         base_width = len(text) * 8 + padding
         return max(50, base_width)
+    
+    def _change_button_x_padding(self):
+        width = self.winfo_width()
+        former_x_padding = self._button_x_padding
+        if width < 600:
+            self._button_x_padding = 5
+        elif width <= 800:
+            self._button_x_padding = 10
+        else:
+            self._button_x_padding = 20
+        return (former_x_padding, self._button_x_padding)
+
+    def _on_window_resize(self, event):
+        x_padding_tuple = self._change_button_x_padding()
+        if (x_padding_tuple[0] != x_padding_tuple[1]):
+            self._setup_layout()

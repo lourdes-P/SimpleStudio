@@ -1,7 +1,5 @@
 import tkinter as tk
 import customtkinter as ctk
-from tkinter import scrolledtext
-from tkinter import font
 
 class CodeEditor(ctk.CTkFrame):
     def __init__(self, parent, **kwargs):
@@ -124,7 +122,7 @@ class CodeEditor(ctk.CTkFrame):
         if line_number is not None:
             self._move_cursor_to_line_end(line_number)
         else: 
-            pass # TODO open editor if not line number
+            pass
         
     def get_content(self):
         return self.text_area.get("1.0", "end-1c")

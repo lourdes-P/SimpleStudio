@@ -28,9 +28,10 @@ class SimpleStudioView(ctk.CTk):
         self.bottom_panel = None    # has label map (name, address) frame, output frame, test battery output frame
         self.presenter = presenter
         
-        self.create_widgets()
+        self._create_widgets()
+        self._setup_bindings()
         
-    def create_widgets(self):
+    def _create_widgets(self):
         # Create main grid - now with a row for the top sidebar
         self.grid_columnconfigure((1,2), weight=1)  # Single column for main content
         self.grid_columnconfigure(0, weight=0)  # Single column for main content
@@ -113,6 +114,24 @@ class SimpleStudioView(ctk.CTk):
             self.control_panel.set_file_path_label(file_path)            
             self.presenter.on_file_selected()
             
+    def on_save_file(self):
+        content = self.memory_panel.get_code_editor_content()
+        if not content:
+            if self.display_yes_no(self, "The content is empty. Do you want to save an empty file?") == 'No':
+                return
+        self.presenter.on_save_file(content)
+    
+    def on_save_as_file(self):
+        content = self.memory_panel.get_code_editor_content()
+        if not content:
+            if self.display_yes_no(self, "The content is empty. Do you want to save an empty file?") == 'No':
+                return
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+        )
+        self.presenter.on_save_file(content, file_path=file_path)
+        
     def get_selected_file_path(self):
         return self.control_panel.get_file_path()
         
@@ -133,7 +152,20 @@ class SimpleStudioView(ctk.CTk):
             width= 300,
             height= 200,
             master=self
-        )    
+        )
+    
+    def display_yes_no(self, message):
+        yes_no_response = CTkMessagebox(
+            title="Continue?",
+            message=message,
+            icon="question",
+            option_1="Yes",
+            option_2="No",
+            width= 300,
+            height= 200,
+            master=self
+        )
+        return yes_no_response.get()
         
     def display_user_input(self, on_user_input_callback):
         InputDialog.show_input_dialog(on_user_input_callback)
@@ -147,6 +179,20 @@ class SimpleStudioView(ctk.CTk):
     def set_cache_entry_disponibility(self, number : int):
         if number >= 0:
             self.control_panel.set_cache_entry_disponibility(number)
+            
+    def _setup_bindings(self):
+        self.bind_all("<Control-s>", self._on_save)
+        self.bind_all("<Control-S>", self._on_save)
+        self.bind_all("<Control-Shift-s>", self._on_save_as)
+        self.bind_all("<Control-Shift-S>", self._on_save_as)
+
+    def _on_save(self, event=None):
+        print("on save")
+        return "break"  # Prevent default behavior
+
+    def _on_save_as(self, event=None):
+        print("on save as")
+        return "break"  # Prevent default behavior
 
 if __name__ == "__main__":
     app = SimpleStudioView()
