@@ -22,18 +22,26 @@ class DataHeapMemoryView(ctk.CTkFrame):
         self._setup_bindings()
     
     def reset(self, cell_list):
-        """Reset modified cells"""
+        """
+        Reset modified cells
+        Args:
+            cell_list: List of dictionaries with keys: 
+                    'register', 'address', 'instruction', 'value', 'annotation'
+        """
         self.last_modified_cell_address = None
         for cell_data in cell_list:
             address = cell_data.get('address', '')
             register = cell_data.get('register', None)
             value = cell_data.get('value', None)
             annotation = cell_data.get('annotation', None)
-            self.update_cell_value(address, value, register, annotation)
+            self._update_cell_value(address, value, register, annotation)
             
     def load_memory(self, memory_data: List[dict]):
         """
         Load memory data into the treeview
+        Args:
+            memory_data: List of dictionaries with keys: 
+                    'register', 'address', 'instruction', 'value', 'annotation'
         """
         for item in self.tree.get_children():
             self.tree.delete(item)
@@ -44,7 +52,6 @@ class DataHeapMemoryView(ctk.CTkFrame):
         for i, cell_data in enumerate(memory_data):
             self._create_tree_item(cell_data, i)
             
-        #self.tree.configure(height=f"{len(memory_data)}")
         self._auto_size_columns()
         
     def update_memory(self, modified_cells):
@@ -57,7 +64,7 @@ class DataHeapMemoryView(ctk.CTkFrame):
             annotation = cell_data.get('annotation', None)
             memory_modified = cell_data.get('memory_modified', False)
             
-            self.update_cell_value(address, value, register, annotation)
+            self._update_cell_value(address, value, register, annotation)
             
             if memory_modified:
                 last_modified_cell_address = address
@@ -188,8 +195,8 @@ class DataHeapMemoryView(ctk.CTkFrame):
     def _define_tree_tag_configurations(self):
         self.tree.tag_configure('modified', background=ColorManager.TERTIARY_COLOR, foreground='black')
         self.tree.tag_configure('register', background=ColorManager.SECONDARY_COLOR, foreground='white')
-        self.tree.tag_configure('even', background=self._get_non_transparent_color(ColorManager.get_alternating_colors(self, 0)))
-        self.tree.tag_configure('odd', background=self._get_non_transparent_color(ColorManager.get_alternating_colors(self, 1)))
+        self.tree.tag_configure('even', background=ColorManager.get_alternating_colors(self, 0))
+        self.tree.tag_configure('odd', background=ColorManager.get_alternating_colors(self, 1))
         
     def _setup_bindings(self):
         self.tree_frame.bind('<Configure>', lambda e: self._update_scrollbar_visibility())
@@ -274,7 +281,7 @@ class DataHeapMemoryView(ctk.CTkFrame):
         
         self.tree.item(row_item_id, tags=row_item_tags)
     
-    def update_cell_value(self, address: str, value: str = None, register: str = None, annotation: str = None):
+    def _update_cell_value(self, address: str, value: str = None, register: str = None, annotation: str = None):
         """Update the value of a specific memory cell"""
         if address not in self.tree_items:
             return
@@ -335,30 +342,9 @@ class DataHeapMemoryView(ctk.CTkFrame):
     def _calculate_text_width(self, text):
         """Calculate appropriate width based on text length"""
         font = ctk.CTkFont()
-        font_metrics = tkfont.Font(font=font)
         padding = 20
-        return font_metrics.measure(text) + padding
+        return font.measure(text) + padding
     
     def change_appearance_mode(self, new_appearance_mode):
         """Update appearance based on the selected mode"""
-        ctk.set_appearance_mode(new_appearance_mode)
-        
         self._setup_styles()
-        
-        for address in self.tree_items:
-            self._update_cell_appearance(address)
-                
-    def _get_non_transparent_color(self, color):
-        if color == "transparent":
-            # Get the actual background color from the master or use default
-            try:
-                # Try to get the background color from parent
-                color = ColorManager.get_single_color(self.master.cget("fg_color"))
-            except:
-                # Fallback colors based on appearance mode
-                if ctk.get_appearance_mode().lower() == "dark":
-                    color = "#2b2b2b"  
-                else:
-                    color = "#f0f0f0"  
-                    
-        return color

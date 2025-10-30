@@ -73,8 +73,8 @@ class Cache:
         return len(self._cache_stack)
         
     def is_empty(self):
-        return not bool(self._cache_stack)     
-    
+        return len(self._cache_stack) == 0
+        
     def _pop_last_modified_data_cell_stack(self, memory_modified_data_cell_list):
         last_modified = self._last_modified_data_cell_stack.peek()
         if memory_modified_data_cell_list is not None and len(memory_modified_data_cell_list) > 0 and memory_modified_data_cell_list[0] == last_modified:

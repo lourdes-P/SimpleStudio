@@ -35,10 +35,10 @@ class CodeMemoryView(ctk.CTkFrame):
     def load_code(self, code_data: List[dict], clear_breakpoints = True):
         """
         Load code into the memory view
-        
         Args:
             code_data: List of dictionaries with keys: 
                     'label', 'address', 'instruction', 'annotation'
+            clear_breapoints: True to clear breakpoint list.
         """
         for item in self.tree.get_children():
             self.tree.delete(item)
@@ -117,6 +117,7 @@ class CodeMemoryView(ctk.CTkFrame):
         
     def _create_widgets(self):
         """Create all the widgets for the code memory view"""  
+        self.style = ttk.Style()
         self.tree_frame = ctk.CTkFrame(self)
         self.tree = ttk.Treeview(
             self.tree_frame,
@@ -124,7 +125,7 @@ class CodeMemoryView(ctk.CTkFrame):
             show='tree headings',
             height=25,
             padding=0,
-            selectmode="browse"
+            selectmode="browse",
         )
         
         canvas_width = self.column_widths['breakpoint']
@@ -153,41 +154,8 @@ class CodeMemoryView(ctk.CTkFrame):
         
     def _setup_styles(self):
         """Configure ttk styles for the treeview"""
-        if not hasattr(self, "style"):
-            self.style = ttk.Style()
-            
-        available_themes = self.style.theme_names()
-        if 'clam' in available_themes:
-            self.style.theme_use('clam')
-        elif 'alt' in available_themes:
-            self.style.theme_use('alt')
-        else:
-            self.style.theme_use(available_themes[0])
         
-        font = ctk.CTkFont()
-
-        bg_color_master = ColorManager.get_theme_background_color(self.master)
-        bg_color = ColorManager.get_theme_background_color(self)
-        text_color = ColorManager.get_theme_text_color()
-        self.style.configure("Treeview", 
-                           font=(font.actual("family"), font.actual("size")),
-                           background=bg_color_master,
-                           foreground=text_color,
-                           fieldbackground=bg_color_master,
-                           rowheight=25, 
-                           borderwidth=0,
-                           highlightthickness=0)
-        
-        self.style.configure("Treeview.Heading",
-                           font=(font.actual("family"), font.actual("size"), "bold"),
-                           background=bg_color,
-                           foreground=text_color,
-                           relief="flat")
-        
-        self.style.map('Treeview.Heading',
-                      background=[('active', bg_color_master),
-                                ('pressed', bg_color_master)],
-                      relief=[('pressed', 'flat')])
+        bg_color = ColorManager.get_theme_background_color(self) 
         
         self._define_tree_tag_configurations()
         self.breakpoint_canvas.configure(background=bg_color)
@@ -197,8 +165,8 @@ class CodeMemoryView(ctk.CTkFrame):
     def _define_tree_tag_configurations(self):
         self.tree.tag_configure('current_pc', background=ColorManager.SECONDARY_COLOR, foreground='white')
         self.tree.tag_configure('last_executed', background=ColorManager.TERTIARY_COLOR, foreground='black')
-        self.tree.tag_configure('even', background=ColorManager.get_non_transparent_color(self.master, ColorManager.get_alternating_colors(self, 0)))
-        self.tree.tag_configure('odd', background=ColorManager.get_non_transparent_color(self.master, ColorManager.get_alternating_colors(self, 1)))
+        self.tree.tag_configure('even', background=ColorManager.get_alternating_colors(self, 0))
+        self.tree.tag_configure('odd', background=ColorManager.get_alternating_colors(self, 1))
         self.tree.tag_configure('has_annotation', font=ctk.CTkFont(weight="bold"))
         
     def _setup_layout(self):
@@ -212,7 +180,7 @@ class CodeMemoryView(ctk.CTkFrame):
         self.tree_frame.grid_columnconfigure((0,2), weight=0)
         self.tree_frame.grid_columnconfigure(1,weight=1)
         
-        self.breakpoint_canvas.grid(row=0,column=0, sticky="ns")
+        self.breakpoint_canvas.grid(row=0,column=0, rowspan=2, sticky="ns")
         self.tree.grid(row=0, column=1, sticky="nsew")
         self.v_scrollbar.grid(row=0, column=2, sticky="ns")
         self.h_scrollbar.grid(row=1, column=1, sticky="ew")
@@ -342,10 +310,10 @@ class CodeMemoryView(ctk.CTkFrame):
         # values = (pc, label, address, instruction)
         values = list(self.tree.item(item_id, 'values'))
         
-        values[0] = "→" if self.current_pc_on_address(address) else ""
+        values[0] = "→" if self._current_pc_on_address(address) else ""
         
         tags = [str(address)]
-        if self.current_pc_on_address(address):
+        if self._current_pc_on_address(address):
             tags.append('current_pc')
         elif self.last_executed_instruction is not None and address == self.last_executed_instruction:
             tags.append('last_executed')
@@ -471,9 +439,6 @@ class CodeMemoryView(ctk.CTkFrame):
         self._hide_tooltips()
         super().destroy()                
     
-    def get_current_pc_value(self):
-        return self.current_pc
-    
     def get_breakpoints(self) -> set:
         """Get all currently set breakpoints"""
         return self.breakpoints.copy()
@@ -491,21 +456,17 @@ class CodeMemoryView(ctk.CTkFrame):
         """
         self.on_breakpoint_change = callback
     
-    def current_pc_on_address(self, address: int):
-        return True if address == self.current_pc else False
-
     def change_appearance_mode(self, new_appearance_mode):
-        ctk.set_appearance_mode(new_appearance_mode)
         self._setup_styles()
-        
-        for address in self.tree_items_address_to_treeview_ID:
-            self._update_line_appearance(address)
 
     def _append_color_tag(self, address, tag_list):
         if address % 2 == 0:
             tag_list.append('even')
         else:
             tag_list.append('odd')
+
+    def _current_pc_on_address(self, address: int):
+        return True if address == self.current_pc else False
 
     def _get_address_from_item(self, item):
         """Extract address from treeview item"""
@@ -529,9 +490,8 @@ class CodeMemoryView(ctk.CTkFrame):
     def _calculate_text_width(self, text):
         """Calculate appropriate width based on text length"""
         font = ctk.CTkFont(weight='bold')
-        font_metrics = tk.font.Font(font=font)
         padding = 5
-        return font_metrics.measure(text) + padding
+        return font.measure(text) + padding
 
     def _get_x_root_from_item_boundingbox(self,bbox):
         return bbox[0]

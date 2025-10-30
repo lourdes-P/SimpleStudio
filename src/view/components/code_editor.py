@@ -1,38 +1,73 @@
 import tkinter as tk
 import customtkinter as ctk
+from view.utils.color_manager import ColorManager
 
 class CodeEditor(ctk.CTkFrame):
-    def __init__(self, parent, **kwargs):
+    
+    END_MINUS_ONE_CHAR = "end-1c"
+    START = "1.0"
+    
+    def __init__(self, parent, font_name = 'Consolas', font_size = 15, **kwargs):
         super().__init__(parent, **kwargs)
-        
-        # Get current theme colors
         self.appearance_mode = ctk.get_appearance_mode()
-        self.font_name = "Consolas"
-        self.font_size = 11
+        self.font = ctk.CTkFont(font_name, font_size)
         self.last_line_count = 0
-        self._setup_colors()
-        
+        self.initial_content = ''
         self._create_widgets()
         self._setup_bindings()
     
-    def _setup_colors(self):
-        """Get colors based on current appearance mode"""
-        if self.appearance_mode == "Dark":
-            self.bg_color = "#2b2b2b"
-            self.fg_color = "#ffffff"
-            self.line_bg = "#3c3c3c"
-            self.line_fg = "#888888"
-            self.highlight_color = "#366693"
-        else:  # Light mode
-            self.bg_color = "#ffffff"
-            self.fg_color = "#000000"
-            self.line_bg = "#f0f0f0"
-            self.line_fg = "#666666"
-            self.highlight_color = "#d6eaff"
+    def load_file(self, file_path):
+        """Load file content into editor"""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                self.initial_content = file.read()
+            self.text_area.delete(self.START, tk.END)
+            self.text_area.insert(self.START, self.initial_content)
+            self._update_line_numbers()
+            self._update_scrollbar_visibility()
+        except Exception as e:
+            print(f"Error loading file: {e}")
+    
+    def open_editor(self, line_number = None):
+        if line_number is not None:
+            self._move_cursor_to_line_end(line_number)
+        else: 
+            pass
+        
+    def get_content(self):
+        return self.text_area.get(self.START, self.END_MINUS_ONE_CHAR)
+    
+    def content_modified(self):
+        return self.get_content() != self.initial_content
+    
+    def update_theme(self, theme):
+        """Update colors when appearance mode changes"""
+        self.appearance_mode = theme
+        if theme == 'System':
+            self.appearance_mode = ctk.get_appearance_mode()
+        else:
+            self.appearance_mode = theme
+        self.text_area.configure(
+            bg=self._get_colors('text_background_color'),
+            fg=self._get_colors('text_color'),
+            insertbackground=self._get_colors('cursor_color'),
+            selectbackground=self._get_colors('highlight_color'),
+            selectforeground=self._get_colors('highlight_text_color')
+        )
+        self.line_numbers.configure(
+            bg=self._get_colors('line_number_background_color'),
+            fg=self._get_colors('line_number_text_color')
+        )
+        self._excess_frame.configure(
+            bg=self._get_colors('line_number_background_color'),
+        )
+        self.main_container.configure(bg=self._get_colors('text_background_color'))
+    
+    def _get_colors(self, widget_and_option):
+        return ColorManager.CODE_EDITOR_COLORS[self.appearance_mode][widget_and_option]
     
     def _create_widgets(self):
-        # Main container
-        self.main_container = tk.Frame(self, bg=self.bg_color)
+        self.main_container = tk.Frame(self, bg=self._get_colors('text_background_color'))
         self.main_container.pack(fill="both", expand=True)
         self.main_container.grid_columnconfigure((0,2), weight=0)
         self.main_container.grid_columnconfigure(1, weight=1)
@@ -43,29 +78,37 @@ class CodeEditor(ctk.CTkFrame):
             width=4,
             padx=4,
             pady=5,
-            bg=self.line_bg,
-            fg=self.line_fg,
+            bg=self._get_colors('line_number_background_color'),
+            fg=self._get_colors('line_number_text_color'),
             relief="flat",
             border=0,
             state="disabled",
             wrap="none",
-            font=(self.font_name, self.font_size)
+            font=(self.font)
         )
-        self.line_numbers.grid(column=0, row=1, rowspan=2, sticky="ns")
+        self.line_numbers.grid(column=0, row=1, sticky="ns")
+        self._excess_frame = tk.Frame(
+            self.main_container,
+            width=4,
+            bg=self._get_colors('line_number_background_color'),
+        )
+        self._excess_frame.grid(column=0,row=2, sticky="nsew")
+        self._excess_frame.grid_remove()
         
         self.text_area = tk.Text(
             self.main_container,
             pady=5,
             padx=5,
-            bg=self.bg_color,
-            fg=self.fg_color,
+            bg=self._get_colors('text_background_color'),
+            fg=self._get_colors('text_color'),
             relief="flat",
             border=0,
             undo=True,
-            wrap="none",
-            font=(self.font_name, self.font_size),
-            insertbackground=self.fg_color,  # Cursor color
-            selectbackground=self.highlight_color  # Selection color
+            wrap=tk.NONE,
+            font=(self.font),
+            insertbackground=self._get_colors('cursor_color'),
+            selectbackground=self._get_colors('highlight_color'),
+            selectforeground=self._get_colors('highlight_text_color')
         )
         self.text_area.grid(row=1, column=1, sticky="nsew")
         
@@ -79,13 +122,13 @@ class CodeEditor(ctk.CTkFrame):
         self.h_scrollbar = ctk.CTkScrollbar(
             self.main_container,
             orientation="horizontal",
-            command=self._on_horizontal_scroll
+            command=self.text_area.xview
         )
-        self.h_scrollbar.grid(row=2,column=1, sticky= "nsew")
+        self.h_scrollbar.grid(row=2,column=1, sticky= "ew")
         
         self.text_area.configure(
             yscrollcommand=self._on_text_vertical_scroll,
-            xscrollcommand=self._on_text_horizontal_scroll
+            xscrollcommand=self.h_scrollbar.set
         )
         
         self.line_numbers.configure(yscrollcommand=self._on_line_scroll)
@@ -94,218 +137,19 @@ class CodeEditor(ctk.CTkFrame):
     
     def _setup_bindings(self):
         self.text_area.bind("<KeyRelease>", self._on_text_change)
-        self.text_area.bind("<MouseWheel>", self._on_mousewheel)
-        self.text_area.bind("<Button-4>", self._on_mousewheel)
-        self.text_area.bind("<Button-5>", self._on_mousewheel)
-        self.text_area.bind("<Shift-MouseWheel>", self._on_shift_mousewheel)
         self.text_area.bind("<Configure>", self._on_configure)
         # Enhanced key bindings
-        self.text_area.bind("<Control-Key-BackSpace>", self._ctrl_backspace)
-        self.text_area.bind("<Control-Key-Delete>", self._ctrl_delete)
-        self.text_area.bind("<Control-Key-c>", self._ctrl_c)
-        self.text_area.bind("<Control-Key-x>", self._ctrl_x)
-        self.text_area.bind("<Control-Key-C>", self._ctrl_c)
-        self.text_area.bind("<Control-Key-X>", self._ctrl_x)
-        
-    def load_file(self, file_path):
-        """Load file content into editor"""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                content = file.read()
-            self.text_area.delete("1.0", "end")
-            self.text_area.insert("1.0", content)
-            self._update_line_numbers()
-        except Exception as e:
-            print(f"Error loading file: {e}")
-    
-    def open_editor(self, line_number = None):
-        if line_number is not None:
-            self._move_cursor_to_line_end(line_number)
-        else: 
-            pass
-        
-    def get_content(self):
-        return self.text_area.get("1.0", "end-1c")
-    
-    def update_theme(self, theme):
-        """Update colors when appearance mode changes"""
-        self.appearance_mode = theme
-        self._setup_colors()
-        self.text_area.configure(
-            bg=self.bg_color,
-            fg=self.fg_color,
-            insertbackground=self.fg_color,
-            selectbackground=self.highlight_color
-        )
-        self.line_numbers.configure(
-            bg=self.line_bg,
-            fg=self.line_fg
-        )
-        self.main_container.configure(bg=self.bg_color)
-    
-    def _ctrl_backspace(self, event):
-        """Delete from cursor to previous word boundary (space, special char, or start of word)"""
-        # Get current cursor position
-        cursor_pos = self.text_area.index(tk.INSERT)
-        
-        # Get the text from start of line to cursor
-        line_start = self.text_area.index(f"{cursor_pos} linestart")
-        text_before_cursor = self.text_area.get(line_start, cursor_pos)
-        
-        if not text_before_cursor:  # If we're at the start of line, nothing to delete
-            return "break"
-        
-        # Find the previous boundary (space, special character, or different character type)
-        delete_length = 0
-        # Check characters backwards from cursor
-        for i in range(len(text_before_cursor) - 1, -1, -1):
-            char = text_before_cursor[i]
-            
-            if i == len(text_before_cursor) - 1:
-                # This is the character immediately before cursor
-                if char.isspace():
-                    # Delete all consecutive whitespace backwards
-                    delete_length += 1
-                    continue
-                elif char.isalnum():
-                    # Delete until non-alphanumeric or space
-                    delete_length += 1
-                    continue
-                else:
-                    # Delete until different type of character or space
-                    delete_length += 1
-                    continue
-            
-            # Check if we should continue deleting
-            prev_char = text_before_cursor[i + 1]  # The character we were previously checking
-            current_char = text_before_cursor[i]   # The character we're currently checking
-            
-            if prev_char.isspace():
-                # If we were deleting whitespace, stop at non-whitespace
-                if not current_char.isspace():
-                    break
-                delete_length += 1
-            elif prev_char.isalnum():
-                # If we were deleting alphanumeric, stop at non-alphanumeric
-                if not current_char.isalnum():
-                    break
-                delete_length += 1
-            else:
-                # If we were deleting special chars, stop at different type or alphanumeric
-                if current_char.isspace() or current_char.isalnum():
-                    break
-                delete_length += 1
-        
-        # Delete the calculated range
-        if delete_length > 0:
-            delete_start = self.text_area.index(f"{cursor_pos}-{delete_length}c")
-            self.text_area.delete(delete_start, cursor_pos)
-        
-        return "break"  # Prevent default behavior
-    
-    def _ctrl_delete(self, event):
-        """Delete from cursor to next word boundary (space, special char, or end of word)"""
-        # Get current cursor position
-        cursor_pos = self.text_area.index(tk.INSERT)
-        
-        # Get the text from cursor to end of line
-        line_end = self.text_area.index(f"{cursor_pos} lineend")
-        text_after_cursor = self.text_area.get(cursor_pos, line_end)
-        
-        if not text_after_cursor:  # If we're at the end of line, nothing to delete
-            return "break"
-        
-        # Find the next boundary (space, special character, or different character type)
-        delete_length = 0
-        first_char = text_after_cursor[0]
-        
-        # Check if we're starting with whitespace
-        if first_char.isspace():
-            # Delete all consecutive whitespace
-            for char in text_after_cursor:
-                if char.isspace():
-                    delete_length += 1
-                else:
-                    break
-        else:
-            # Check if first character is alphanumeric
-            if first_char.isalnum():
-                # Delete until non-alphanumeric or space
-                for char in text_after_cursor:
-                    if char.isalnum():
-                        delete_length += 1
-                    else:
-                        break
-            else:
-                # Delete until different type of character or space
-                for char in text_after_cursor:
-                    if not char.isspace() and not char.isalnum():
-                        delete_length += 1
-                    else:
-                        break
-        
-        # Delete the calculated range
-        if delete_length > 0:
-            delete_end = self.text_area.index(f"{cursor_pos}+{delete_length}c")
-            self.text_area.delete(cursor_pos, delete_end)
-        
-        return "break"  # Prevent default behavior
-    
-    def _ctrl_c(self, event):
-        """Enhanced Ctrl+C: if no selection, copy from cursor to end of line"""
-        try:
-            # Check if there's a selection
-            if self.text_area.tag_ranges(tk.SEL):
-                # Use default copy behavior if there's a selection
-                self.text_area.event_generate("<<Copy>>")
-            else:
-                # No selection - copy from cursor to end of line
-                cursor_pos = self.text_area.index(tk.INSERT)
-                line_end = self.text_area.index(f"{cursor_pos} lineend")
-                text_to_copy = self.text_area.get(cursor_pos, line_end)
-                
-                if text_to_copy:
-                    self.clipboard_clear()
-                    self.clipboard_append(text_to_copy)
-            
-            return "break"
-        except tk.TclError:
-            # Fallback to default behavior if something goes wrong
-            self.text_area.event_generate("<<Copy>>")
-            return "break"
-    
-    def _ctrl_x(self, event):
-        """Enhanced Ctrl+X: if no selection, cut from cursor to end of line"""
-        try:
-            # Check if there's a selection
-            if self.text_area.tag_ranges(tk.SEL):
-                # Use default cut behavior if there's a selection
-                self.text_area.event_generate("<<Cut>>")
-            else:
-                # No selection - cut from cursor to end of line
-                cursor_pos = self.text_area.index(tk.INSERT)
-                line_end = self.text_area.index(f"{cursor_pos} lineend")
-                text_to_cut = self.text_area.get(cursor_pos, line_end)
-                
-                if text_to_cut:
-                    self.clipboard_clear()
-                    self.clipboard_append(text_to_cut)
-                    self.text_area.delete(cursor_pos, line_end)
-            
-            return "break"
-        except tk.TclError:
-            # Fallback to default behavior if something goes wrong
-            self.text_area.event_generate("<<Cut>>")
-            return "break"
+        self.text_area.bind("<Control-BackSpace>", self._ctrl_backspace)
+        self.text_area.bind("<Control-Delete>", self._ctrl_delete)
+        self.text_area.bind("<Control-c>", self._ctrl_c)
+        self.text_area.bind("<Control-x>", self._ctrl_x)
+        self.text_area.bind("<Control-C>", self._ctrl_c)
+        self.text_area.bind("<Control-X>", self._ctrl_x)  
     
     def _on_vertical_scroll(self, *args):
         """Handle vertical scrolling for both text and line numbers"""
         self.text_area.yview(*args)
         self.line_numbers.yview(*args)
-    
-    def _on_horizontal_scroll(self, *args):
-        """Handle horizontal scrolling for text area"""
-        self.text_area.xview(*args)
     
     def _on_text_vertical_scroll(self, *args):
         """Sync vertical scrollbar with text scrolling"""
@@ -321,64 +165,9 @@ class CodeEditor(ctk.CTkFrame):
         self.v_scrollbar.set(*args)
         self.text_area.yview_moveto(args[0])
     
-    def _on_mousewheel(self, event):
-        """Handle mouse wheel scrolling"""
-        if event.delta:
-            self.text_area.yview_scroll(int(-1 * (event.delta / 120)), "units")
-        else:
-            self.text_area.yview_scroll(int(-1 * event.num), "units")
-        return "break"
-    
-    def _on_shift_mousewheel(self, event):
-        """Handle Shift+MouseWheel for horizontal scrolling (optional)"""
-        if event.delta:
-            self.text_area.xview_scroll(int(-1 * (event.delta / 120)), "units")
-        else:
-            self.text_area.xview_scroll(int(-1 * event.num), "units")
-        return "break"
-    
-    def _on_configure(self, event=None):
-        """Update scrollbar visibility when widget is resized"""
-        self._update_horizontal_scrollbar_visibility()
-    
-    def _update_horizontal_scrollbar_visibility(self):
-        """Show/hide horizontal scrollbar based on content width"""
-        longest_line_width = self._get_longest_line_width()
-        
-        text_width = self.text_area.winfo_width()
-        
-        if longest_line_width > text_width:
-            self.h_scrollbar.grid(row=2,column=1, sticky= "nsew")
-        else:
-            self.h_scrollbar.grid_remove()
-    
-    def _get_longest_line_width(self):
-        """Calculate the width of the longest line in pixels"""
-        try:
-            content = self.text_area.get("1.0", "end-1c")
-            lines = content.split('\n')
-            
-            if not lines:
-                return 0
-            
-            text_font = self.text_area.cget("font")
-            font_metrics = tk.font.Font(self.text_area, font=text_font)
-            
-            max_width = 0
-            padding = 20
-            for line in lines:
-                line_width = font_metrics.measure(line)
-                max_width = max(max_width, line_width)
-            
-            return max_width + padding
-            
-        except Exception as e:
-            print(f"Error calculating line width: {e}")
-            return 0
-    
     def _on_text_change(self, event=None):
         self._update_line_numbers()
-        self.after(10, self._update_horizontal_scrollbar_visibility)
+        self.after(10, self._update_scrollbar_visibility)
     
     def _update_line_numbers(self):
         current_line_count = int(self.text_area.index('end-1c').split('.')[0])
@@ -398,53 +187,186 @@ class CodeEditor(ctk.CTkFrame):
             new_lines = "\n".join(str(i) for i in range(last_line_count + 1, current_line_count + 1))
             if last_line_count == 0:
                 # First time or complete refresh needed
-                self.line_numbers.delete("1.0", "end")
-                self.line_numbers.insert("1.0", new_lines)
+                self.line_numbers.delete(self.START, tk.END)
+                self.line_numbers.insert(self.START, new_lines)
             else:
-                self.line_numbers.insert("end", "\n" + new_lines)
+                self.line_numbers.insert(tk.END, "\n" + new_lines)
         
         elif current_line_count < last_line_count:
-            self.line_numbers.delete(f"{current_line_count + 1}.0", "end")
+            self.line_numbers.delete(f"{current_line_count + 1}.0", tk.END)
         
         self.last_line_count = current_line_count
         self.line_numbers.config(state="disabled")
+    
+    def _on_configure(self, event=None):
+        """Update scrollbar visibility when widget is resized"""
+        self._update_scrollbar_visibility()
+    
+    def _update_scrollbar_visibility(self):
+        """Show/hide scrollbars based on content width and height"""
+        xview = self.text_area.xview()
+        if xview == (0.0, 1.0):
+            self.h_scrollbar.grid_remove()
+            self._update_line_frame()
+        else:
+            self.h_scrollbar.grid()
+            self._update_line_frame(True)
+            
+        yview = self.text_area.yview()
+        if yview == (0.0, 1.0):
+            self.v_scrollbar.grid_remove()
+        else:
+            self.v_scrollbar.grid()
+            
+    def _update_line_frame(self, cut=False):
+        if cut:
+            self._excess_frame.grid()
+        else:
+            self._excess_frame.grid_remove()
+    
+    def _get_longest_line_width(self):
+        """Calculate the width of the longest line in pixels"""
+        try:
+            content = self.text_area.get(self.START, self.END_MINUS_ONE_CHAR)
+            lines = content.split('\n')
+            
+            if not lines:
+                return 0
+            
+            max_width = 0
+            padding = 10
+            for line in lines:
+                line_width = self.font.measure(line)
+                max_width = max(max_width, line_width)
+            
+            return max_width + padding
+            
+        except Exception as e:
+            print(f"Error calculating line width: {e}")
+            return 0
         
     def _move_cursor_to_line_end(self, line_number):
         """Move cursor to the end of specified line number"""
         index = f"{line_number}.end"
-        self.text_area.mark_set("insert", index)
+        self.text_area.mark_set(tk.INSERT, index)
         self.text_area.see(index)
         self.text_area.focus_set()
-        
-class App(ctk.CTk):
-    def __init__(self):
-        super().__init__()
-        
-        self.title("VM Code Editor")
-        self.geometry("800x600")
-        
-        # Theme switcher
-        self.theme_button = ctk.CTkButton(
-            self, 
-            text="Toggle Theme", 
-            command=self.toggle_theme
-        )
-        self.theme_button.pack(pady=10)
-        
-        # Code editor
-        self.editor = CodeEditor(self)
-        self.editor.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        # Load sample content
-        self.editor.text_area.insert("1.0", "# Sample code\nprint('Hello, World!')\nfor i in range(10):\n    print(i)")
-        self.editor._update_line_numbers()
-    
-    def toggle_theme(self):
-        current = ctk.get_appearance_mode()
-        new_mode = "Light" if current == "Dark" else "Dark"
-        ctk.set_appearance_mode(new_mode)
-        self.editor.update_theme(new_mode)
 
-if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    # -------- Enhanced key bindings --------
+    
+    def _ctrl_backspace(self, event):
+        """Delete from cursor to previous word boundary (space, special char, or start of word)"""
+        cursor_position = self.text_area.index(tk.INSERT)
+        line_start_index = self.text_area.index(f"{cursor_position} linestart")
+        text_before_cursor = self.text_area.get(line_start_index, cursor_position)
+        delete_length = 0
+        if not text_before_cursor:
+            delete_length = 1
+        else:
+            char_right_before_cursor_index = len(text_before_cursor) - 1
+            line_start = 0
+            for i in range(char_right_before_cursor_index, line_start-1, -1):
+                if i == char_right_before_cursor_index:
+                    delete_length += 1
+                    continue
+                
+                previous_char = text_before_cursor[i + 1]
+                current_char = text_before_cursor[i]
+                
+                if previous_char.isspace():
+                    if not current_char.isspace():
+                        break
+                    delete_length += 1
+                elif previous_char.isalnum():
+                    if not current_char.isalnum():
+                        break
+                    delete_length += 1
+                else:
+                    if current_char.isspace() or current_char.isalnum():
+                        break
+                    delete_length += 1
+        
+        if delete_length > 0:
+            delete_start = self.text_area.index(f"{cursor_position}-{delete_length}c")
+            self.text_area.delete(delete_start, cursor_position)
+            self.text_area.see(delete_start)
+        
+        return "break"  # prevent default behavior
+    
+    def _ctrl_delete(self, event):
+        """Delete from cursor to next word boundary (space, special char, or end of word)"""
+        cursor_position = self.text_area.index(tk.INSERT)
+        line_end_index = self.text_area.index(f"{cursor_position} lineend")
+        text_after_cursor = self.text_area.get(cursor_position, line_end_index)
+        delete_length = 0
+        if not text_after_cursor:
+            delete_length = 1
+        else:
+            first_char = text_after_cursor[0]
+            
+            if first_char.isspace():
+                for char in text_after_cursor:
+                    if char.isspace():
+                        delete_length += 1
+                    else:
+                        break
+            else:
+                if first_char.isalnum():
+                    for char in text_after_cursor:
+                        if char.isalnum():
+                            delete_length += 1
+                        else:
+                            break
+                else:
+                    for char in text_after_cursor:
+                        if not char.isspace() and not char.isalnum():
+                            delete_length += 1
+                        else:
+                            break
+        
+        if delete_length > 0:
+            delete_end = self.text_area.index(f"{cursor_position}+{delete_length}c")
+            self.text_area.delete(cursor_position, delete_end)
+        
+        return "break"
+    
+    def _ctrl_c(self, event):
+        """Enhanced Ctrl+C: if no selection, copy from cursor to end of line"""
+        try:
+            there_is_selection = self.text_area.tag_ranges(tk.SEL)
+            if there_is_selection:
+                self.text_area.event_generate("<<Copy>>")
+            else:
+                cursor_pos = self.text_area.index(tk.INSERT)
+                line_end = self.text_area.index(f"{cursor_pos} lineend")
+                text_to_copy = self.text_area.get(cursor_pos, line_end)
+                
+                if text_to_copy:
+                    self.clipboard_clear()
+                    self.clipboard_append(text_to_copy)
+            
+            return "break"
+        except tk.TclError:
+            self.text_area.event_generate("<<Copy>>")
+            return "break"
+    
+    def _ctrl_x(self, event):
+        """Enhanced Ctrl+X: if no selection, cut from cursor to end of line"""
+        try:
+            there_is_selection = self.text_area.tag_ranges(tk.SEL)
+            if there_is_selection:
+                self.text_area.event_generate("<<Cut>>")
+            else:
+                cursor_pos = self.text_area.index(tk.INSERT)
+                line_end = self.text_area.index(f"{cursor_pos} lineend")
+                text_to_cut = self.text_area.get(cursor_pos, line_end)
+                
+                if text_to_cut:
+                    self.clipboard_clear()
+                    self.clipboard_append(text_to_cut)
+                    self.text_area.delete(cursor_pos, line_end)
+            
+            return "break"
+        except tk.TclError:
+            self.text_area.event_generate("<<Cut>>")
+            return "break"

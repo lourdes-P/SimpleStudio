@@ -1,6 +1,7 @@
 import tkinter as tk
 from dataclasses import dataclass
 from view.utils.color_manager import ColorManager
+import customtkinter as ctk
 
 @dataclass
 class Breakpoint:
@@ -42,7 +43,7 @@ class BreakpointCanvas(tk.Canvas):
         if breakpoint.active:
             fill_color = breakpoint.fill_on
         elif breakpoint.hover:
-            fill_color = breakpoint.fill_hover
+            fill_color = breakpoint.fill_hover[ctk.AppearanceModeTracker.appearance_mode]
         else:
             fill_color = breakpoint.fill_off
 

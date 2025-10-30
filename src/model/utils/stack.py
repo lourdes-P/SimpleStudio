@@ -9,16 +9,16 @@ class Stack(List):
         if not self.is_empty():
             return self[-1]
         else:
-            pass    # TODO exception?
+            return
         
     def pop(self):
         if not self.is_empty():
             return super().pop()
         else:
-            pass
+            return
     
     def size(self):
         return len(self)
         
     def is_empty(self):
-        return not bool(self)
+        return len(self) == 0

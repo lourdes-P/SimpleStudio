@@ -1,5 +1,4 @@
 import customtkinter as ctk
-from tkinter import ttk
 import tkinter as tk
 from view.components.code_editor import CodeEditor
 from view.components.codememory import CodeMemoryView
@@ -24,9 +23,10 @@ class MemoryPanel(ctk.CTkFrame):
     def initialize(self, on_breakpoint_change_callback):
         """self.grid_rowconfigure(1, weight=1)  # Make the code memory expand
         self.grid_columnconfigure((0,1,2), weight=1)"""
-        fg_color= ColorManager.get_single_color(self.cget("fg_color"))
-        self.paned_memory = tk.PanedWindow(self, orient=tk.HORIZONTAL, sashrelief=tk.FLAT, bg=fg_color,
-                                      borderwidth=0, sashwidth=8, showhandle=False)
+        bg_color= ColorManager.get_single_color(self.cget("fg_color"))
+        
+        self.paned_memory = tk.PanedWindow(self, orient=tk.HORIZONTAL, sashrelief=tk.FLAT, bg=bg_color,
+                                      borderwidth=0, sashwidth=8, showhandle=False, bd=0)
         self.paned_memory.pack(fill="both", expand=True)
                         
         self.create_c_memory(on_breakpoint_change_callback)
@@ -39,13 +39,13 @@ class MemoryPanel(ctk.CTkFrame):
         self.cmem_container.grid_columnconfigure(0, weight=1)
         
         self.code_editor = CodeEditor(self.cmem_container)
-        self.code_editor.grid(row=0, rowspan=2, column=0, padx=1, pady=1, sticky="nsew")
+        self.code_editor.grid(row=0, rowspan=2, column=0, sticky="nsew")
         self.code_editor.grid_remove()
         
-        self.cmem_label = ctk.CTkLabel(self.cmem_container, text="C", font=ctk.CTkFont(weight="bold"))
-        self.cmem_label.grid(row=0, column=0, padx=2, pady=(1,0), sticky="sw")
+        self.cmem_label = ctk.CTkLabel(self.cmem_container, text=" C", font=ctk.CTkFont(weight="bold"), anchor='w')
+        self.cmem_label.grid(row=0, column=0, sticky="nsew")
         self.code_memory_view = CodeMemoryView(self.cmem_container)
-        self.code_memory_view.grid(row=1, column=0, padx=(0,0), pady=1, sticky="nsew")
+        self.code_memory_view.grid(row=1, column=0, sticky="nsew")
         
         self.code_memory_view.set_breakpoint_change_callback(on_breakpoint_change_callback)
         self.code_memory_view.change_appearance_mode("System")
@@ -57,10 +57,10 @@ class MemoryPanel(ctk.CTkFrame):
         self.dmem_container.grid_rowconfigure(1, weight=1)
         self.dmem_container.grid_columnconfigure(0, weight=1)
         
-        dmem_label = ctk.CTkLabel(self.dmem_container, text="D", font=ctk.CTkFont(weight="bold"))
-        dmem_label.grid(row=0, column=0, padx=2, pady=(1,0), sticky="sw")
+        dmem_label = ctk.CTkLabel(self.dmem_container, text=" D", font=ctk.CTkFont(weight="bold"), anchor='w')
+        dmem_label.grid(row=0, column=0, sticky="nsew")
         self.data_memory_view = DataHeapMemoryView(self.dmem_container)
-        self.data_memory_view.grid(row=1, column=0, padx=(0,0), pady=1, sticky="nsew")
+        self.data_memory_view.grid(row=1, column=0, sticky="nsew")
         self.data_memory_view.change_appearance_mode("System")
 
         self.paned_memory.add(self.dmem_container)
@@ -70,10 +70,10 @@ class MemoryPanel(ctk.CTkFrame):
         self.hmem_container.grid_rowconfigure(1, weight=1)
         self.hmem_container.grid_columnconfigure(0, weight=1)
         
-        hmem_label = ctk.CTkLabel(self.hmem_container, text="H", font=ctk.CTkFont(weight="bold"))
-        hmem_label.grid(row=0, column=0, padx=2, pady=(1,0), sticky="sw")
+        hmem_label = ctk.CTkLabel(self.hmem_container, text=" H", font=ctk.CTkFont(weight="bold"), anchor='w')
+        hmem_label.grid(row=0, column=0, sticky="nsew")
         self.heap_memory_view = DataHeapMemoryView(self.hmem_container)
-        self.heap_memory_view.grid(row=1, column=0, padx=0, pady=1, sticky="nsew")
+        self.heap_memory_view.grid(row=1, column=0, sticky="nsew")
         self.heap_memory_view.change_appearance_mode("System")
         
         self.paned_memory.add(self.hmem_container)
@@ -125,11 +125,16 @@ class MemoryPanel(ctk.CTkFrame):
         self.heap_memory_view.update_memory(modified_heap_cells)
         
     def change_appearance_mode(self, new_appearance_mode):
-        ctk.set_appearance_mode(new_appearance_mode)
         self.after(20, lambda: 
             self._change_paned_window_appearance(new_appearance_mode)
         ) 
-      
+    
+    def get_code_editor_content(self):
+        return self.code_editor.get_content()
+    
+    def code_editor_content_modified(self):
+        return self.code_editor.content_modified()
+              
     def get_selected_code_address(self):
         return self.code_memory_view.get_selected_address()
       
@@ -143,9 +148,15 @@ class MemoryPanel(ctk.CTkFrame):
         return self.code_memory_view
     
     def _change_paned_window_appearance(self, new_appearance_mode):
-        bg_color = ColorManager.get_single_color(self.cget("fg_color"))
-        self.paned_memory.configure(bg=bg_color, proxybackground=bg_color, background=bg_color)
         self.code_editor.update_theme(new_appearance_mode)
         self.code_memory_view.change_appearance_mode(new_appearance_mode)
         self.data_memory_view.change_appearance_mode(new_appearance_mode)
         self.heap_memory_view.change_appearance_mode(new_appearance_mode)  
+        bg_color = ColorManager.get_single_color(self.cget("fg_color"))
+        self.paned_memory.configure(bg=bg_color,
+                                    bd=0,
+                                    background=bg_color,
+                                    proxybackground=bg_color,
+                                    sashrelief=tk.FLAT,
+                                    proxyrelief=tk.FLAT)
+        

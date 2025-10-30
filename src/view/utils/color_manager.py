@@ -5,22 +5,51 @@ class ColorManager:
     SECONDARY_COLOR = '#2c3e50'
     TERTIARY_COLOR = '#4b8bab'
     BREAKPOINT_COLOR = '#c4160a'
-    HOVER_BREAKPOINT_COLOR = "#ffcccc"
+    HOVER_BREAKPOINT_COLOR = ("#c49292","#680b05")
+    CODE_EDITOR_COLORS = {  
+                          'Dark':
+                              {
+                                'cursor_color': "#CCCCCC",
+                                'text_background_color': "#2b2b2b",
+                                'text_color': "white",
+                                'line_number_background_color': "#3c3c3c",
+                                'line_number_text_color': "#8A8A8A",
+                                'highlight_color':"#366693",
+                                'highlight_text_color': 'white',
+                              },
+                          'Light':
+                              {
+                                'cursor_color': "#363636",
+                                'text_background_color': "#e6e6e6",
+                                'text_color': "black",
+                                'line_number_background_color': "#d4d4d4",
+                                'line_number_text_color': "#585858",
+                                'highlight_color':"#B2D3F3",
+                                'highlight_text_color': 'black',
+                              }
+                         }
     
     @staticmethod
-    def get_alternating_colors(parent, index: int):
-        """Get the background color for alternating rows"""
+    def get_alternating_colors(widget, index: int):
+        """Get the background color for alternating rows.
+        If color is transparent, it will get the color from the parent of the widget."""
         header_color = 'transparent'
         if index % 2 != 0:
-            header_color = ColorManager.get_single_color(parent._fg_color)
+            header_color = ColorManager.get_single_color(widget._fg_color)
             if header_color is None:
                 header_color = ColorManager.get_single_color(ThemeManager.theme["CTkFrame"]["fg_color"])
+        
+        if header_color == 'transparent':      
+            header_color = ColorManager.get_non_transparent_color(widget.master, header_color)
         return header_color
     
     @staticmethod         
-    def get_single_color(color_tuple):
+    def get_single_color(color_tuple, appearance_mode = None):
         """Convert CTk color tuple to single color string based on current appearance mode"""
-        if ctk.get_appearance_mode().lower() == "light":
+        if appearance_mode is None:
+            appearance_mode = ctk.get_appearance_mode()
+            
+        if appearance_mode == "Light":
             return color_tuple[0]  
         else:
             return color_tuple[1]

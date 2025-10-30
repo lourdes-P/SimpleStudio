@@ -59,9 +59,8 @@ class SimpleStudioPresenter(VirtualMachineListener):
             if on_load:
                 self.virtual_machine.load_program(self._file_manager.last_file_path)
                 self.virtual_machine.reset()
-            else:
+            elif on_load is False:
                 self.virtual_machine.reset(on_load=False)
-
         except Exception as e:
             self.main_view.display_error(f"Error loading file: {str(e)}")
             
@@ -74,7 +73,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
         
     def on_save_file(self, content, file_path = None):
         try:
-            if file_path is not None:
+            if file_path is None:
                 self._file_manager.save(content)
             else:
                 self._file_manager.save_as(content, file_path)

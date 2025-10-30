@@ -6,7 +6,7 @@ class ControlPanel(ctk.CTkFrame):
     def __init__(self, master, step_callback=None, run_callback=None,
                  reset_callback=None, n_step_callback=None, undo_callback = None, 
                  switch_code_editor_callback = None, change_appearance_mode = None, 
-                 browse_file = None, **kwargs):
+                 browse_file = None, on_save_callback = None, on_save_as_callback = None, **kwargs):
         super().__init__(master, height=140, corner_radius=0, **kwargs)
         
         self._step_callback = step_callback
@@ -17,6 +17,8 @@ class ControlPanel(ctk.CTkFrame):
         self._undo_callback = undo_callback
         self._switch_code_editor_callback = switch_code_editor_callback
         self._browse_files_callback = browse_file
+        self._on_save_callback = on_save_callback
+        self._on_save_as_callback = on_save_as_callback
         self._n_step = 1
         self._cache_entry_disponibility = 0
         self._button_x_padding = 20
@@ -73,18 +75,18 @@ class ControlPanel(ctk.CTkFrame):
         self.file_managing_menu = ctk.CTkOptionMenu(
             self, 
             values=["Upload Source", "Save", "Save As"],
-            command=self._change_appearance_mode_callback,
-            width=self._calculate_button_width("System")
+            command=self._on_file_menu_selected,
+            width=self._calculate_button_width("Upload Source"),
+            anchor='center'
         )
         
         self.code_editor_button = ctk.CTkButton(
             self, 
             text="Open Code Editor",
-            command=self._switch_code_editor,
+            command=self.switch_code_editor,
             width=self._calculate_button_width("Open Code Editor", 5)
         )
-        
-        # Appearance mode option menu
+
         self.appearance_mode_label = ctk.CTkLabel(
             self, 
             text="Appearance:",
@@ -115,7 +117,7 @@ class ControlPanel(ctk.CTkFrame):
         self.n_step_button.grid(row=0, column=4, padx=(self._button_x_padding, 0), pady=(20,5), sticky="ew")
         self.n_step_spinbox.grid(row=0, column=5, padx=(0, self._button_x_padding), pady=(20,5))
         self.reset_button.grid(row=0, column=6, padx=self._button_x_padding, pady=(20,5), sticky="ew")
-        self.upload_button.grid(row=0, column=7, padx=(self._button_x_padding,0), pady=(20,5))  
+        self.file_managing_menu.grid(row=0, column=7, padx=(self._button_x_padding,0), pady=(20,5))  
         self.code_editor_button.grid(row=1, column=7, padx=(self._button_x_padding,0), pady=(0,10))
         self.appearance_mode_label.grid(row=0, column=9, padx=self._button_x_padding, pady=(20,5), sticky="ne")
         self.appearance_mode_optionemenu.grid(row=1, column=9, padx=self._button_x_padding, pady=(0,10), sticky="se")
@@ -124,13 +126,33 @@ class ControlPanel(ctk.CTkFrame):
     def _setup_bindings(self):
         self.bind("<Configure>", self._on_window_resize)
 
+    def on_undo(self):
+        if self._undo_callback and self._get_button_state(self.undo_button) == ctk.NORMAL:
+            self._undo_callback()
+            
+    def on_run(self):
+        if self._run_callback and self._get_button_state(self.run_button) == ctk.NORMAL:
+            self._run_callback()
+            
+    def on_step(self):
+        if self._step_callback and self._get_button_state(self.step_button) == ctk.NORMAL:
+            self._step_callback()
+            
     def on_n_step(self):
-        if self._n_step_callback:
+        if self._n_step_callback and self.n_step_button.cget('state') == ctk.NORMAL:
             self._n_step = self.n_step_spinbox.get()
             if self._n_step > 0:
                 self._n_step_callback(self._n_step)
+                
+    def _on_file_menu_selected(self, option_selected):
+        if option_selected == 'Upload Source':
+            self._browse_files_callback()
+        elif option_selected == 'Save':
+            self._on_save_callback()
+        elif option_selected == 'Save As':
+            self._on_save_as_callback()
     
-    def _switch_code_editor(self):
+    def switch_code_editor(self):
         self._toggle_code_editor_button()
         self._switch_code_editor_callback()
         
@@ -176,6 +198,9 @@ class ControlPanel(ctk.CTkFrame):
             self.step_button.configure(state="disabled")
             self.n_step_button.configure(state="disabled")
             self.run_button.configure(state="disabled")
+       
+    def _get_button_state(self, button_widget):
+        return button_widget.cget('state')
             
     def _calculate_button_width(self, text, padding=20):
         """Calculate appropriate width based on text length"""

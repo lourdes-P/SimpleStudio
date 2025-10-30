@@ -171,6 +171,8 @@ class SyntacticAnalyzer:
             case "pr_halt":
                 instruction = HaltInstruction(instruction_token, self._address)
                 self.match("pr_halt")
+            case _:
+                raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("Signature"))
         self.increase_address()
         return instruction
 
@@ -365,7 +367,8 @@ class SyntacticAnalyzer:
     def concatenated_first_and_next_lists(self, production_name):
         copy_firsts_nexts_list = self._firsts_map.get_value(production_name).copy()
         copy_firsts_nexts_list.extend(self._nexts_map.get_value(production_name))
-        return set(copy_firsts_nexts_list)
+        
+        return self.lexical_analyzer.reserved_word_map.map_list_from_id_to_name(set(copy_firsts_nexts_list))
     
     def register_syntactic_error(self):
         self._no_errors = False

@@ -59,9 +59,10 @@ class VirtualMachine:
             self.notify_load_finished()
         except (LexicalException, LexicalExceptionInvalidSymbol, 
             LexicalExceptionInvalidOperator, SyntacticException, 
-            SyntacticExceptionNoMatch, SimpleSyntacticException) as e:  # TODO ver estas excepciones catcheadas
+            SyntacticExceptionNoMatch, SimpleSyntacticException, Exception) as e:  # TODO ver estas excepciones catcheadas
             self._error = e
             self.notify_error()
+            return
         
     def reset(self, on_load = True):
         if self._code_memory is not None:
@@ -85,6 +86,7 @@ class VirtualMachine:
         except EmptyCacheException as e:
             self._error = e
             self.notify_error()
+            return
         self._deleted_label_name = None
         self._last_execution_added_labels.clear()
         self._modified_cell_manager.reset()
@@ -239,6 +241,7 @@ class VirtualMachine:
         if not self._io_manager:
             self._error = 'No source loaded'
             self.notify_error()
+            return
             
         match mode:
             case self.SINGLE_STEP_EXECUTION_MODE:
@@ -378,6 +381,7 @@ class VirtualMachine:
         if address == None:
             self._error = f"Label with name {label_name} does not exist"
             self.notify_error()
+            return
         return address
     
     def get_last_triggered_error(self):

@@ -32,6 +32,8 @@ class PresenterFileManager:
                 on_load = True
                 
             return on_load
+        else:
+            return None
         
     def save(self, content):
         """Save the current content to the last used file path, or trigger Save As if no file path exists."""
@@ -45,8 +47,11 @@ class PresenterFileManager:
                 
     def _write_to_file(self, file_path, content):
         """Write content to the specified file path."""
-        with open(file_path, 'w', encoding='utf-8') as file:
-            file.write(content)
+        fob = open(file_path, 'w')
+        fob.write(content)
+        fob.close()
+        """with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(content)"""
        
     def set_loading_file(self, loading_file : bool):
         self._loading_file = loading_file

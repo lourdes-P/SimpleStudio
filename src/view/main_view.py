@@ -1,6 +1,5 @@
 import customtkinter as ctk
 from tkinter import filedialog
-from view.components.code_editor import CodeEditor
 from view.components.controlpanel import ControlPanel
 from view.components.input_dialog import InputDialog
 from view.components.labelpanel import LabelPanel
@@ -22,6 +21,7 @@ class SimpleStudioView(ctk.CTk):
         self.title("SimpleStudio")
         self.geometry("1200x800")
         self.minsize(800,600)
+        self.protocol("WM_DELETE_WINDOW", self._on_closing)
         
         self.control_panel = None   # has top sidebar buttons (execution, upload code)
         self.memory_panel = None    # has the 3 memory frames (c, d, h)
@@ -45,7 +45,9 @@ class SimpleStudioView(ctk.CTk):
                                           undo_callback= self.presenter.on_undo,
                                           switch_code_editor_callback=self.presenter.on_switch_code_editor,
                                           change_appearance_mode= self.change_appearance_mode, 
-                                          browse_file= self.on_browse_file)
+                                          browse_file= self.on_browse_file,
+                                          on_save_callback = self.on_save_file,
+                                          on_save_as_callback = self.on_save_as_file)
         self.control_panel.grid(row=0, column=0, columnspan=3, sticky="nsew")
         self.control_panel.grid_rowconfigure(0, weight=1)
         self.control_panel.initialize()
@@ -59,6 +61,21 @@ class SimpleStudioView(ctk.CTk):
         
         self._output_panel = OutputPanel(self)
         self._output_panel.grid(row=2, column=1, columnspan=2, padx=(0,5), pady=(0,10), sticky="nsew")
+
+    def _setup_bindings(self):
+        self.bind_all("<Control-h>", lambda _: self.on_browse_file())
+        self.bind_all("<Control-H>", lambda _: self.on_browse_file())
+        self.bind_all("<Control-s>", lambda _: self.on_save_file())
+        self.bind_all("<Control-S>", lambda _: self.on_save_file())
+        self.bind_all("<Control-Shift-s>", lambda _: self.on_save_as_file())
+        self.bind_all("<Control-Shift-S>", lambda _: self.on_save_as_file())
+        self.bind_all("<Control-e>", lambda _: self.control_panel.switch_code_editor())
+        self.bind_all("<Control-E>", lambda _: self.control_panel.switch_code_editor())
+        self.bind_all("<F5>", lambda _: self.presenter.on_reset())
+        self.bind_all("<F7>", lambda _: self.control_panel.on_undo())
+        self.bind_all("<F8>", lambda _: self.control_panel.on_step())
+        self.bind_all("<F9>", lambda _: self.control_panel.on_n_step())
+        self.bind_all("<F10>", lambda _: self.control_panel.on_run())
 
     def set_pc(self, pc, last_executed_instruction_address):
         self.memory_panel.set_pc(pc, last_executed_instruction_address)
@@ -115,20 +132,24 @@ class SimpleStudioView(ctk.CTk):
             self.presenter.on_file_selected()
             
     def on_save_file(self):
-        content = self.memory_panel.get_code_editor_content()
-        if not content:
-            if self.display_yes_no(self, "The content is empty. Do you want to save an empty file?") == 'No':
-                return
-        self.presenter.on_save_file(content)
+        file_path = self.control_panel.get_file_path()
+        if file_path is None or file_path == 'No file selected':
+            self.on_save_as_file()
+        else:
+            content = self.memory_panel.get_code_editor_content()
+            if not content:
+                if self.display_yes_no("The content is empty. Do you want to save an empty file?") != 'Yes':
+                    return
+            self.presenter.on_save_file(content)
     
     def on_save_as_file(self):
         content = self.memory_panel.get_code_editor_content()
         if not content:
-            if self.display_yes_no(self, "The content is empty. Do you want to save an empty file?") == 'No':
+            if self.display_yes_no("The content is empty. Do you want to save an empty file?") != 'Yes':
                 return
         file_path = filedialog.asksaveasfilename(
-            defaultextension=".txt",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            defaultextension=".SimpleStudio",
+            filetypes=[("SimpleStudio files", "*.SimpleStudio"), ("Text files", "*.txt"), ("All files", "*.*")]
         )
         self.presenter.on_save_file(content, file_path=file_path)
         
@@ -154,9 +175,9 @@ class SimpleStudioView(ctk.CTk):
             master=self
         )
     
-    def display_yes_no(self, message):
+    def display_yes_no(self, message, title = "Continue?"):
         yes_no_response = CTkMessagebox(
-            title="Continue?",
+            title=title,
             message=message,
             icon="question",
             option_1="Yes",
@@ -179,20 +200,19 @@ class SimpleStudioView(ctk.CTk):
     def set_cache_entry_disponibility(self, number : int):
         if number >= 0:
             self.control_panel.set_cache_entry_disponibility(number)
-            
-    def _setup_bindings(self):
-        self.bind_all("<Control-s>", self._on_save)
-        self.bind_all("<Control-S>", self._on_save)
-        self.bind_all("<Control-Shift-s>", self._on_save_as)
-        self.bind_all("<Control-Shift-S>", self._on_save_as)
 
-    def _on_save(self, event=None):
-        print("on save")
-        return "break"  # Prevent default behavior
-
-    def _on_save_as(self, event=None):
-        print("on save as")
-        return "break"  # Prevent default behavior
+    def _on_closing(self):
+        if self.memory_panel.code_editor_content_modified():
+            reply = self.display_yes_no("Save file changes?", "Save?")
+            if reply == 'Yes':
+                self.on_save_file()
+            elif reply == 'No':
+                pass
+            else:
+                return
+        
+        self.destroy()
+        
 
 if __name__ == "__main__":
     app = SimpleStudioView()

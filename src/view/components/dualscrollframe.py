@@ -25,8 +25,8 @@ class DualScrollFrame(ctk.CTkFrame):
         
         # Grid layout
         self.canvas.grid(row=0, column=0, sticky="nsew")
-        self.v_scrollbar.grid(row=0, column=1, sticky="ns")
-        self.h_scrollbar.grid(row=1, column=0, sticky="ew")        
+        self.v_scrollbar.grid(row=0, column=1, sticky="nsew")
+        self.h_scrollbar.grid(row=1, column=0, sticky="nsew")        
         
         self.set_bindings()
         
