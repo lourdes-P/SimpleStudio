@@ -17,17 +17,18 @@ class IOManager:
     def get_next_char(self):
         if self.current_char == self.END_OF_LINE:
             self.line_number+= 1
-            self.line_char_index = 1
+            self.line_char_index = 0
             self.line = ""
             
         if self.current_char != self.EOF:
-            self.current_char= self.file_reader.read(1)                    
-        
+            self.current_char= self.file_reader.read(1)
+            self.line += self.current_char                  
+            self.line_char_index += 1
         if self.current_char == self.EOF:
             self.file_reader.close()
         elif self.current_char != self.END_OF_LINE:
             self.line += self.current_char
-            self.line_char_index += 0
+            self.line_char_index += 1
 
         return self.current_char
 

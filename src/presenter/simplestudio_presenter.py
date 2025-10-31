@@ -19,10 +19,12 @@ class SimpleStudioPresenter(VirtualMachineListener):
     def set_virtual_machine(self, virtual_machine : VirtualMachine):
         self.virtual_machine = virtual_machine
     
-    def update_code_memory_view(self, clear_breakpoints = True):       
-        code_data = PresenterParser.parse_code_memory(self.virtual_machine.get_code_memory().codecell_list)
-        
-        self.main_view.load_code_onto_c_memory(code_data, self.main_view.get_selected_file_path(), clear_breakpoints)
+    def update_code_memory_view(self, clear_breakpoints = True, code_editor_only = False):       
+        if code_editor_only:
+            self.main_view.load_code_editor()
+        else:
+            code_data = PresenterParser.parse_code_memory(self.virtual_machine.get_code_memory().codecell_list)
+            self.main_view.load_code_onto_c_memory(code_data, self.main_view.get_selected_file_path(), clear_breakpoints)
        
     # --------- user view events    
      
@@ -93,6 +95,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
     def trigger_error(self):
         error = self.virtual_machine.get_last_triggered_error()
         self.disable_execution()
+        self.update_code_memory_view(code_editor_only=True)
         self.main_view.display_error(error)
         
     def trigger_user_input(self):

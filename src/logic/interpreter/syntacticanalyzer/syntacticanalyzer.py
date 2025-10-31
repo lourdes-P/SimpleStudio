@@ -1,3 +1,4 @@
+from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception import LexicalException
 from logic.expression_ast.expression_node import ExpressionNode
 from logic.interpreter.syntacticanalyzer.syntacticexceptions import *
 from logic.memories.codememory.codecell import CodeCell
@@ -10,32 +11,36 @@ from logic.interpreter.utils import MapManager, OperatorPrecedenceManager
 
 class SyntacticAnalyzer:
 
-    def __init__(self, lexical_analyzer, code_memory, firsts_map = MapManager("resources/firsts.csv"), nexts_map = MapManager("resources/nexts.csv"), operator_precedence_manager = OperatorPrecedenceManager()):
+    def __init__(self, lexical_analyzer, code_memory, firsts_map = None, nexts_map = None, operator_precedence_manager = None):
         self.current_token = None
         self.lexical_analyzer = lexical_analyzer
         self._code_memory = code_memory
         self._firsts_map = firsts_map
         self._nexts_map = nexts_map
-        self._no_errors = True
-        self._address = 0       # suma por cada instrucción que se guarda en la memoria C, incremento en 1
+        self._current_parsing_address = 0
         self._operator_precedence_manager = operator_precedence_manager
         self._label_dictionary = {}
-        # sólo se notifica un error
 
     def match(self, expected_token_name):
-        if expected_token_name == self.current_token.token_name:
-            self.current_token = self.lexical_analyzer.next_token()
-        else:
-            raise SyntacticExceptionNoMatch(self.current_token, expected_token_name)
+        try:
+            if expected_token_name == self.current_token.token_name:
+                self.current_token = self.lexical_analyzer.next_token()
+            else:
+                raise SyntacticExceptionNoMatch(self.current_token, expected_token_name)
+        except (LexicalException, Exception) as e:
+            raise e
         
     def start(self):
-        self.current_token = self.lexical_analyzer.next_token()
-        if self._firsts_map.contains_entry("Start", self.current_token.token_name):
-            self.instruction_list()
-        elif self.current_token.token_name == "EOF":
-            pass # termination
-        else:
-            raise SyntacticException(self.current_token, self._firsts_map.get_value("Start"))
+        try:
+            self.current_token = self.lexical_analyzer.next_token()
+            if self._firsts_map.contains_entry("Start", self.current_token.token_name):
+                self.instruction_list()
+            elif self.current_token.token_name == "EOF":
+                pass # termination
+            else:
+                raise SyntacticException(self.current_token, self._firsts_map.get_value("Start"))
+        except (LexicalException, Exception) as e:
+            raise e
         
     def instruction_list(self):
         if self._firsts_map.contains_entry("InstructionList", self.current_token.token_name):
@@ -57,10 +62,10 @@ class SyntacticAnalyzer:
 
     def instruction(self):
         if self.current_token.token_name == "identifier":
-            codecell = CodeCell(address= self._address)
+            codecell = CodeCell(address= self._current_parsing_address)
             # address is increased after         
             label = self.current_token
-            self.add_label_to_dictionary(label, self._address)
+            self.add_label_to_dictionary(label, self._current_parsing_address)
             codecell.set_label_token(label)
             self.match("identifier")
             instruction = self.signature()
@@ -69,7 +74,7 @@ class SyntacticAnalyzer:
             codecell.set_annotation(annotation)
             self._code_memory.add_codecell(codecell)
         elif self._firsts_map.contains_entry("Signature", self.current_token.token_name):
-            codecell = CodeCell(address= self._address)   
+            codecell = CodeCell(address= self._current_parsing_address)   
             # address is increased after         
             instruction = self.signature()
             codecell.set_instruction(instruction)
@@ -96,7 +101,7 @@ class SyntacticAnalyzer:
         instruction = None
         match instruction_token.token_name:
             case "pr_setd":
-                instruction = SetDInstruction(instruction_token, self._address)
+                instruction = SetDInstruction(instruction_token, self._current_parsing_address)
                 self.match("pr_setd")
                 argument1 = self.expression()
                 self.check_invalid_string_argument(argument1, instruction_token.lexeme)
@@ -105,7 +110,7 @@ class SyntacticAnalyzer:
                 instruction.set_argument1(ExpressionNode(argument1))
                 instruction.set_argument2(ExpressionNode(argument2))
             case "pr_seth":
-                instruction = SetHInstruction(instruction_token, self._address)
+                instruction = SetHInstruction(instruction_token, self._current_parsing_address)
                 self.match("pr_seth")
                 argument1 = self.expression()
                 self.check_invalid_string_argument(argument1, instruction_token.lexeme)                
@@ -114,36 +119,36 @@ class SyntacticAnalyzer:
                 instruction.set_argument1(ExpressionNode(argument1))
                 instruction.set_argument2(ExpressionNode(argument2))
             case "pr_setactual":
-                instruction = SetActualInstruction(instruction_token, self._address)
+                instruction = SetActualInstruction(instruction_token, self._current_parsing_address)
                 self.match("pr_setactual")
                 argument1 = self.expression()
                 self.check_invalid_string_argument(argument1, instruction_token.lexeme)
                 instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setlibre":
-                instruction = SetLibreInstruction(instruction_token, self._address)
+                instruction = SetLibreInstruction(instruction_token, self._current_parsing_address)
                 self.match("pr_setlibre")
                 argument1 = self.expression()
                 self.check_invalid_string_argument(argument1, instruction_token.lexeme)
                 instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setin":
-                instruction = SetInInstruction(instruction_token, self._address)
+                instruction = SetInInstruction(instruction_token, self._current_parsing_address)
                 self.match("pr_setin")
                 argument1 = self.expression()
                 self.check_invalid_string_argument(argument1, instruction_token.lexeme)
                 instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setout":
-                instruction = SetOutInstruction(instruction_token, self._address)
+                instruction = SetOutInstruction(instruction_token, self._current_parsing_address)
                 self.match("pr_setout")
                 argument1 = self.expression()
                 instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setpo":
-                instruction = SetPOInstruction(instruction_token, self._address)
+                instruction = SetPOInstruction(instruction_token, self._current_parsing_address)
                 self.match("pr_setpo")
                 argument1 = self.expression()
                 self.check_invalid_string_argument(argument1, instruction_token.lexeme)
                 instruction.set_argument1(ExpressionNode(argument1))
             case "pr_setlabel":
-                instruction = SetLabelInstruction(instruction_token, self._address)
+                instruction = SetLabelInstruction(instruction_token, self._current_parsing_address)
                 self.match("pr_setlabel")
                 identifier_token = self.current_token
                 self.match("identifier")
@@ -153,7 +158,7 @@ class SyntacticAnalyzer:
                 instruction.set_argument1(identifier_token)
                 instruction.set_argument2(ExpressionNode(argument2))
             case "pr_jumpt":
-                instruction = JumpTInstruction(instruction_token, self._address)
+                instruction = JumpTInstruction(instruction_token, self._current_parsing_address)
                 self.match("pr_jumpt")
                 argument1 = self.expression()
                 self.check_invalid_string_argument(argument1, instruction_token.lexeme)
@@ -163,16 +168,16 @@ class SyntacticAnalyzer:
                 instruction.set_argument1(ExpressionNode(argument1))
                 instruction.set_argument2(ExpressionNode(argument2))
             case "pr_jump":
-                instruction = JumpInstruction(instruction_token, self._address)
+                instruction = JumpInstruction(instruction_token, self._current_parsing_address)
                 self.match("pr_jump")
                 argument1 = self.expression()
                 self.check_invalid_string_argument(argument1, instruction_token.lexeme)
                 instruction.set_argument1(ExpressionNode(argument1))
             case "pr_halt":
-                instruction = HaltInstruction(instruction_token, self._address)
+                instruction = HaltInstruction(instruction_token, self._current_parsing_address)
                 self.match("pr_halt")
             case _:
-                raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("Signature"))
+                raise SyntacticException(self.current_token, self.get_list_with_no_word_id(self._firsts_map.get_value("Signature")))
         self.increase_address()
         return instruction
 
@@ -216,7 +221,7 @@ class SyntacticAnalyzer:
                 unary_op_node = NotNode(self.current_token)
                 self.match("not")
             case _:
-                raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("UnaryOp"))
+                raise SyntacticException(self.current_token, self.get_list_with_no_word_id(self._firsts_map.get_value("UnaryOp")))
 
 
         return unary_op_node
@@ -277,7 +282,7 @@ class SyntacticAnalyzer:
                 operand_node = StringNode(self.current_token)
                 self.match("string")
             case _:
-                raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("Operand"))
+                raise SyntacticException(self.current_token, self.get_list_with_no_word_id(self._firsts_map.get_value("Operand")))
 
         return operand_node
             
@@ -362,7 +367,7 @@ class SyntacticAnalyzer:
                     self.match("mod")
             return binary_op_node        
         else:
-            raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("BinaryOp"))
+            raise SyntacticException(self.current_token, self.get_list_with_no_word_id(self._firsts_map.get_value("BinaryOp")))
 
     def concatenated_first_and_next_lists(self, production_name):
         copy_firsts_nexts_list = self._firsts_map.get_value(production_name).copy()
@@ -370,15 +375,11 @@ class SyntacticAnalyzer:
         
         return self.lexical_analyzer.reserved_word_map.map_list_from_id_to_name(set(copy_firsts_nexts_list))
     
-    def register_syntactic_error(self):
-        self._no_errors = False
-
-    @property
-    def no_errors(self):
-        return self._no_errors
+    def get_list_with_no_word_id(self, first_or_nexts_list):
+        return self.lexical_analyzer.reserved_word_map.map_list_from_id_to_name(set(first_or_nexts_list))
         
     def increase_address(self):
-        self._address += 1
+        self._current_parsing_address += 1
         
     def get_operator_precedence(self, binary_operator_token):
         return self._operator_precedence_manager.get_precedence(binary_operator_token.token_name)

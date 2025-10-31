@@ -33,6 +33,7 @@ class VirtualMachine:
         self._io_manager = None
         self._error = None
         self._breakpoint_list = None
+        self._original_label_dictionary = None
         self._label_dictionary = None
         self._last_execution_added_labels = {}
         self._listeners = []
@@ -74,8 +75,9 @@ class VirtualMachine:
             self._last_execution_added_labels.clear()
             self._modified_cell_manager.reset()
             if not on_load:
-                self._processor.reset()
-                self._label_dictionary = self._original_label_dictionary.copy()
+                self.initialize_processor()
+                if self._original_label_dictionary is not None:
+                    self._label_dictionary = self._original_label_dictionary.copy()
             else:
                 self._breakpoint_list = None
             self.notify_reset_finished()
