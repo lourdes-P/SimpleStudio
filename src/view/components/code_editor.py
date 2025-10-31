@@ -9,10 +9,10 @@ class CodeEditor(ctk.CTkFrame):
     
     def __init__(self, parent, font_name = 'Consolas', font_size = 15, **kwargs):
         super().__init__(parent, **kwargs)
-        self.appearance_mode = ctk.get_appearance_mode()
-        self.font = ctk.CTkFont(font_name, font_size)
-        self.last_line_count = 0
-        self.initial_content = ''
+        self._appearance_mode = ctk.get_appearance_mode()
+        self._font = ctk.CTkFont(font_name, font_size)
+        self._last_line_count = 0
+        self._initial_content = ''
         self._create_widgets()
         self._setup_bindings()
     
@@ -20,9 +20,9 @@ class CodeEditor(ctk.CTkFrame):
         """Load file content into editor"""
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
-                self.initial_content = file.read()
+                self._initial_content = file.read()
             self.text_area.delete(self.START, tk.END)
-            self.text_area.insert(self.START, self.initial_content)
+            self.text_area.insert(self.START, self._initial_content)
             self._update_line_numbers()
             self._update_scrollbar_visibility()
         except Exception as e:
@@ -38,15 +38,18 @@ class CodeEditor(ctk.CTkFrame):
         return self.text_area.get(self.START, self.END_MINUS_ONE_CHAR)
     
     def content_modified(self):
-        return self.get_content() != self.initial_content
+        return self.get_content() != self._initial_content
+    
+    def on_save(self):
+        self._initial_content = self.get_content()
     
     def update_theme(self, theme):
         """Update colors when appearance mode changes"""
-        self.appearance_mode = theme
+        self._appearance_mode = theme
         if theme == 'System':
-            self.appearance_mode = ctk.get_appearance_mode()
+            self._appearance_mode = ctk.get_appearance_mode()
         else:
-            self.appearance_mode = theme
+            self._appearance_mode = theme
         self.text_area.configure(
             bg=self._get_colors('text_background_color'),
             fg=self._get_colors('text_color'),
@@ -64,7 +67,7 @@ class CodeEditor(ctk.CTkFrame):
         self.main_container.configure(bg=self._get_colors('text_background_color'))
     
     def _get_colors(self, widget_and_option):
-        return ColorManager.CODE_EDITOR_COLORS[self.appearance_mode][widget_and_option]
+        return ColorManager.CODE_EDITOR_COLORS[self._appearance_mode][widget_and_option]
     
     def _create_widgets(self):
         self.main_container = tk.Frame(self, bg=self._get_colors('text_background_color'))
@@ -84,7 +87,7 @@ class CodeEditor(ctk.CTkFrame):
             border=0,
             state="disabled",
             wrap="none",
-            font=(self.font)
+            font=(self._font)
         )
         self.line_numbers.grid(column=0, row=1, sticky="ns")
         self._excess_frame = tk.Frame(
@@ -105,7 +108,7 @@ class CodeEditor(ctk.CTkFrame):
             border=0,
             undo=True,
             wrap=tk.NONE,
-            font=(self.font),
+            font=(self._font),
             insertbackground=self._get_colors('cursor_color'),
             selectbackground=self._get_colors('highlight_color'),
             selectforeground=self._get_colors('highlight_text_color')
@@ -173,10 +176,10 @@ class CodeEditor(ctk.CTkFrame):
         current_line_count = int(self.text_area.index('end-1c').split('.')[0])
         
         if hasattr(self, 'last_line_count'):
-            last_line_count = self.last_line_count
+            last_line_count = self._last_line_count
         else:
             last_line_count = 0
-            self.last_line_count = 0
+            self._last_line_count = 0
         
         if current_line_count == last_line_count:
             return
@@ -195,7 +198,7 @@ class CodeEditor(ctk.CTkFrame):
         elif current_line_count < last_line_count:
             self.line_numbers.delete(f"{current_line_count + 1}.0", tk.END)
         
-        self.last_line_count = current_line_count
+        self._last_line_count = current_line_count
         self.line_numbers.config(state="disabled")
     
     def _on_configure(self, event=None):
@@ -236,7 +239,7 @@ class CodeEditor(ctk.CTkFrame):
             max_width = 0
             padding = 10
             for line in lines:
-                line_width = self.font.measure(line)
+                line_width = self._font.measure(line)
                 max_width = max(max_width, line_width)
             
             return max_width + padding

@@ -36,7 +36,7 @@ class PresenterFileManager:
             return None
         
     def save(self, content):
-        """Save the current content to the last used file path, or trigger Save As if no file path exists."""
+        """Save the current content to the last used file path, if it is not None"""
         if self._last_file_path:
             self._write_to_file(self._last_file_path, content)
                 

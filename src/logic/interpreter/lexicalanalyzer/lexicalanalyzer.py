@@ -1,7 +1,5 @@
-from logic.interpreter.lexicalanalyzer.reserved_word_manager.reserved_word_map import ReservedWordMap
 from logic.interpreter.iomanager.io_manager import IOManager
 from logic.interpreter.lexicalanalyzer.token_ import Token
-from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception import LexicalException
 from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidoperator import LexicalExceptionInvalidOperator
 from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidsymbol import LexicalExceptionInvalidSymbol
 

@@ -9,7 +9,7 @@ class SubexpressionNode(ABC):
 
     @abstractmethod
     def evaluate(self, processor=None):
-        pass # TODO ver cómo evaluar los nodos de AST
+        pass
 
     @abstractmethod
     def generate_string(self):

@@ -156,6 +156,9 @@ class SimpleStudioView(ctk.CTk):
         )
         self.presenter.on_save_file(content, file_path=file_path)
         
+    def on_save_code_editor(self):
+        self.memory_panel.on_save_code_editor()
+        
     def get_selected_file_path(self):
         return self.control_panel.get_file_path()
         

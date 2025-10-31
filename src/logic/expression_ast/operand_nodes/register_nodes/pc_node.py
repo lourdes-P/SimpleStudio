@@ -8,7 +8,6 @@ class PCNode(OperandNode):
     @property
     def token(self):
         return self._token
-    # TODO ver cómo se comporta binarios y accesos
 
     def evaluate(self, processor=None):
         return int(processor.pc)

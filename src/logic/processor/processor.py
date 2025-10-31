@@ -66,7 +66,7 @@ class Processor:
         return self._virtual_machine.get_label_address(label_name)
     
     def access_data_memory(self, address):
-        return self._virtual_machine.access_data_memory(address) #TODO review mechanic
+        return self._virtual_machine.access_data_memory(address)
     
     def access_heap_memory(self, address):
         return self._virtual_machine.access_heap_memory(address)

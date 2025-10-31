@@ -79,6 +79,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
                 self._file_manager.save(content)
             else:
                 self._file_manager.save_as(content, file_path)
+            self.main_view.on_save_code_editor()
         except Exception as e:
             self.main_view.display_error(f"Error saving file: {str(e)}")
 

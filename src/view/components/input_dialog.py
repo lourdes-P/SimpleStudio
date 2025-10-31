@@ -1,7 +1,6 @@
 import customtkinter as ctk
-from typing import Callable, Union, Optional
+from typing import Callable, Union
 from CTkMessagebox import CTkMessagebox
-# TODO add in documentation pip install CTkMessagebox
 
 class InputDialog(ctk.CTkInputDialog):
     def __init__(

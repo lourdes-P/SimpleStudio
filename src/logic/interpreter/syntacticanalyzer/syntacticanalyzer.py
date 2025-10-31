@@ -2,12 +2,10 @@ from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception import
 from logic.expression_ast.expression_node import ExpressionNode
 from logic.interpreter.syntacticanalyzer.syntacticexceptions import *
 from logic.memories.codememory.codecell import CodeCell
-from logic.memories.codememory.codememory import CodeMemory
 from logic.processor.instructions import *
 from logic.expression_ast.binaryop_nodes import *
 from logic.expression_ast.unaryop_nodes import *
 from logic.expression_ast.operand_nodes import *
-from logic.interpreter.utils import MapManager, OperatorPrecedenceManager
 
 class SyntacticAnalyzer:
 

@@ -3,13 +3,12 @@ from logic.memories.datamemory.datacell import DataCell
 
 class DataMemory(DataHeapMemory):
     
-    def __init__(self):
+    def __init__(self, cell_number = 200):
         self._datacell_list = []
         self._actual = 0
         self._libre = 0
-        self._initial_cell_number = 200
+        self._initial_cell_number = cell_number
         self._modified = False
-        # TODO encontrar una manera de renderizar mas celdas
         self.initialize_memory(self._initial_cell_number)
         
     def initialize_memory(self, cell_number):

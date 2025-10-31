@@ -91,6 +91,9 @@ class MemoryPanel(ctk.CTkFrame):
     def load_code_editor(self, file_path):
         if file_path:
             self.code_editor.load_file(file_path)
+            
+    def on_save_code_editor(self):
+        self.code_editor.on_save()
         
     def load_data_memory(self, data):
         self.data_memory_view.load_memory(data)
