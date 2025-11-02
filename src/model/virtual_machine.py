@@ -177,13 +177,13 @@ class VirtualMachine:
         self._memory_manager.set_heap_memory(self._cache, address, data, source_instruction_address)
         
     def set_libre(self, former_libre, libre):
-        self._memory_manager.set_libre(self._cache, former_libre, libre)
+        self._memory_manager.set_libre(self._cache.peek(), former_libre, libre)
         
     def set_actual(self, former_actual, actual):
-        self._memory_manager.set_actual(self._cache, former_actual, actual)
+        self._memory_manager.set_actual(self._cache.peek(), former_actual, actual)
        
     def set_po(self, former_po, po):
-        self._memory_manager.set_po(self._cache, former_po, po)
+        self._memory_manager.set_po(self._cache.peek(), former_po, po)
         
     def define_label(self, label_token, address):
         response = self._label_manager.define_label(label_token, address, cache=self._cache)

@@ -1,4 +1,5 @@
 from model.cache.cache import Cache
+from model.cache.cache_entry import CacheEntry
 from model.utils.modified_cell_manager import ModifiedCellManager
 from logic.memories.datamemory.data_memory import DataMemory
 from logic.memories.heapmemory.heap_memory import HeapMemory
@@ -44,30 +45,30 @@ class MemoryManager:
         self._modified_cell_manager.add_to_memory_modified_heap_cells(modified_cell)
         self._all_time_modified_heap_cells_addresses.append(address)
         
-    def set_libre(self, cache, former_libre, libre):
+    def set_libre(self, cache_entry: CacheEntry, former_libre, libre):
         former = self._data_memory.get_cell(former_libre)
         new = self._data_memory.get_cell(libre)
-        cache.peek().set_register_modified_data_cell_list([new, former])
+        cache_entry.set_register_modified_data_cell_list([new, former])
         self._data_memory.place_libre(libre)
         self._modified_cell_manager.add_to_register_modified_data_cells(former)
         self._modified_cell_manager.add_to_register_modified_data_cells(new)
         self._all_time_modified_data_cells_addresses.append(new.address)
         self._all_time_modified_data_cells_addresses.append(former.address)
         
-    def set_actual(self, cache, former_actual, actual):
+    def set_actual(self, cache_entry: CacheEntry, former_actual, actual):
         former = self._data_memory.get_cell(former_actual)
         new = self._data_memory.get_cell(actual)
-        cache.peek().set_register_modified_data_cell_list([new, former])
+        cache_entry.set_register_modified_data_cell_list([new, former])
         self._data_memory.place_actual(actual)
         self._modified_cell_manager.add_to_register_modified_data_cells(former)
         self._modified_cell_manager.add_to_register_modified_data_cells(new)
         self._all_time_modified_data_cells_addresses.append(new.address)
         self._all_time_modified_data_cells_addresses.append(former.address) 
         
-    def set_po(self, cache, former_po, po):
+    def set_po(self, cache_entry: CacheEntry, former_po, po):
         former = self._heap_memory.get_cell(former_po)
         new = self._heap_memory.get_cell(po)
-        cache.peek().set_register_modified_heap_cell_list([new, former])
+        cache_entry.set_register_modified_heap_cell_list([new, former])
         self._heap_memory.place_po(po)
         self._modified_cell_manager.add_to_register_modified_heap_cells(former)
         self._modified_cell_manager.add_to_register_modified_heap_cells(new)
@@ -116,11 +117,11 @@ class MemoryManager:
     def undo_memory_modified_data_cells(self, memory_modified_data_cells):
         original_data_cells = []
         if len(memory_modified_data_cells) > 0:
-            undo_modified_cell = memory_modified_data_cells[0]
-            address = undo_modified_cell.address
-            original_data_cells.append(self._data_memory.set_cell(address, undo_modified_cell.value, undo_modified_cell.annotation))
-            for i in range(1,len(memory_modified_data_cells)):
-                original_data_cells.append(self._data_memory.get_cell(memory_modified_data_cells[i].address))
+            for i in range(0,len(memory_modified_data_cells)-1):
+                undo_modified_cell = memory_modified_data_cells[i]
+                address = undo_modified_cell.address
+                original_data_cells.append(self._data_memory.set_cell(address, undo_modified_cell.value, undo_modified_cell.annotation))
+            original_data_cells.append(self._data_memory.get_cell(memory_modified_data_cells[-1].address))
             self._modified_cell_manager.extend_memory_modified_data_cells(original_data_cells)
             
     def undo_register_modified_data_cells(self, processor, register_modified_data_cells):
@@ -142,8 +143,8 @@ class MemoryManager:
             address = undo_modified_cell.address
             original_heap_cells.append(self._heap_memory.set_cell(address, undo_modified_cell.value, undo_modified_cell.annotation))
             for i in range(1,len(memory_modified_heap_cells)):
-                original_heap_cells.append(self._data_memory.get_cell(memory_modified_heap_cells[i].address))
-            self._modified_cell_manager.extend_memory_modified_data_cells(original_heap_cells)
+                original_heap_cells.append(self._heap_memory.get_cell(memory_modified_heap_cells[i].address))
+            self._modified_cell_manager.extend_memory_modified_heap_cells(original_heap_cells)
             
     def undo_register_modified_heap_cells(self, processor, register_modified_heap_cells):
         for undo_modified_cell in register_modified_heap_cells:
@@ -153,4 +154,4 @@ class MemoryManager:
                 processor.reinstate_po(address)
                 self._heap_memory.place_po(address)
         
-        self._modified_cell_manager.extend_register_modified_data_cells(register_modified_heap_cells)
+        self._modified_cell_manager.extend_register_modified_heap_cells(register_modified_heap_cells)
