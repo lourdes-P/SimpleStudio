@@ -23,6 +23,7 @@ class CodeEditor(ctk.CTkFrame):
                 self._initial_content = file.read()
             self.text_area.delete(self.START, tk.END)
             self.text_area.insert(self.START, self._initial_content)
+            self.text_area.edit_reset()
             self._update_line_numbers()
             self._update_scrollbar_visibility()
         except Exception as e:

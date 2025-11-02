@@ -1,9 +1,8 @@
 import sys
 import customtkinter as ctk
-import tkinter as tk
 from tkinter import ttk
-from typing import List, Dict, Optional, Callable
-from view.components.breakpoint_canvas import Breakpoint, BreakpointCanvas
+from typing import List, Optional, Callable
+from view.components.breakpoint_canvas import BreakpointCanvas
 from view.utils.color_manager import ColorManager
 from view.utils.time import debounce
 

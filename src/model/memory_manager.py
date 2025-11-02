@@ -1,3 +1,4 @@
+from model.cache.cache import Cache
 from model.utils.modified_cell_manager import ModifiedCellManager
 from logic.memories.datamemory.data_memory import DataMemory
 from logic.memories.heapmemory.heap_memory import HeapMemory
@@ -23,7 +24,7 @@ class MemoryManager:
         self._all_time_modified_data_cells_addresses.clear()
         self._all_time_modified_heap_cells_addresses.clear()
     
-    def set_data_memory(self, cache, address, data = None, source_instruction_address = None):
+    def set_data_memory(self, cache: Cache, address, data = None, source_instruction_address = None):
         annotation = None
         if source_instruction_address is not None:
             annotation = self._code_memory.get_codecell(source_instruction_address).annotation
@@ -33,7 +34,7 @@ class MemoryManager:
         self._modified_cell_manager.add_to_memory_modified_data_cells(modified_cell)
         self._all_time_modified_data_cells_addresses.append(address)
     
-    def set_heap_memory(self, cache, address, data = None, source_instruction_address = None):
+    def set_heap_memory(self, cache: Cache, address, data = None, source_instruction_address = None):
         annotation = None
         if source_instruction_address is not None:
             annotation = self._code_memory.get_codecell(source_instruction_address).annotation

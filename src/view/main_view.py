@@ -125,6 +125,9 @@ class SimpleStudioView(ctk.CTk):
         self._output_panel.append_text_ln(output_text)
     
     def on_browse_file(self):
+        if self.memory_panel.code_editor_content_modified():
+            if self.display_yes_no("Save file changes?", "Save?") == 'Yes':
+                self.on_save_file()
         file_path = filedialog.askopenfilename(
             title="Select Source File",
             filetypes=[("All files", "*.*"),("Text files", "*.txt"),("SimpleSem files", "*.SimpleSem")]
