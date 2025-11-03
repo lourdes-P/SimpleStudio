@@ -40,7 +40,7 @@ class Processor:
             finally:
                 if exception_caught:
                     self._enabled = False
-                    return self.FAILURE
+                    success =  self.FAILURE
                 
             if success == self.SUCCESS and self._former_pc == self._pc:
                 self.increase_pc()

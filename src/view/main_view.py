@@ -162,6 +162,9 @@ class SimpleStudioView(ctk.CTk):
     def on_save_code_editor(self):
         self.memory_panel.on_save_code_editor()
         
+    def set_selected_file_path(self, file_path):
+        self.control_panel.set_file_path_label(file_path)
+    
     def get_selected_file_path(self):
         return self.control_panel.get_file_path()
         

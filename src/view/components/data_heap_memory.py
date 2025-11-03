@@ -319,7 +319,7 @@ class DataHeapMemoryView(ctk.CTkFrame):
                         cell['annotation'] = annotation
                     break
             
-            self._update_cell_appearance(address)
+        self._update_cell_appearance(address)
     
     def _update_last_modified_cell(self, last_modified_cell_address):
         """Update the last modified cell highlight"""

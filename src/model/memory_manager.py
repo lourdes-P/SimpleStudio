@@ -116,13 +116,20 @@ class MemoryManager:
     
     def undo_memory_modified_data_cells(self, memory_modified_data_cells):
         original_data_cells = []
-        if len(memory_modified_data_cells) > 0:
-            for i in range(0,len(memory_modified_data_cells)-1):
-                undo_modified_cell = memory_modified_data_cells[i]
-                address = undo_modified_cell.address
-                original_data_cells.append(self._data_memory.set_cell(address, undo_modified_cell.value, undo_modified_cell.annotation))
-            original_data_cells.append(self._data_memory.get_cell(memory_modified_data_cells[-1].address))
+        modified_cells_size = len(memory_modified_data_cells)
+        if modified_cells_size > 0:
+            if modified_cells_size == 1:
+                original_data_cells.append(self._undo_datacell(memory_modified_data_cells[0]))
+            else:
+                last_modified_cell = memory_modified_data_cells[-1]
+                for i in range(0,modified_cells_size-1):
+                    original_data_cells.append(self._undo_datacell(memory_modified_data_cells[i]))
+                original_data_cells.append(self._data_memory.get_cell(last_modified_cell.address))
             self._modified_cell_manager.extend_memory_modified_data_cells(original_data_cells)
+    
+    def _undo_datacell(self, data_cell_clone):
+        address = data_cell_clone.address
+        return self._data_memory.set_cell(address, data_cell_clone.value, data_cell_clone.annotation)
             
     def undo_register_modified_data_cells(self, processor, register_modified_data_cells):
         for undo_modified_cell in register_modified_data_cells:
@@ -135,17 +142,24 @@ class MemoryManager:
                 self._data_memory.place_actual(address)
         
         self._modified_cell_manager.extend_register_modified_data_cells(register_modified_data_cells)
-        
+    
     def undo_memory_modified_heap_cells(self, memory_modified_heap_cells):
         original_heap_cells = []
-        if len(memory_modified_heap_cells) > 0:
-            undo_modified_cell = memory_modified_heap_cells[0]
-            address = undo_modified_cell.address
-            original_heap_cells.append(self._heap_memory.set_cell(address, undo_modified_cell.value, undo_modified_cell.annotation))
-            for i in range(1,len(memory_modified_heap_cells)):
-                original_heap_cells.append(self._heap_memory.get_cell(memory_modified_heap_cells[i].address))
+        modified_cells_size = len(memory_modified_heap_cells)
+        if modified_cells_size > 0:
+            if modified_cells_size == 1:
+                original_heap_cells.append(self._undo_heapcell(memory_modified_heap_cells[0]))
+            else:
+                last_modified_cell = memory_modified_heap_cells[-1]
+                for i in range(0,modified_cells_size-1):
+                    original_heap_cells.append(self._undo_heapcell(memory_modified_heap_cells[i]))
+                original_heap_cells.append(self._heap_memory.get_cell(last_modified_cell.address))
             self._modified_cell_manager.extend_memory_modified_heap_cells(original_heap_cells)
-            
+    
+    def _undo_heapcell(self, heap_cell_clone):
+        address = heap_cell_clone.address
+        return self._heap_memory.set_cell(address, heap_cell_clone.value, heap_cell_clone.annotation)
+         
     def undo_register_modified_heap_cells(self, processor, register_modified_heap_cells):
         for undo_modified_cell in register_modified_heap_cells:
             address = undo_modified_cell.address
