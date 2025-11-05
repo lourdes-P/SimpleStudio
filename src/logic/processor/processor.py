@@ -1,3 +1,6 @@
+from logic.memories.exceptions.address_out_of_range import MemoryAddressOutOfRangeException
+from logic.memories.exceptions.address_value_invalid_exception import AddressValueInvalidException
+from logic.memories.exceptions.register_value_error import RegisterValueError
 from logic.processor.exceptions.instruction_amalgam_exception import InstructionAmalgamException
 
 class Processor:
@@ -34,7 +37,8 @@ class Processor:
             exception_caught = False
             try:
                 success = self._next_instruction.execute(self)
-            except InstructionAmalgamException as error:
+            except (InstructionAmalgamException, MemoryAddressOutOfRangeException, 
+                    RegisterValueError, AddressValueInvalidException) as error:
                 exception_caught = True
                 self._error = error
             finally:
@@ -139,6 +143,7 @@ class Processor:
         
     def enable(self):
         self._enabled = True
+        self._error = None
         self._virtual_machine.enable_execution()
     
     @property

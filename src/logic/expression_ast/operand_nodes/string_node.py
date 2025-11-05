@@ -9,6 +9,9 @@ class StringNode(OperandNode):
     def token(self):
         return self._token
 
+    def contains_string(self):
+        return True
+
     def get_string(self):
         return self._token.lexeme
 

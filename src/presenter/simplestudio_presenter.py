@@ -9,6 +9,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
         self.virtual_machine = virtual_machine
         
     def start(self):
+        self._resetting = False
         self.main_view = SimpleStudioView(self)
         self.virtual_machine.addListener(self)
         self._initialize_data_memory_view(self.virtual_machine.get_data_memory())
@@ -19,12 +20,12 @@ class SimpleStudioPresenter(VirtualMachineListener):
     def set_virtual_machine(self, virtual_machine : VirtualMachine):
         self.virtual_machine = virtual_machine
     
-    def update_code_memory_view(self, clear_breakpoints = True, code_editor_only = False):       
+    def update_code_memory_view(self, clear_breakpoints = True, code_editor_only = False, load_new_file = True):       
         if code_editor_only:
-            self.main_view.load_code_editor()
+            self.main_view.load_code_editor(load_new_file)
         else:
             code_data = PresenterParser.parse_code_memory(self.virtual_machine.get_code_memory().codecell_list)
-            self.main_view.load_code_onto_c_memory(code_data, self.main_view.get_selected_file_path(), clear_breakpoints)
+            self.main_view.load_code_onto_c_memory(code_data, self.main_view.get_selected_file_path(), load_new_file, clear_breakpoints)
        
     # --------- user view events    
      
@@ -58,13 +59,15 @@ class SimpleStudioPresenter(VirtualMachineListener):
     def on_reset(self):
         try: 
             on_load = self._file_manager.reload_file()
+            self._resetting = True
             if on_load:
                 self.virtual_machine.load_program(self._file_manager.last_file_path)
                 self.virtual_machine.reset()
             elif on_load is False:
                 self.virtual_machine.reset(on_load=False)
         except Exception as e:
-            self.main_view.display_error(f"Error loading file: {str(e)}")
+            self._resetting = False
+            self.main_view.display_error(f"Error loading file: {str(e)}") 
             
     def on_undo(self):
         self.virtual_machine.undo()
@@ -89,10 +92,11 @@ class SimpleStudioPresenter(VirtualMachineListener):
     # --------- listener methods
     
     def load_has_finished(self):
-        self.update_code_memory_view()
+        if not self._resetting:
+            self.update_code_memory_view()
         label_list = PresenterParser.parse_label_dictionary(self.virtual_machine.get_label_dictionary())
         self.main_view.load_label_panel(label_list)  
-        self._file_manager.set_loading_file(False)    
+        #self._file_manager.set_loading_file(False)    
         
     def trigger_error(self):
         error = self.virtual_machine.get_last_triggered_error()
@@ -118,11 +122,13 @@ class SimpleStudioPresenter(VirtualMachineListener):
         
     def reset_has_finished(self):
         reset_code_memory = True
-        if not self._file_manager.loading_file:
-            self.update_code_memory_view(clear_breakpoints=False)
+        if not self._file_manager.loading_file and self._resetting:
+            reset_code_memory = False
+            self.update_code_memory_view(clear_breakpoints=False, load_new_file=False)
         else:
             self._file_manager.set_loading_file(False)
-            reset_code_memory = False
+            if self._resetting:
+                self.update_code_memory_view(load_new_file=False)
         all_time_modified_data_cells_addresses = self.virtual_machine.get_all_time_modified_data_cells_addresses()
         parsed_data_memory = PresenterParser.parse_reset_data_heap_memory(self.virtual_machine.get_data_memory().cell_list, all_time_modified_data_cells_addresses)
         all_time_modified_heap_cells_addresses = self.virtual_machine.get_all_time_modified_heap_cells_addresses()
@@ -131,6 +137,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
         self.virtual_machine.reset_all_time_modified_cells()
         self.main_view.reset(parsed_data_memory, parsed_heap_memory, label_list, reset_code_memory)
         self.main_view.set_cache_entry_disponibility(self.virtual_machine.get_cache_size())
+        self._resetting = False
        
     def undo_has_finished(self):
         pc = self.virtual_machine.get_pc()

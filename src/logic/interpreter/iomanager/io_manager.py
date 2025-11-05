@@ -22,8 +22,7 @@ class IOManager:
             
         if self.current_char != self.EOF:
             self.current_char= self.file_reader.read(1)
-            self.line += self.current_char                  
-            self.line_char_index += 1
+            
         if self.current_char == self.EOF:
             self.file_reader.close()
         elif self.current_char != self.END_OF_LINE:

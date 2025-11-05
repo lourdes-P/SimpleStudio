@@ -7,6 +7,8 @@ from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invali
 from logic.interpreter.syntacticanalyzer.syntacticanalyzer import SyntacticAnalyzer
 from logic.interpreter.syntacticanalyzer.syntacticexceptions import *
 from logic.interpreter.utils import MapManager, OperatorPrecedenceManager
+from logic.memories.exceptions.address_out_of_range import MemoryAddressOutOfRangeException
+from logic.processor.exceptions.instruction_amalgam_exception import InstructionAmalgamException
 from logic.processor.processor import Processor
 from model.cache.cache import Cache
 from model.label_manager import LabelManager
@@ -94,11 +96,16 @@ class VirtualMachine:
             
     def deliver_user_input(self, input):
         self._last_user_input = input
-        self._processor.deliver_user_input()
+        try:
+            self._processor.deliver_user_input()
+        except InstructionAmalgamException as e:
+            self._error = e
+            self.notify_error()
         
     def execute_program(self, mode, steps : int = None):
         self._memory_manager.reset(only_modified_cells=True)
         self._label_manager.clear_last_execution_added_labels()
+        self._error = None
         state = Processor.SUCCESS
         
         if not self._io_manager:
@@ -146,11 +153,12 @@ class VirtualMachine:
         if state == Processor.COMPLETED:
             pass 
         elif state == Processor.FAILURE:
-            error = self._processor.get_error()
-            if error is not None:
-                self._error = error
-            else:
-                self._error = "Error while executing source code"   
+            if self._error is None:
+                error = self._processor.get_error()
+                if error is not None:
+                    self._error = error
+                else:
+                    self._error = "Error while executing source code"   
             self.notify_error()
     
     def _initialize_processor(self):
@@ -165,33 +173,73 @@ class VirtualMachine:
     # --------- PROCESSOR use
     
     def access_data_memory(self, address):
-        return self._memory_manager.access_data_memory(address)
+        try:
+            return self._memory_manager.access_data_memory(address)
+        except MemoryAddressOutOfRangeException as e:
+            self._error = e
+            self.notify_error()
+        except ValueError:
+            self._error = f'Cannot access memory with a string address. Input address: {address}'
+            self.notify_error()
     
     def access_heap_memory(self, address):
-        return self._memory_manager.access_heap_memory(address)
+        try:
+            return self._memory_manager.access_heap_memory(address)
+        except MemoryAddressOutOfRangeException as e:
+                self._error = e
+                self.notify_error()
+        except ValueError:
+            self._error = f'Cannot access memory with a string address. Input address: {address}'
+            self.notify_error()
     
     def set_data_memory(self, address, data = None, source_instruction_address = None):
-        self._memory_manager.set_data_memory(self._cache, address, data, source_instruction_address)
+        try:
+            self._memory_manager.set_data_memory(self._cache, address, data, source_instruction_address)
+        except MemoryAddressOutOfRangeException as e:
+            self._error = e
+            self.notify_error()
+        except ValueError:
+            self._error = f'Cannot access memory with a string address. Input address: {address}'
+            self.notify_error()
         
     def set_heap_memory(self, address, data = None, source_instruction_address = None):
-        self._memory_manager.set_heap_memory(self._cache, address, data, source_instruction_address)
+        try:
+            self._memory_manager.set_heap_memory(self._cache, address, data, source_instruction_address)
+        except MemoryAddressOutOfRangeException as e:
+            self._error = e
+            self.notify_error()
+        except ValueError:
+            self._error = f'Cannot access memory with a string address. Input address: {address}'
+            self.notify_error()
         
     def set_libre(self, former_libre, libre):
-        self._memory_manager.set_libre(self._cache.peek(), former_libre, libre)
+        try:
+            self._memory_manager.set_libre(self._cache.peek(), former_libre, libre)
+        except ValueError:
+            self._error = f'Cannot change Libre register with a string value. Input value: {libre}'
+            self.notify_error()
         
     def set_actual(self, former_actual, actual):
+        
         self._memory_manager.set_actual(self._cache.peek(), former_actual, actual)
+        
        
     def set_po(self, former_po, po):
-        self._memory_manager.set_po(self._cache.peek(), former_po, po)
+        try:
+            self._memory_manager.set_po(self._cache.peek(), former_po, po)
+        except ValueError:
+            self._error = f'Cannot change PO register with a string value. Input value: {po}'
+            self.notify_error()
         
     def define_label(self, label_token, address):
-        response = self._label_manager.define_label(label_token, address, cache=self._cache)
+        if address >= 0:
+            response = self._label_manager.define_label(label_token, address, cache=self._cache)
+        else:
+            response = "Label address value can only be a positive Integer."
         if response == Processor.SUCCESS:
             return response
         else:
             self._error = response
-            self.notify_error()
             return Processor.FAILURE
         
     def print_output(self, text):

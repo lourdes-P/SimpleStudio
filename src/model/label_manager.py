@@ -38,10 +38,6 @@ class LabelManager:
             else:
                 self._label_dictionary[label_name] = former_address
                 self._last_execution_added_labels[label_name] = former_address
-        
-    def add_to_label_dictionary(self, label_name, address):
-        self._label_dictionary[label_name] = address
-        self._last_execution_added_labels[label_name] = address
     
     def set_label_dictionary(self, label_dictionary : dict):
         self._code_label_dictionary = label_dictionary

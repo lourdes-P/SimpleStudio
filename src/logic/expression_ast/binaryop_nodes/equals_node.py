@@ -8,4 +8,7 @@ class EqualsNode(BinaryOpNode):
     def evaluate(self, processor=None):
         left_side_evaluation = self.left_side.evaluate(processor)
         right_side_evaluation = self.right_side.evaluate(processor)
-        return left_side_evaluation == right_side_evaluation
+        return int(left_side_evaluation == right_side_evaluation)
+    
+    def _check_sides(self):
+        pass

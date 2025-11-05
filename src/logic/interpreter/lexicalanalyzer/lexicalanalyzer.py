@@ -1,10 +1,11 @@
+from logic.interpreter.lexicalanalyzer.reserved_word_manager.reserved_word_map import ReservedWordMap
 from logic.interpreter.iomanager.io_manager import IOManager
 from logic.interpreter.lexicalanalyzer.token_ import Token
 from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidoperator import LexicalExceptionInvalidOperator
 from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidsymbol import LexicalExceptionInvalidSymbol
 
 class LexicalAnalyzer:
-    def __init__(self, io_manager, reserved_word_map):
+    def __init__(self, io_manager, reserved_word_map : ReservedWordMap):
         self.io_manager = io_manager
         self.reserved_word_map = reserved_word_map
         self.current_char = ''
@@ -41,13 +42,13 @@ class LexicalAnalyzer:
 
     def s0(self):
         self.first_char_index = self.io_manager.get_line_char_index
-        if self.current_char.isspace():
-            self.update_current_char()
-            return self.s0()
-        elif self.current_char == IOManager.END_OF_LINE:
+        if self.current_char == IOManager.END_OF_LINE:
             self.update_lexeme()
             self.update_current_char()
             return self.s_enter()
+        elif self.current_char.isspace():
+            self.update_current_char()
+            return self.s0()
         elif self.current_char == ',':
             self.update_lexeme()
             self.update_current_char()

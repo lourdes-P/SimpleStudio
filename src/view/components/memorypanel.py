@@ -84,13 +84,13 @@ class MemoryPanel(ctk.CTkFrame):
         if reset_code_memory:
             self.code_memory_view.reset()
         
-    def load_code_onto_c_memory(self, code_data, file_path, clear_breakpoints = True):
+    def load_code_onto_c_memory(self, code_data, file_path, load_new_file, clear_breakpoints = True):
         self.code_memory_view.load_code(code_data, clear_breakpoints)
-        self.code_editor.load_file(file_path)
+        self.code_editor.load_file(file_path, load_new_file)
         
-    def load_code_editor(self, file_path):
+    def load_code_editor(self, file_path, load_new_file):
         if file_path:
-            self.code_editor.load_file(file_path)
+            self.code_editor.load_file(file_path, load_new_file)
             
     def on_save_code_editor(self):
         self.code_editor.on_save()

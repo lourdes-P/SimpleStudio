@@ -1,6 +1,7 @@
 import tkinter as tk
 import customtkinter as ctk
 from view.utils.color_manager import ColorManager
+from view.utils.time import debounce
 
 class CodeEditor(ctk.CTkFrame):
     
@@ -16,14 +17,21 @@ class CodeEditor(ctk.CTkFrame):
         self._create_widgets()
         self._setup_bindings()
     
-    def load_file(self, file_path):
+    def load_file(self, file_path, load_new_file = True):
         """Load file content into editor"""
         try:
+            cursor_position = self.text_area.index(tk.INSERT)
             with open(file_path, 'r', encoding='utf-8') as file:
                 self._initial_content = file.read()
+            self.text_area.configure(undo=False)    # prevents making a separator with erased content
             self.text_area.delete(self.START, tk.END)
             self.text_area.insert(self.START, self._initial_content)
-            self.text_area.edit_reset()
+            self.text_area.configure(undo=True)
+            if load_new_file:
+                self.text_area.edit_reset()
+                cursor_position = '1.0'
+            
+            self._move_cursor_to(cursor_position)
             self._update_line_numbers()
             self._update_scrollbar_visibility()
         except Exception as e:
@@ -31,9 +39,8 @@ class CodeEditor(ctk.CTkFrame):
     
     def open_editor(self, line_number = None):
         if line_number is not None:
-            self._move_cursor_to_line_end(line_number)
-        else: 
-            pass
+            index = f"{line_number}.end"
+            self._move_cursor_to(index)
         
     def get_content(self):
         return self.text_area.get(self.START, self.END_MINUS_ONE_CHAR)
@@ -88,7 +95,8 @@ class CodeEditor(ctk.CTkFrame):
             border=0,
             state="disabled",
             wrap="none",
-            font=(self._font)
+            font=(self._font),
+            blockcursor=True
         )
         self.line_numbers.grid(column=0, row=1, sticky="ns")
         self._excess_frame = tk.Frame(
@@ -159,6 +167,7 @@ class CodeEditor(ctk.CTkFrame):
         """Sync vertical scrollbar with text scrolling"""
         self.v_scrollbar.set(*args)
         self.line_numbers.yview_moveto(args[0])
+        self._update_scrollbar_visibility()
     
     def _on_text_horizontal_scroll(self, *args):
         """Sync horizontal scrollbar with text scrolling"""
@@ -171,16 +180,12 @@ class CodeEditor(ctk.CTkFrame):
     
     def _on_text_change(self, event=None):
         self._update_line_numbers()
-        self.after(10, self._update_scrollbar_visibility)
+        self._update_scrollbar_visibility()
     
     def _update_line_numbers(self):
-        current_line_count = int(self.text_area.index('end-1c').split('.')[0])
+        current_line_count = int(self.text_area.index(self.END_MINUS_ONE_CHAR).split('.')[0])
         
-        if hasattr(self, 'last_line_count'):
-            last_line_count = self._last_line_count
-        else:
-            last_line_count = 0
-            self._last_line_count = 0
+        last_line_count = self._last_line_count
         
         if current_line_count == last_line_count:
             return
@@ -206,6 +211,7 @@ class CodeEditor(ctk.CTkFrame):
         """Update scrollbar visibility when widget is resized"""
         self._update_scrollbar_visibility()
     
+    @debounce(timeout=0.002)
     def _update_scrollbar_visibility(self):
         """Show/hide scrollbars based on content width and height"""
         xview = self.text_area.xview()
@@ -249,9 +255,8 @@ class CodeEditor(ctk.CTkFrame):
             print(f"Error calculating line width: {e}")
             return 0
         
-    def _move_cursor_to_line_end(self, line_number):
-        """Move cursor to the end of specified line number"""
-        index = f"{line_number}.end"
+    def _move_cursor_to(self, index):
+        """Move cursor to index and scroll to cursor"""
         self.text_area.mark_set(tk.INSERT, index)
         self.text_area.see(index)
         self.text_area.focus_set()
@@ -346,8 +351,7 @@ class CodeEditor(ctk.CTkFrame):
                 text_to_copy = self.text_area.get(cursor_pos, line_end)
                 
                 if text_to_copy:
-                    self.clipboard_clear()
-                    self.clipboard_append(text_to_copy)
+                    self.text_area.clipboard_append(text_to_copy)
             
             return "break"
         except tk.TclError:
@@ -366,8 +370,7 @@ class CodeEditor(ctk.CTkFrame):
                 text_to_cut = self.text_area.get(cursor_pos, line_end)
                 
                 if text_to_cut:
-                    self.clipboard_clear()
-                    self.clipboard_append(text_to_cut)
+                    self.text_area.clipboard_append(text_to_cut)
                     self.text_area.delete(cursor_pos, line_end)
             
             return "break"

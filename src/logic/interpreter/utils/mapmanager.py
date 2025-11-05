@@ -37,13 +37,13 @@ class MapManager:
 
 
     def flatten_nested_list(self, key, value):
-        value_as_key_list = self.map.get(value)
+        value_as_key_list = self.map.get(value).copy()
         list_replacement = []
         for value_from_list in value_as_key_list:
             if self.map.get(value_from_list) != None:
                 list_replacement.extend(self.flatten_nested_list(value, value_from_list))
             else:
-                if self.map.get(key).count(value_from_list) == 0:                    
+                if self.map.get(key).count(value_from_list) == 0 and value_from_list not in list_replacement:                    
                         list_replacement.append(value_from_list)
         
         set_no_duplicates_replacement = set(list_replacement)

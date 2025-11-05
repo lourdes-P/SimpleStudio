@@ -23,9 +23,11 @@ class SimpleStudioView(ctk.CTk):
         self.minsize(800,600)
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
         
-        self.control_panel = None   # has top sidebar buttons (execution, upload code)
-        self.memory_panel = None    # has the 3 memory frames (c, d, h)
-        self.bottom_panel = None    # has label map (name, address) frame, output frame, test battery output frame
+        self.control_panel = None
+        self.memory_panel = None
+        self.label_panel = None    
+        self._output_panel = None
+        
         self.presenter = presenter
         
         self._create_widgets()
@@ -86,11 +88,11 @@ class SimpleStudioView(ctk.CTk):
     def get_breakpoints(self):
         return self.memory_panel.get_breakpoints()
     
-    def load_code_onto_c_memory(self, code_data, file_path, clear_breakpoints = True):
-        self.memory_panel.load_code_onto_c_memory(code_data, file_path, clear_breakpoints)
+    def load_code_onto_c_memory(self, code_data, file_path, load_new_file, clear_breakpoints = True):
+        self.memory_panel.load_code_onto_c_memory(code_data, file_path, load_new_file, clear_breakpoints)
         
-    def load_code_editor(self):
-        self.memory_panel.load_code_editor(self.get_selected_file_path())
+    def load_code_editor(self, load_new_file):
+        self.memory_panel.load_code_editor(self.get_selected_file_path(), load_new_file)
         
     def load_data_memory(self, data):
         self.memory_panel.load_data_memory(data)

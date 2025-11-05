@@ -8,4 +8,4 @@ class NotNode(UnaryOpNode):
     
     def evaluate(self, processor=None):
         operand_evaluation = self._operand_node.evaluate(processor)
-        return not operand_evaluation
+        return int(not operand_evaluation)

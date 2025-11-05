@@ -8,4 +8,4 @@ class GreaterNode(BinaryOpNode):
     def evaluate(self, processor=None):
         left_side_evaluation = self.left_side.evaluate(processor)
         right_side_evaluation = self.right_side.evaluate(processor)
-        return int(left_side_evaluation) > int(right_side_evaluation)
+        return int(int(left_side_evaluation) > int(right_side_evaluation))

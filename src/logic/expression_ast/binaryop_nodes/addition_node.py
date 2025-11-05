@@ -13,3 +13,9 @@ class AdditionNode(BinaryOpNode):
         except ValueError:
             result = f"{left_side_evaluation}{right_side_evaluation}"
         return result
+    
+    def contains_string(self):
+        return self.left_side.contains_string() or self.right_side.contains_string()
+    
+    def _check_sides(self):
+        pass

@@ -7,6 +7,9 @@ class SubexpressionNode(ABC):
     def token(self):
         pass
 
+    def contains_string(self):
+        return False
+    
     @abstractmethod
     def evaluate(self, processor=None):
         pass

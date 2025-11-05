@@ -1,3 +1,4 @@
+from logic.interpreter.lexicalanalyzer.lexicalanalyzer import LexicalAnalyzer
 from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception import LexicalException
 from logic.expression_ast.expression_node import ExpressionNode
 from logic.interpreter.syntacticanalyzer.syntacticexceptions import *
@@ -9,7 +10,7 @@ from logic.expression_ast.operand_nodes import *
 
 class SyntacticAnalyzer:
 
-    def __init__(self, lexical_analyzer, code_memory, firsts_map = None, nexts_map = None, operator_precedence_manager = None):
+    def __init__(self, lexical_analyzer : LexicalAnalyzer, code_memory, firsts_map = None, nexts_map = None, operator_precedence_manager = None):
         self.current_token = None
         self.lexical_analyzer = lexical_analyzer
         self._code_memory = code_memory
@@ -42,7 +43,8 @@ class SyntacticAnalyzer:
         
     def instruction_list(self):
         if self._firsts_map.contains_entry("InstructionList", self.current_token.token_name):
-            self.instruction()
+            if self.current_token.token_name != 'enter':
+                self.instruction()
             self.enter()
             self.instruction_list()            
         elif self._nexts_map.contains_entry("InstructionList", self.current_token.token_name):
@@ -92,7 +94,8 @@ class SyntacticAnalyzer:
         elif self._nexts_map.contains_entry("Annotation", self.current_token.token_name):
             return None
         else:
-            raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("Annotation"))
+            return None
+            #raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("Annotation"))
 
     def signature(self):
         instruction_token = self.current_token
@@ -182,29 +185,39 @@ class SyntacticAnalyzer:
     def expression(self):
         if self._firsts_map.contains_entry("UnaryOp", self.current_token.token_name):
             unary_op_node = self.unary_op()
-            operand_node = self.operand()
-            unary_op_node.set_operand_node(operand_node)
-            return self.expression_remainder_2(unary_op_node)
+            if self._nexts_map.contains_entry("UnaryOp", self.current_token.token_name):
+                operand_node = self.operand()
+                unary_op_node.set_operand_node(operand_node)
+                return self.expression_remainder_2(unary_op_node)
+            else:
+                unaryop_list = self.get_list_with_no_word_id(self._nexts_map.get_value("UnaryOp"))
+                raise SyntacticException(self.current_token, unaryop_list)
         elif self._firsts_map.contains_entry("Operand", self.current_token.token_name):
             operand_node = self.operand()
             return self.expression_remainder_2(operand_node)
-        elif self._nexts_map.contains_entry("Expression", self.current_token.token_name):
-            return None
         else:
-            raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("Expression"))
+            unaryop_or_operand_list = self.get_list_with_no_word_id(self._firsts_map.get_value("UnaryOp"))
+            unaryop_or_operand_list.extend(self.get_list_with_no_word_id(self._firsts_map.get_value("Operand")))
+            raise SyntacticException(self.current_token, unaryop_or_operand_list)
 
     def unary_op_or_operand(self):
         if self._firsts_map.contains_entry("UnaryOp", self.current_token.token_name):
             unary_op_node = self.unary_op()
-            operand_node = self.operand()
-            self.check_string_operand_validity_unary(unary_op_node.token, operand_node)
-            unary_op_node.set_operand_node(operand_node)
-            return unary_op_node
+            if self._nexts_map.contains_entry("UnaryOp", self.current_token.token_name):
+                operand_node = self.operand()
+                self.check_string_operand_validity_unary(unary_op_node.token, operand_node)
+                unary_op_node.set_operand_node(operand_node)
+                return unary_op_node
+            else:
+                unaryop_list = self.get_list_with_no_word_id(self._nexts_map.get_value("UnaryOp"))
+                raise SyntacticException(self.current_token, unaryop_list)
         elif self._firsts_map.contains_entry("Operand", self.current_token.token_name):
             operand_node = self.operand()
             return operand_node
         else:
-            raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("UnaryOp").extend(self.concatenated_first_and_next_lists("Operand")))
+            unaryop_or_operand_list = self.get_list_with_no_word_id(self._firsts_map.get_value("UnaryOp"))
+            unaryop_or_operand_list.extend(self.get_list_with_no_word_id(self._firsts_map.get_value("Operand")))
+            raise SyntacticException(self.current_token, unaryop_or_operand_list)
 
     def unary_op(self):
         unary_op_node = None
@@ -290,7 +303,8 @@ class SyntacticAnalyzer:
         elif self._nexts_map.contains_entry("ExpressionRemainder", self.current_token.token_name):
             return unary_op_or_operand
         else:
-            raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("ExpressionRemainder"))
+            return unary_op_or_operand
+            #raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("ExpressionRemainder"))
           
     def parse_binary_operation(self, former_operator_precedence, left_side):
         while True:
@@ -383,16 +397,7 @@ class SyntacticAnalyzer:
         return self._operator_precedence_manager.get_precedence(binary_operator_token.token_name)
     
     def check_string_operand_validity_binary(self, left_side, binary_operator_token, right_side):
-        if self.check_if_string(left_side) and left_side.__class__.__name__ == right_side.__class__.__name__ and (binary_operator_token.token_name == 'equals' or binary_operator_token.token_name == 'different' or binary_operator_token.token_name == 'plus'):
-            pass
-        elif self.check_if_string(left_side) and left_side.__class__.__name__ == right_side.__class__.__name__ and (binary_operator_token.token_name != 'equals' and binary_operator_token.token_name != 'different' and binary_operator_token.token_name == 'plus'):
-            raise StringInvalidOperatorSyntacticException(binary_operator_token)
-        elif self.check_if_string(right_side) and left_side.__class__.__name__ != right_side.__class__.__name__ and (binary_operator_token.token_name == 'equals' and binary_operator_token.token_name == 'different'):
-            raise StringInvalidComparationSyntacticException(left_side.token)
-        elif self.check_if_string(left_side) and left_side.__class__.__name__ != right_side.__class__.__name__ and (binary_operator_token.token_name == 'equals' and binary_operator_token.token_name == 'different'):
-            raise StringInvalidComparationSyntacticException(right_side.token)
-        else:
-            pass
+        pass
         
     def check_string_operand_validity_unary(self, unary_operator_token, operand):
         if operand.__class__.__name__ == 'StringNode':
