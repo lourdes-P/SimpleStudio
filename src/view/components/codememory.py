@@ -312,10 +312,10 @@ class CodeMemoryView(ctk.CTkFrame):
         values[0] = "→" if self._current_pc_on_address(address) else ""
         
         tags = [str(address)]
-        if self._current_pc_on_address(address):
-            tags.append('current_pc')
-        elif self.last_executed_instruction is not None and address == self.last_executed_instruction:
+        if self.last_executed_instruction is not None and address == self.last_executed_instruction:
             tags.append('last_executed')
+        elif self._current_pc_on_address(address):
+            tags.append('current_pc')
         else:
             self._append_color_tag(address, tags)
         

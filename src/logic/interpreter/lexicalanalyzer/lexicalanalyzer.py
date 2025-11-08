@@ -31,10 +31,7 @@ class LexicalAnalyzer:
         self.lexeme = self.lexeme + self.current_char
 
     def update_current_char(self):
-        try:
-            self.current_char = self.io_manager.get_next_char()
-        except:
-            print("Source Manager error.")
+        self.current_char = self.io_manager.get_next_char()
         
     def update_char_to_next_blank(self):
         while not self.reached_eof() and not self.current_char.isspace():
@@ -235,7 +232,9 @@ class LexicalAnalyzer:
             self.update_current_char()            
             return Token("equals", self.lexeme, self.io_manager.get_line_number, self.first_char_index)                      
         else:
-            raise LexicalExceptionInvalidOperator(self.lexeme, self.io_manager.get_line_number, self.io_manager.get_whole_current_line(), self.io_manager.get_line_char_index)
+            invalid_operator_exception = LexicalExceptionInvalidOperator(self.lexeme, self.io_manager.get_line_number, self.io_manager.get_whole_current_line(), self.io_manager.get_line_char_index)
+            self.io_manager.close()
+            raise invalid_operator_exception
 
     def s_greater(self):
         if self.current_char == '=':
@@ -295,7 +294,11 @@ class LexicalAnalyzer:
     def register_lexical_error(self):
         self._no_errors = False
         self._recover_from_error = True
+        self.io_manager.close()
 
     @property
     def no_errors(self):
         return self._no_errors
+    
+    def io_manager(self):
+        return self.io_manager

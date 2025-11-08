@@ -8,6 +8,9 @@ class ParenthesizedExpressionNode(OperandNode):
     @property
     def token(self):
         return self._sub_expression_node.token
+    
+    def is_string(self):
+        return self._sub_expression_node.is_string()
 
     def evaluate(self, processor=None):
         return self._sub_expression_node.evaluate(processor)

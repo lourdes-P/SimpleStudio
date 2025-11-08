@@ -31,6 +31,10 @@ class IOManager:
 
         return self.current_char
 
+    def close(self):
+        if self.file_reader:
+            self.file_reader.close()
+            
     @property
     def get_line_number(self):
         return self.line_number

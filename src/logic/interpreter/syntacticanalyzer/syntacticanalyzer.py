@@ -400,16 +400,13 @@ class SyntacticAnalyzer:
         pass
         
     def check_string_operand_validity_unary(self, unary_operator_token, operand):
-        if operand.__class__.__name__ == 'StringNode':
-            raise StringInvalidUnaryOperationSyntacticException(unary_operator_token)
+        if operand.is_string():
+            raise StringInvalidUnaryOperationSyntacticException(unary_operator_token, operand)
         
     def check_invalid_string_argument(self, node, instruction_name):
-        if self.check_if_string(node):
-            raise InstructionInvalidStringArgumentSyntacticException(node.token, instruction_name)            
+        if node.is_string():
+            raise InstructionInvalidStringArgumentSyntacticException(node.token, node.generate_string(), instruction_name)
         
-    def check_if_string(self, node):
-        return True if node.__class__.__name__ == 'StringNode' else False
-    
     def add_label_to_dictionary(self, label_token, address):
         label_name = str.lower(label_token.lexeme)
         if self._label_dictionary.get(label_name) == None:

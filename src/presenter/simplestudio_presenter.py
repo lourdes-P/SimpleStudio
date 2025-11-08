@@ -101,7 +101,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
     def trigger_error(self):
         error = self.virtual_machine.get_last_triggered_error()
         self.disable_execution()
-        self.update_code_memory_view(code_editor_only=True)
+        self.update_code_memory_view(code_editor_only=True, load_new_file=False)
         self.main_view.display_error(error)
         
     def trigger_user_input(self):

@@ -1,13 +1,11 @@
 from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_nomatch import SyntacticExceptionNoMatch, SyntacticException
 from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_missingenter import SyntacticExceptionMissingEnter
-from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_string_invalidcomparation import StringInvalidComparationSyntacticException
-from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_string_invalidoperator import StringInvalidOperatorSyntacticException
 from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_string_unaryoperator import StringInvalidUnaryOperationSyntacticException
 from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_string_invalidargument import InstructionInvalidStringArgumentSyntacticException
 from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_duplicatedlabel import DuplicatedLabelSyntacticException
 from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_simple import SimpleSyntacticException
 
 __all__ = ['SyntacticException', 'SyntacticExceptionNoMatch', 'SyntacticExceptionMissingEnter', 
-           'StringInvalidComparationSyntacticException', 'StringInvalidOperatorSyntacticException', 
-           'StringInvalidUnaryOperationSyntacticException', 'InstructionInvalidStringArgumentSyntacticException',
+           'StringInvalidUnaryOperationSyntacticException', 
+           'InstructionInvalidStringArgumentSyntacticException',
            'DuplicatedLabelSyntacticException', 'SimpleSyntacticException']

@@ -1,3 +1,4 @@
+from logic.expression_ast.exceptions.invalid_operator_exception import InvalidOperatorException
 from logic.interpreter.lexicalanalyzer.lexicalanalyzer import LexicalAnalyzer
 from logic.interpreter.iomanager.io_manager import IOManager
 from logic.interpreter.lexicalanalyzer.reserved_word_manager.reserved_word_map import ReservedWordMap
@@ -7,7 +8,6 @@ from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invali
 from logic.interpreter.syntacticanalyzer.syntacticanalyzer import SyntacticAnalyzer
 from logic.interpreter.syntacticanalyzer.syntacticexceptions import *
 from logic.interpreter.utils import MapManager, OperatorPrecedenceManager
-from logic.memories.exceptions.address_out_of_range import MemoryAddressOutOfRangeException
 from logic.processor.exceptions.instruction_amalgam_exception import InstructionAmalgamException
 from logic.processor.processor import Processor
 from model.cache.cache import Cache
@@ -25,33 +25,38 @@ class VirtualMachine:
         self._firsts_map = MapManager("resources/firsts.csv")
         self._nexts_map = MapManager("resources/nexts.csv")
         self._operator_precedence_manager = OperatorPrecedenceManager()
+        self._io_manager = None
+        
         self._label_manager = LabelManager()
         self._memory_manager = MemoryManager()
         self._cache = Cache(10)
         self._processor = None
-        self._io_manager = None
-        self._error = None
         self._breakpoint_list = None
         self._listeners = []
         self._last_executed_instruction_address = None
         self._last_output_text = ''
+        self._error = None
         
     def addListener(self, listener) : 
         self._listeners.append(listener)
         
     def load_program(self, file_path):        
-        self._io_manager = IOManager(file_path)
         code_memory = self._memory_manager.get_code_memory(new_memory=True)
         try:
+            self._io_manager = IOManager(file_path)
             lexical_analyzer = LexicalAnalyzer(self._io_manager, self._reserved_word_map)
             syntactic_analyzer = SyntacticAnalyzer(lexical_analyzer, code_memory, self._firsts_map, self._nexts_map, self._operator_precedence_manager)
             syntactic_analyzer.start()
             self._label_manager.set_label_dictionary(syntactic_analyzer.get_label_dictionary())
             self._initialize_processor()
             self.notify_load_finished()
-        except (LexicalException, LexicalExceptionInvalidSymbol, 
-            LexicalExceptionInvalidOperator, SyntacticException, 
-            SyntacticExceptionNoMatch, SimpleSyntacticException, Exception) as e:  # TODO ver estas excepciones catcheadas
+        except (LexicalExceptionInvalidSymbol, 
+            LexicalExceptionInvalidOperator, LexicalException, 
+            SyntacticException, SyntacticExceptionNoMatch, 
+            SimpleSyntacticException, InvalidOperatorException,
+            Exception) as e:  # TODO ver estas excepciones catcheadas
+            if self._io_manager:
+                self._io_manager.close()
             self._error = e
             self.notify_error()
             return
@@ -108,7 +113,7 @@ class VirtualMachine:
         self._error = None
         state = Processor.SUCCESS
         
-        if not self._io_manager:
+        if not self._io_manager or not self.get_code_memory():
             self._error = 'No source loaded'
             self.notify_error()
             return
@@ -121,8 +126,7 @@ class VirtualMachine:
             case self.COMPLETE_EXECUTION_MODE:
                 state = self._complete_execution()
                 
-        self._check_execution_state(state)
-                
+        self._check_finished_execution_state(state)
         self.notify_execution_finished()
             
     def _single_step_execution(self):
@@ -141,7 +145,7 @@ class VirtualMachine:
             steps-= 1
         
         return state
-                
+
     def _complete_execution(self):
         state = self._single_step_execution()
         while state == Processor.SUCCESS and not (self._in_breakpoint_list(self.get_pc())):
@@ -149,10 +153,10 @@ class VirtualMachine:
         
         return state
             
-    def _check_execution_state(self, state):
-        if state == Processor.COMPLETED:
-            pass 
-        elif state == Processor.FAILURE:
+    def _check_finished_execution_state(self, state):
+        if state == Processor.COMPLETED or state == Processor.SUCCESS:
+            pass
+        elif state == Processor.FAILURE or state == Processor.DISABLED:
             if self._error is None:
                 error = self._processor.get_error()
                 if error is not None:
@@ -173,63 +177,25 @@ class VirtualMachine:
     # --------- PROCESSOR use
     
     def access_data_memory(self, address):
-        try:
-            return self._memory_manager.access_data_memory(address)
-        except MemoryAddressOutOfRangeException as e:
-            self._error = e
-            self.notify_error()
-        except ValueError:
-            self._error = f'Cannot access memory with a string address. Input address: {address}'
-            self.notify_error()
+        return self._memory_manager.access_data_memory(address)
     
     def access_heap_memory(self, address):
-        try:
-            return self._memory_manager.access_heap_memory(address)
-        except MemoryAddressOutOfRangeException as e:
-                self._error = e
-                self.notify_error()
-        except ValueError:
-            self._error = f'Cannot access memory with a string address. Input address: {address}'
-            self.notify_error()
+        return self._memory_manager.access_heap_memory(address)
     
     def set_data_memory(self, address, data = None, source_instruction_address = None):
-        try:
-            self._memory_manager.set_data_memory(self._cache, address, data, source_instruction_address)
-        except MemoryAddressOutOfRangeException as e:
-            self._error = e
-            self.notify_error()
-        except ValueError:
-            self._error = f'Cannot access memory with a string address. Input address: {address}'
-            self.notify_error()
+        self._memory_manager.set_data_memory(self._cache, address, data, source_instruction_address)
         
     def set_heap_memory(self, address, data = None, source_instruction_address = None):
-        try:
-            self._memory_manager.set_heap_memory(self._cache, address, data, source_instruction_address)
-        except MemoryAddressOutOfRangeException as e:
-            self._error = e
-            self.notify_error()
-        except ValueError:
-            self._error = f'Cannot access memory with a string address. Input address: {address}'
-            self.notify_error()
+        self._memory_manager.set_heap_memory(self._cache, address, data, source_instruction_address)
         
     def set_libre(self, former_libre, libre):
-        try:
-            self._memory_manager.set_libre(self._cache.peek(), former_libre, libre)
-        except ValueError:
-            self._error = f'Cannot change Libre register with a string value. Input value: {libre}'
-            self.notify_error()
+        self._memory_manager.set_libre(self._cache.peek(), former_libre, libre)
         
     def set_actual(self, former_actual, actual):
-        
         self._memory_manager.set_actual(self._cache.peek(), former_actual, actual)
-        
        
     def set_po(self, former_po, po):
-        try:
-            self._memory_manager.set_po(self._cache.peek(), former_po, po)
-        except ValueError:
-            self._error = f'Cannot change PO register with a string value. Input value: {po}'
-            self.notify_error()
+        self._memory_manager.set_po(self._cache.peek(), former_po, po)
         
     def define_label(self, label_token, address):
         if address >= 0:

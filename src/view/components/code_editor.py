@@ -23,13 +23,11 @@ class CodeEditor(ctk.CTkFrame):
             cursor_position = self.text_area.index(tk.INSERT)
             with open(file_path, 'r', encoding='utf-8') as file:
                 self._initial_content = file.read()
-            self.text_area.configure(undo=False)    # prevents making a separator with erased content
-            self.text_area.delete(self.START, tk.END)
-            self.text_area.insert(self.START, self._initial_content)
-            self.text_area.configure(undo=True)
+            self._replace_content(self._initial_content)
+            
             if load_new_file:
                 self.text_area.edit_reset()
-                cursor_position = '1.0'
+                cursor_position = self.START
             
             self._move_cursor_to(cursor_position)
             self._update_line_numbers()
@@ -233,27 +231,13 @@ class CodeEditor(ctk.CTkFrame):
             self._excess_frame.grid()
         else:
             self._excess_frame.grid_remove()
-    
-    def _get_longest_line_width(self):
-        """Calculate the width of the longest line in pixels"""
-        try:
-            content = self.text_area.get(self.START, self.END_MINUS_ONE_CHAR)
-            lines = content.split('\n')
-            
-            if not lines:
-                return 0
-            
-            max_width = 0
-            padding = 10
-            for line in lines:
-                line_width = self._font.measure(line)
-                max_width = max(max_width, line_width)
-            
-            return max_width + padding
-            
-        except Exception as e:
-            print(f"Error calculating line width: {e}")
-            return 0
+        
+    def _replace_content(self, content):
+        """Replace content of text area, preventing the program from making a separator in the undo stack"""
+        self.text_area.configure(undo=False)    # prevents making a separator (undo/redo stacks) with erased content
+        self.text_area.delete(self.START, tk.END)
+        self.text_area.insert(self.START, content)
+        self.text_area.configure(undo=True)
         
     def _move_cursor_to(self, index):
         """Move cursor to index and scroll to cursor"""
@@ -351,6 +335,7 @@ class CodeEditor(ctk.CTkFrame):
                 text_to_copy = self.text_area.get(cursor_pos, line_end)
                 
                 if text_to_copy:
+                    self.text_area.clipboard_clear()
                     self.text_area.clipboard_append(text_to_copy)
             
             return "break"
@@ -370,6 +355,7 @@ class CodeEditor(ctk.CTkFrame):
                 text_to_cut = self.text_area.get(cursor_pos, line_end)
                 
                 if text_to_cut:
+                    self.text_area.clipboard_clear()
                     self.text_area.clipboard_append(text_to_cut)
                     self.text_area.delete(cursor_pos, line_end)
             

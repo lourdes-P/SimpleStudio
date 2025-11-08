@@ -19,6 +19,7 @@ class Processor:
         self._po = 0   
         self._next_instruction = None
         self._error = None
+        self._after_execution_state = self.FAILURE
         self.enable()
     
     def reset(self):
@@ -29,30 +30,28 @@ class Processor:
         self._po = 0   
         self._next_instruction = None
         self._error = None
+        self._after_execution_state = self.FAILURE
         self.enable()
     
     def execute_next_instruction(self):
         self._next_instruction = self._get_next_instruction()
         if self._next_instruction and self._enabled:
-            exception_caught = False
             try:
-                success = self._next_instruction.execute(self)
+                self._after_execution_state = self._next_instruction.execute(self)
             except (InstructionAmalgamException, MemoryAddressOutOfRangeException, 
                     RegisterValueError, AddressValueInvalidException) as error:
-                exception_caught = True
+                self._after_execution_state = self.FAILURE
                 self._error = error
-            finally:
-                if exception_caught:
-                    self._enabled = False
-                    success =  self.FAILURE
+                self._enabled = False
                 
-            if success == self.SUCCESS and self._former_pc == self._pc:
+            if self._after_execution_state == self.SUCCESS and self._former_pc == self._pc:
                 self.increase_pc()
-            elif success == self.SUCCESS:
+            elif self._after_execution_state == self.SUCCESS:
                 self._former_pc = self._pc
 
-            return success
+            return self._after_execution_state
         elif not self._enabled:
+            self._error = "Processor not enabled."
             return self.DISABLED
         elif self._next_instruction is None:
             self._error = "No instruction under current PC. Make sure to not try accessing an address out of code memory's range, and to halt execution properly with the HALT instruction."

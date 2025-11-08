@@ -9,7 +9,7 @@ class StringNode(OperandNode):
     def token(self):
         return self._token
 
-    def contains_string(self):
+    def is_string(self):
         return True
 
     def get_string(self):

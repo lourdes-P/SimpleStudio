@@ -1,8 +1,11 @@
 class LexicalException(Exception):
-    # throw con raise LexicalException("", "", int, "")
+    DEBUG = False
+    
     def __init__(self, error_message, lexeme, line_number, line, char_index):
         blanks = (char_index-1) * ' '
-        error_message = error_message + f" At line {line_number}:" + f"\n{line}\n" + blanks + f"^\n[Error:{lexeme}|{line_number}]"
+        error_message = error_message + f" At line {line_number}:" + f"\n{line}\n" + blanks
+        if self.DEBUG:
+            error_message += f"^\n[Error:{lexeme}|{line_number}]"
         super().__init__(error_message)
         self.lexeme = lexeme
         self.line_number = line_number
