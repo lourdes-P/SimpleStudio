@@ -1,5 +1,6 @@
 from abc import abstractmethod,ABC
 from logic.expression_ast.exceptions.invalid_operator_exception import InvalidOperatorException
+from logic.expression_ast.exceptions.runtime_invalid_operand_exception import RuntimeInvalidOperandException
 from logic.expression_ast.subexpression_node import SubexpressionNode
 
 class BinaryOpNode(SubexpressionNode,ABC):
@@ -45,3 +46,12 @@ class BinaryOpNode(SubexpressionNode,ABC):
             left_side_class_name = 'string' if left_side_contains_string else 'int'
             right_side_class_name = 'string' if right_side_contains_string else 'int'
             raise InvalidOperatorException(self.token, left_side_class_name, right_side_class_name)
+        
+    def _runtime_operand_exception(self, left_side_evaluation, right_side_evaluation, invalid_type_name):
+        left_side_class_name = self._get_type(left_side_evaluation)
+        right_side_class_name = self._get_type(right_side_evaluation)
+
+        if left_side_class_name == invalid_type_name:
+            raise RuntimeInvalidOperandException(self._operator_token, left_side_class_name, left_side_evaluation)
+        else:
+            raise RuntimeInvalidOperandException(self._operator_token, right_side_class_name, right_side_evaluation)

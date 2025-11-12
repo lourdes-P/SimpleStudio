@@ -1,4 +1,5 @@
 from abc import ABC
+from logic.expression_ast.exceptions.runtime_invalid_operand_exception import RuntimeInvalidOperandException
 from logic.expression_ast.subexpression_node import SubexpressionNode
 
 class UnaryOpNode(SubexpressionNode, ABC):
@@ -20,3 +21,9 @@ class UnaryOpNode(SubexpressionNode, ABC):
 
     def generate_string(self):
         return self._operator_token.lexeme + self._operand_node.generate_string()
+    
+    def _runtime_operand_exception(self, evaluation, invalid_type_name):
+        class_name = self._get_type(evaluation)
+
+        if class_name == invalid_type_name:
+            raise RuntimeInvalidOperandException(self._operator_token, invalid_type_name, evaluation)

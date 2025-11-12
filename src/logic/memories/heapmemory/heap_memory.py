@@ -44,7 +44,7 @@ class HeapMemory(DataHeapMemory):
                 self._heapcell_list[address].set_annotation(annotation)
                 return self._heapcell_list[address]
             else:
-                raise MemoryAddressOutOfRangeException(f"Address {address} is out of heap memory range")
+                raise MemoryAddressOutOfRangeException(f"Address {address} is out of heap memory range.")
         except ValueError:
             raise AddressValueInvalidException(memory_name='heap', address_value=address)
         
@@ -53,7 +53,7 @@ class HeapMemory(DataHeapMemory):
             if (0 <= int(address) < self._initial_cell_number):
                 return self._heapcell_list[address]
             else:
-                raise MemoryAddressOutOfRangeException(f"Address {address} is out of heap memory range")
+                raise MemoryAddressOutOfRangeException(f"Address {address} is out of heap memory range.")
         except ValueError:
             raise AddressValueInvalidException(memory_name='heap', address_value=address)
     

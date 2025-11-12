@@ -24,6 +24,7 @@ class ControlPanel(ctk.CTkFrame):
         self._button_x_padding = 20
         
     def initialize(self):
+        """Create widgets, setup their layout, and setup bindings."""
         self._create_widgets()
         self._setup_layout()
         self._setup_bindings()
@@ -111,6 +112,7 @@ class ControlPanel(ctk.CTkFrame):
     def _setup_layout(self):
         self.grid_columnconfigure((1, 2, 3, 4, 5, 6, 7, 9), weight=0, minsize=5)
         self.grid_columnconfigure((0,8), weight=1)
+        self.grid_rowconfigure(0, weight=1)
         self.undo_button.grid(row=0, column=1, padx=self._button_x_padding, pady=(20,5), sticky="ew")
         self.run_button.grid(row=0, column=2, padx=self._button_x_padding, pady=(20,5), sticky="ew")
         self.step_button.grid(row=0, column=3, padx=self._button_x_padding, pady=(20,5), sticky="ew")
@@ -139,7 +141,7 @@ class ControlPanel(ctk.CTkFrame):
             self._step_callback()
             
     def on_n_step(self):
-        if self._n_step_callback and self.n_step_button.cget('state') == ctk.NORMAL:
+        if self._n_step_callback and self._get_button_state(self.n_step_button) == ctk.NORMAL:
             self._n_step = self.n_step_spinbox.get()
             if self._n_step > 0:
                 self._n_step_callback(self._n_step)
@@ -172,9 +174,6 @@ class ControlPanel(ctk.CTkFrame):
             self.undo_button.configure(state='normal')
         else:
             self.undo_button.configure(state='disabled')
-    
-    def change_apparance_mode(self, new_appearance_mode):
-        ctk.set_appearance_mode(new_appearance_mode)
     
     def set_change_appearance_mode_callback(self, change_appearance_mode):
         self._change_appearance_mode_callback = change_appearance_mode

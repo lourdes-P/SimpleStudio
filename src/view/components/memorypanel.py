@@ -19,10 +19,10 @@ class MemoryPanel(ctk.CTkFrame):
         self.heap_memory_view = None
         
         self.code_editor = None
+        ctk.AppearanceModeTracker.add(self.change_appearance_mode)
         
     def initialize(self, on_breakpoint_change_callback):
-        """self.grid_rowconfigure(1, weight=1)  # Make the code memory expand
-        self.grid_columnconfigure((0,1,2), weight=1)"""
+        """Create PanedWindow and memories within."""
         bg_color= ColorManager.get_single_color(self.cget("fg_color"))
         
         self.paned_memory = tk.PanedWindow(self, orient=tk.HORIZONTAL, sashrelief=tk.FLAT, bg=bg_color,
@@ -78,11 +78,9 @@ class MemoryPanel(ctk.CTkFrame):
         
         self.paned_memory.add(self.hmem_container)
         
-    def reset(self, parsed_data_memory, parsed_heap_memory, reset_code_memory = False):
+    def reset(self, parsed_data_memory, parsed_heap_memory):
         self.data_memory_view.reset(parsed_data_memory)
         self.heap_memory_view.reset(parsed_heap_memory)
-        if reset_code_memory:
-            self.code_memory_view.reset()
         
     def load_code_onto_c_memory(self, code_data, file_path, load_new_file, clear_breakpoints = True):
         self.code_memory_view.load_code(code_data, clear_breakpoints)

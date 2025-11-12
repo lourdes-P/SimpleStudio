@@ -44,8 +44,6 @@ class CodeMemoryView(ctk.CTkFrame):
         
         if clear_breakpoints:
             self.breakpoints.clear()
-        if self.breakpoint_canvas:
-            self.breakpoint_canvas.clear()
         
         self.tree_items_address_to_treeview_ID.clear()
         self.annotations.clear()
@@ -57,7 +55,7 @@ class CodeMemoryView(ctk.CTkFrame):
             self._create_tree_item(instruction, i)  
             
         self._auto_size_columns()
-        self.after_idle(lambda: self._update_breakpoint_canvas)
+        self.after_idle(lambda: self._update_breakpoint_canvas())
         
     def set_current_pc(self, pc_value: int, last_executed_instruction_address: int):
         """

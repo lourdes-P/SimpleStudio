@@ -8,4 +8,8 @@ class OrNode(BinaryOpNode):
     def evaluate(self, processor=None):
         left_side_evaluation = self.left_side.evaluate(processor)
         right_side_evaluation = self.right_side.evaluate(processor)
-        return int(left_side_evaluation or right_side_evaluation)
+        try:
+            int(right_side_evaluation)
+            return int(int(left_side_evaluation) or int(right_side_evaluation))
+        except ValueError:
+            self._runtime_operand_exception(left_side_evaluation, right_side_evaluation, invalid_type_name='string')

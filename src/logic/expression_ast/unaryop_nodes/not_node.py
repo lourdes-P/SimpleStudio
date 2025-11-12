@@ -8,4 +8,7 @@ class NotNode(UnaryOpNode):
     
     def evaluate(self, processor=None):
         operand_evaluation = self._operand_node.evaluate(processor)
-        return int(not operand_evaluation)
+        try:
+            return int(not int(operand_evaluation))
+        except ValueError:
+            self._runtime_operand_exception(operand_evaluation, invalid_type_name='string')

@@ -19,8 +19,8 @@ class NumeralSpinbox(ctk.CTkFrame):
         self.command = command
         self.grid_columnconfigure((1, 2), weight=0)
         self.grid_columnconfigure(0, minsize= 50, weight=1)
-        vcmd = (self.register(self.validate))
-        self.entry = ctk.CTkEntry(self, width=width-(2*height), height=height-6, border_width=0, validate='all', validatecommand=(vcmd, '%P'))
+        validation_command = (self.register(self.validate))
+        self.entry = ctk.CTkEntry(self, width=width-(2*height), height=height-6, border_width=0, validate='all', validatecommand=(validation_command, '%P'))
         self.entry.grid(row=0, column=0, columnspan=1, padx=3, pady=3, sticky="nsew")
         
         self.subtract_button = ctk.CTkButton(self, text='-', width=height-6, 
@@ -63,8 +63,7 @@ class NumeralSpinbox(ctk.CTkFrame):
         try:
             return int(self.entry.get()) if int(self.entry.get())>0 else self.set(1)
         except ValueError:
-            self.set(1)
-            return int(0)
+            return self.set(1)
 
     def set(self, value: int):
         self.entry.delete(0, "end")

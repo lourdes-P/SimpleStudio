@@ -16,7 +16,7 @@ class OutputPanel(ctk.CTkFrame):
         self.output_header = ctk.CTkLabel(self.header_frame, text="Output", width=100, anchor="w")
         
         self.output_frame =  DualScrollFrame(self, height=150)
-        self.output_label = ctk.CTkLabel(self.output_frame.get_scrollable_frame(), text='')
+        self.output_label = ctk.CTkLabel(self.output_frame.get_scrollable_frame(), text='', anchor='w', justify='left')
         
     def _setup_layout(self):
         self.grid_propagate(False)
@@ -29,12 +29,12 @@ class OutputPanel(ctk.CTkFrame):
         self.output_frame.grid(row=1, column=0, sticky="ew", padx=5, pady=(0, 5))
         self.output_label.grid()
         
-    def set_output_text(self, text):
+    def _set_output_text(self, text):
         self.output_label.configure(text=text)
         
     def append_text_ln(self, text):
         former_text = self.output_label.cget('text')
-        self.set_output_text(f"{former_text}{text}\n")
+        self._set_output_text(f"{former_text}{text}\n")
         
     def get_output_text(self):
         return self.output_label.cget('text')

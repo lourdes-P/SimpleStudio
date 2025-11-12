@@ -23,8 +23,9 @@ class MemoryCell(ABC):
     def annotation(self):
         return self._annotation
     
+    @abstractmethod
     def clone(self):
-        return MemoryCell(self._address, self._annotation)
+        pass
     
     def copy(self, cell):
         """Copies passed cell attribute values into self"""

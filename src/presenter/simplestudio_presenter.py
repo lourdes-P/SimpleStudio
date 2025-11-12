@@ -93,10 +93,10 @@ class SimpleStudioPresenter(VirtualMachineListener):
     
     def load_has_finished(self):
         if not self._resetting:
+            self._file_manager.set_loading_file(False)
             self.update_code_memory_view()
         label_list = PresenterParser.parse_label_dictionary(self.virtual_machine.get_label_dictionary())
-        self.main_view.load_label_panel(label_list)  
-        #self._file_manager.set_loading_file(False)    
+        self.main_view.load_label_panel(label_list)    
         
     def trigger_error(self):
         error = self.virtual_machine.get_last_triggered_error()
@@ -121,9 +121,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
         self.main_view.set_cache_entry_disponibility(self.virtual_machine.get_cache_size())
         
     def reset_has_finished(self):
-        reset_code_memory = True
         if not self._file_manager.loading_file and self._resetting:
-            reset_code_memory = False
             self.update_code_memory_view(clear_breakpoints=False, load_new_file=False)
         else:
             self._file_manager.set_loading_file(False)
@@ -135,7 +133,7 @@ class SimpleStudioPresenter(VirtualMachineListener):
         parsed_heap_memory = PresenterParser.parse_reset_data_heap_memory(self.virtual_machine.get_heap_memory().cell_list, all_time_modified_heap_cells_addresses)
         label_list = PresenterParser.parse_label_dictionary(self.virtual_machine.get_label_dictionary())
         self.virtual_machine.reset_all_time_modified_cells()
-        self.main_view.reset(parsed_data_memory, parsed_heap_memory, label_list, reset_code_memory)
+        self.main_view.reset(parsed_data_memory, parsed_heap_memory, label_list)
         self.main_view.set_cache_entry_disponibility(self.virtual_machine.get_cache_size())
         self._resetting = False
        

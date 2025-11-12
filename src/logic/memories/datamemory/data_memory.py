@@ -58,7 +58,7 @@ class DataMemory(DataHeapMemory):
                 self._datacell_list[address].set_annotation(annotation)
                 return self._datacell_list[address]
             else:
-                raise MemoryAddressOutOfRangeException(f"Address {address} is out of data memory range")
+                raise MemoryAddressOutOfRangeException(f"Address {address} is out of data memory range.")
         except ValueError:
             raise AddressValueInvalidException(memory_name='data', address_value=address)
         
@@ -67,7 +67,7 @@ class DataMemory(DataHeapMemory):
             if (0 <= int(address) < self._initial_cell_number):
                 return self._datacell_list[address]
             else:
-                raise MemoryAddressOutOfRangeException(f"Address {address} is out of data memory range")
+                raise MemoryAddressOutOfRangeException(f"Address {address} is out of data memory range.")
         except ValueError:
             raise AddressValueInvalidException(memory_name='data', address_value=address)
     

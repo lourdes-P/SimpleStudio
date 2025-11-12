@@ -1,7 +1,9 @@
+from logic.expression_ast.exceptions.datacell_value_notset_exception import DatacellValueNotSetException
+from logic.expression_ast.exceptions.heapcell_value_notset_exception import HeapcellValueNotSetException
+from logic.expression_ast.exceptions.runtime_invalid_operand_exception import RuntimeInvalidOperandException
 from logic.memories.exceptions.address_out_of_range import MemoryAddressOutOfRangeException
 from logic.memories.exceptions.address_value_invalid_exception import AddressValueInvalidException
 from logic.memories.exceptions.register_value_error import RegisterValueError
-from logic.processor.exceptions.instruction_amalgam_exception import InstructionAmalgamException
 
 class Processor:
     COMPLETED = 0
@@ -19,7 +21,7 @@ class Processor:
         self._po = 0   
         self._next_instruction = None
         self._error = None
-        self._after_execution_state = self.FAILURE
+        self._after_execution_state = self.SUCCESS
         self.enable()
     
     def reset(self):
@@ -30,7 +32,7 @@ class Processor:
         self._po = 0   
         self._next_instruction = None
         self._error = None
-        self._after_execution_state = self.FAILURE
+        self._after_execution_state = self.SUCCESS
         self.enable()
     
     def execute_next_instruction(self):
@@ -38,10 +40,11 @@ class Processor:
         if self._next_instruction and self._enabled:
             try:
                 self._after_execution_state = self._next_instruction.execute(self)
-            except (InstructionAmalgamException, MemoryAddressOutOfRangeException, 
-                    RegisterValueError, AddressValueInvalidException) as error:
+            except (HeapcellValueNotSetException, DatacellValueNotSetException, 
+                    MemoryAddressOutOfRangeException, RegisterValueError, 
+                    AddressValueInvalidException, RuntimeInvalidOperandException) as error:
                 self._after_execution_state = self.FAILURE
-                self._error = error
+                self._error = self._add_triggering_instruction_address_and_line_number(error)
                 self._enabled = False
                 
             if self._after_execution_state == self.SUCCESS and self._former_pc == self._pc:
@@ -61,6 +64,9 @@ class Processor:
             self._enabled = False
             self._error = "ERROR in processor instruction execution."
             return self.FAILURE
+        
+    def _add_triggering_instruction_address_and_line_number(self, error):        
+        return f"{error}\nTriggering instruction at address {self._next_instruction.address} in code memory, line {self._next_instruction.line} at source."
         
     def _get_next_instruction(self):
         return self._virtual_machine.get_instruction(self._pc)

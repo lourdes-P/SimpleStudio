@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from view.components.dualscrollframe import DualScrollFrame
 from typing import List, Dict
+from view.utils.color_manager import ColorManager
 
 class LabelPanel(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -43,10 +44,6 @@ class LabelPanel(ctk.CTkFrame):
         self.address_header.grid(row=0, column=1, padx=2, pady=2, sticky="w")
         
         self.scroll_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=(0, 5))
-        
-    def change_appearance_mode(self, new_appearance_mode):
-        ctk.set_appearance_mode(new_appearance_mode)
-        self.scroll_frame.change_appearance_mode()    
     
     def load_data(self, data: List[dict]):
         """
@@ -69,7 +66,7 @@ class LabelPanel(ctk.CTkFrame):
     def add_label(self, label: dict, color = None):
         self._create_line_widget(label, self.line_widget_index, color)
         
-    def add_label_list(self, label_list, color):
+    def add_label_list(self, label_list, color = ColorManager.SECONDARY_COLOR):
         for i, label in enumerate(label_list):
             widget_index = self.label_index.get(label['name'])
             if widget_index is None:

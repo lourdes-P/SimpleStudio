@@ -38,6 +38,7 @@ class LabelManager:
             else:
                 self._label_dictionary[label_name] = former_address
                 self._last_execution_added_labels[label_name] = former_address
+                self._deleted_label_name = None
     
     def set_label_dictionary(self, label_dictionary : dict):
         self._code_label_dictionary = label_dictionary

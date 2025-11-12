@@ -19,21 +19,18 @@ class CodeEditor(ctk.CTkFrame):
     
     def load_file(self, file_path, load_new_file = True):
         """Load file content into editor"""
-        try:
-            cursor_position = self.text_area.index(tk.INSERT)
-            with open(file_path, 'r', encoding='utf-8') as file:
-                self._initial_content = file.read()
-            self._replace_content(self._initial_content)
-            
-            if load_new_file:
-                self.text_area.edit_reset()
-                cursor_position = self.START
-            
-            self._move_cursor_to(cursor_position)
-            self._update_line_numbers()
-            self._update_scrollbar_visibility()
-        except Exception as e:
-            print(f"Error loading file: {e}")
+        cursor_position = self.text_area.index(tk.INSERT)
+        with open(file_path, 'r', encoding='utf-8') as file:
+            self._initial_content = file.read()
+        self._replace_content(self._initial_content)
+        
+        if load_new_file:
+            self.text_area.edit_reset()
+            cursor_position = self.START
+        
+        self._move_cursor_to(cursor_position)
+        self._update_line_numbers()
+        self._update_scrollbar_visibility()
     
     def open_editor(self, line_number = None):
         if line_number is not None:

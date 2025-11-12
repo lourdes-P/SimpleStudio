@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from typing import Callable, Union
-from CTkMessagebox import CTkMessagebox
+from view.components.dialogs import CustomDialog
 
 class InputDialog(ctk.CTkInputDialog):
     def __init__(
@@ -33,8 +33,7 @@ class InputDialog(ctk.CTkInputDialog):
             return
         
         try:            
-            self.callback(self._user_input)
-             
+            self.callback(self._user_input)     
         except ValueError as e:
             self._show_error(str(e))
         finally:
@@ -51,15 +50,7 @@ class InputDialog(ctk.CTkInputDialog):
     
     def _show_error(self, message: str):
         """Show error message to user"""
-        error_box = CTkMessagebox(
-            title="ERROR",
-            message=message,
-            icon="cancel",
-            option_1="OK",
-            width= self.winfo_width(),
-            height=self.winfo_height(),
-            master=self
-        )
+        CustomDialog.display_error(self, message)
         
     def destroy(self):
         if self.top_level and self.top_level.winfo_exists():

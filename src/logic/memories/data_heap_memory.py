@@ -7,7 +7,7 @@ class DataHeapMemory(ABC):
         pass
     
     @abstractmethod
-    def reset():
+    def reset(self):
         pass
     
     @abstractmethod

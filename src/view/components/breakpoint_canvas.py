@@ -23,7 +23,7 @@ class BreakpointCanvas(tk.Canvas):
     def __init__(self, master=None, width=300, height=200, on_breakpoint_click_callback=None, **kwargs):
         super().__init__(master, width=width, height=height, highlightthickness=0, **kwargs)
         self.breakpoints: list[Breakpoint] = []
-        self.items_map = {}  # canvas_id -> Breakpoint
+        self._address_to_id_map = {}  # breakpoint address -> item id
         self._on_breakpoint_click_callback = on_breakpoint_click_callback
         self.bind("<Button-1>", self._on_click)
         self.bind("<Motion>", self._on_motion)
@@ -49,26 +49,30 @@ class BreakpointCanvas(tk.Canvas):
 
         circle = self.create_oval(x - r, y - r, x + r, y + r, fill=fill_color, outline='',)
         
-        self.items_map[circle] = breakpoint
+        self._address_to_id_map[breakpoint.address] = circle
 
     def redraw(self):
         self.delete("all")
-        self.items_map.clear()
+        self._address_to_id_map.clear()
         for breakpoint in self.breakpoints:
             self._draw_one(breakpoint)
+            
+    def _single_redraw(self, breakpoint : Breakpoint):
+        self.delete(self._address_to_id_map[breakpoint.address])
+        self._address_to_id_map.pop(breakpoint.address)
+        self._draw_one(breakpoint)
 
     def clear(self):
         self.delete("all")
-        self.items_map.clear()
+        self._address_to_id_map.clear()
         self.breakpoints.clear()
 
     def _on_click(self, event):
-        items = self.find_overlapping(event.x-2, event.y-2, event.x+2, event.y+2)
-        for iid in items:
-            breakpoint = self.items_map.get(iid)
-            if breakpoint:
+        for breakpoint in self.breakpoints:
+            breakpoint_clicked = breakpoint.contains(event.x, event.y)
+            if breakpoint_clicked:
                 breakpoint.active = not breakpoint.active
-                self.redraw()
+                self._single_redraw(breakpoint)
                 self._on_breakpoint_click_callback(breakpoint.address)
                 return
 
@@ -78,7 +82,7 @@ class BreakpointCanvas(tk.Canvas):
             old_hover = breakpoint.hover
             breakpoint.hover = breakpoint.contains(event.x, event.y)
             if old_hover != breakpoint.hover:
-                self.redraw()
+                self._single_redraw(breakpoint)
             if breakpoint.hover:
                 hover_found_over_breakpoint = True
         
@@ -91,5 +95,5 @@ class BreakpointCanvas(tk.Canvas):
         for breakpoint in self.breakpoints:
             if breakpoint.hover:
                 breakpoint.hover = False
-                self.redraw()
+                self._single_redraw(breakpoint)
         self.config(cursor="")

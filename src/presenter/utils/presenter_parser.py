@@ -57,16 +57,15 @@ class PresenterParser:
             return []
         
         data = []
-        for cell in cell_list:
-            address = cell.address
-            if address in all_time_modified_cells_addresses:
-                cell_data = {                
+        for address in all_time_modified_cells_addresses:
+            cell = cell_list[address]
+            cell_data = {                
                     'register': cell.generate_register_string(),
-                    'address': address, 
+                    'address': cell.address, 
                     'value': cell.value if cell.value is not None else '###',
                     'annotation': cell.annotation_string(),
                 }
-                data.append(cell_data)
+            data.append(cell_data)
         return data
     
     @staticmethod
