@@ -28,3 +28,6 @@ class CodeMemory:
     @property
     def codecell_list(self):
         return self._codecell_list
+
+    def is_empty(self):
+        return self._index == 0

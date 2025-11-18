@@ -487,7 +487,7 @@ class CodeMemoryView(ctk.CTkFrame):
     def _calculate_text_width(self, text):
         """Calculate appropriate width based on text length"""
         font = ctk.CTkFont(weight='bold')
-        padding = 5
+        padding = 10
         return font.measure(text) + padding
 
     def _get_x_root_from_item_boundingbox(self,bbox):

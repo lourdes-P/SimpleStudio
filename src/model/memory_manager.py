@@ -89,7 +89,7 @@ class MemoryManager:
         return self._code_memory
     
     def there_is_code_memory(self):
-        return self._code_memory is not None
+        return self._code_memory is not None and not self._code_memory.is_empty()
     
     def get_data_memory(self):
         return self._data_memory
