@@ -1,12 +1,20 @@
+from pathlib import Path
+from CTkMessagebox.ctkmessagebox import Image
 import customtkinter as ctk
+import tkinter as tk
+from view.components.info_window import InfoWindow
 from view.components.numeral_spinner import NumeralSpinbox
+
+current_dir = Path(__file__).parent
+root = current_dir.parent.parent.parent
 
 class ControlPanel(ctk.CTkFrame):
     """Component for execution controls"""
     def __init__(self, master, step_callback=None, run_callback=None,
                  reset_callback=None, n_step_callback=None, undo_callback = None, 
                  switch_code_editor_callback = None, change_appearance_mode = None, 
-                 browse_file = None, on_save_callback = None, on_save_as_callback = None, **kwargs):
+                 browse_file = None, on_save_callback = None, on_save_as_callback = None,
+                 show_info_callback = None, **kwargs):
         super().__init__(master, height=140, corner_radius=0, **kwargs)
         
         self._step_callback = step_callback
@@ -22,6 +30,8 @@ class ControlPanel(ctk.CTkFrame):
         self._n_step = 1
         self._cache_entry_disponibility = 0
         self._button_x_padding = 20
+        self._show_info_callback = show_info_callback
+        self._info_window = None
         
     def initialize(self):
         """Create widgets, setup their layout, and setup bindings."""
@@ -87,11 +97,21 @@ class ControlPanel(ctk.CTkFrame):
             command=self.switch_code_editor,
             width=self._calculate_button_width("Open Code Editor", 5)
         )
-
-        self.appearance_mode_label = ctk.CTkLabel(
+        
+        light_image_path = root/'resources'/'info_light.png'
+        dark_image_path = root/'resources'/'info_dark.png'
+        icon = ctk.CTkImage(Image.open(light_image_path), Image.open(dark_image_path), size=(22,22))
+        self._about_button = ctk.CTkButton(
             self, 
-            text="Appearance:",
-            anchor="sw"
+            text='',
+            command=self.show_info,
+            width=1,
+            height=1,
+            image=icon,
+            border_spacing=0,
+            border_width=0,
+            fg_color='transparent',
+            hover=False,
         )
         
         self.appearance_mode_optionemenu = ctk.CTkOptionMenu(
@@ -108,7 +128,7 @@ class ControlPanel(ctk.CTkFrame):
         )
         
         self.set_buttons_state(False) 
-            
+        
     def _setup_layout(self):
         self.grid_columnconfigure((1, 2, 3, 4, 5, 6, 7, 9), weight=0, minsize=5)
         self.grid_columnconfigure((0,8), weight=1)
@@ -121,7 +141,7 @@ class ControlPanel(ctk.CTkFrame):
         self.reset_button.grid(row=0, column=6, padx=self._button_x_padding, pady=(20,5), sticky="ew")
         self.file_managing_menu.grid(row=0, column=7, padx=(self._button_x_padding,0), pady=(20,5))  
         self.code_editor_button.grid(row=1, column=7, padx=(self._button_x_padding,0), pady=(0,10))
-        self.appearance_mode_label.grid(row=0, column=9, padx=self._button_x_padding, pady=(20,5), sticky="ne")
+        self._about_button.grid(row=0, column=9, padx=self._button_x_padding, pady=(20,5), sticky="ne")
         self.appearance_mode_optionemenu.grid(row=1, column=9, padx=self._button_x_padding, pady=(0,10), sticky="se")
         self.file_path_label.grid(row=1, column=0, columnspan=7, padx=self._button_x_padding, pady=(0,1), sticky="w")
 
@@ -157,6 +177,10 @@ class ControlPanel(ctk.CTkFrame):
     def switch_code_editor(self):
         self._toggle_code_editor_button()
         self._switch_code_editor_callback()
+        
+    def show_info(self):
+        if self._show_info_callback is not None:
+            self._show_info_callback()
         
     def _toggle_code_editor_button(self):
         if self.code_editor_button.cget("text") == "Open Code Editor":

@@ -1,12 +1,13 @@
 import customtkinter as ctk
 from view.components.controlpanel import ControlPanel
 from view.components.dialogs import CustomDialog
+from view.components.info_window import InfoWindow
 from view.components.input_dialog import InputDialog
 from view.components.labelpanel import LabelPanel
 from view.components.memorypanel import MemoryPanel
 from view.components.output_panel import OutputPanel
 from view.file_system_manager import FileSystemManager
-from view.utils.color_manager import ColorManager
+from CTkMessagebox.ctkmessagebox import ImageTk
 
 # Set appearance mode and color theme
 ctk.set_appearance_mode("System")  # "System", "Dark", "Light"
@@ -14,18 +15,21 @@ ctk.set_default_color_theme("dark-blue")  # "blue", "green", "dark-blue"
 
 class SimpleStudioView(ctk.CTk):
         
-    def __init__(self, presenter):
+    def __init__(self, presenter, window_icon_path = None):
         super().__init__()
         
         self.title("SimpleStudio")
         self.geometry("1200x800")
         self.minsize(800,600)
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
+        self._set_window_icon(window_icon_path)
         
         self._control_panel = None
         self._memory_panel = None
         self._label_panel = None    
         self._output_panel = None
+        
+        self._info_window = None
         
         self._presenter = presenter
         self._file_system_manager = FileSystemManager(presenter)
@@ -38,6 +42,12 @@ class SimpleStudioView(ctk.CTk):
         
         self._setup_bindings()
         
+    def _set_window_icon(self, image_path):
+        """
+        icon_bitmap = ImageTk.PhotoImage(file=image_path)
+        self.iconbitmap(icon_bitmap)
+        """
+        
     def _create_widgets(self):
         self._control_panel = ControlPanel(self, step_callback= self._presenter.on_single_step_execution,
                                           run_callback= self._presenter.on_complete_execution,
@@ -48,7 +58,8 @@ class SimpleStudioView(ctk.CTk):
                                           change_appearance_mode= self.change_appearance_mode, 
                                           browse_file= self._file_system_manager.on_browse_file,
                                           on_save_callback = self._file_system_manager.on_save_file,
-                                          on_save_as_callback = self._file_system_manager.on_save_as_file)
+                                          on_save_as_callback = self._file_system_manager.on_save_as_file,
+                                          show_info_callback= self.show_info)
         
         self._memory_panel = MemoryPanel(self)
         self._label_panel = LabelPanel(self)
@@ -171,6 +182,12 @@ class SimpleStudioView(ctk.CTk):
     def set_cache_entry_disponibility(self, number : int):
         if number >= 0:
             self._control_panel.set_cache_entry_disponibility(number)
+            
+    def show_info(self):
+        if self._info_window is None or not self._info_window.winfo_exists():
+            self._info_window = InfoWindow(self)
+        else:
+            self._info_window.focus()
 
     def _on_closing(self):
         close_window = self._file_system_manager.on_app_close()

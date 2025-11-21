@@ -1,9 +1,7 @@
 import sys
 import customtkinter as ctk
-import tkinter as tk
 from tkinter import ttk
 from typing import List
-import tkinter.font as tkfont
 from view.utils.color_manager import ColorManager
 
 class DataHeapMemoryView(ctk.CTkFrame):
