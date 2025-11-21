@@ -223,11 +223,12 @@ The information displayed on this window is meant to be a quick summary on the k
         text_box._textbox.tag_configure(tagName="bold", font=ctk.CTkFont(family=self._font_family, size= self._font_size, weight="bold"))
         text_box._textbox.tag_configure(tagName="italic", font=ctk.CTkFont(family=self._font_family, size= self._font_size, slant="italic"))
         text_box._textbox.tag_configure(tagName="bold_italic", font=ctk.CTkFont(family=self._font_family, size= self._font_size, weight="bold", slant= "italic"))
+        text_box._textbox.tag_configure(tagName="superscript", font=ctk.CTkFont(family=self._font_family, size= self._font_size - 4), offset=4)
     
     def _insert_formatted_text(self, text_widget, text):
         """Insert text with formatting using CTkTextbox tags"""
         # Pattern to match _*text*_, *text*, _text_
-        pattern = r'(_\*(.*?)\*_)|(\*(.*?)\*)|(_(.*?)_)'
+        pattern = r'(_\*(.*?)\*_)|(\*(.*?)\*)|(_(.*?)_)|(\^(\S+))'
         
         position = 0
         for match in re.finditer(pattern, text):
@@ -246,6 +247,9 @@ The information displayed on this window is meant to be a quick summary on the k
             elif match.group(5):  # _text_ pattern
                 content = match.group(6)
                 text_widget.insert("end", content, "italic")
+            elif match.group(7):  # ^text pattern (superscript)
+                content = match.group(8)
+                text_widget.insert("end", content, "superscript")
             
             position = match.end()
         
