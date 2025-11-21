@@ -1,3 +1,4 @@
+from logic.expression_ast.exceptions.invalid_memory_access_operand_exception import InvalidMemoryAccessOperandException
 from logic.expression_ast.exceptions.invalid_operator_exception import InvalidOperatorException
 from logic.interpreter.lexicalanalyzer.lexicalanalyzer import LexicalAnalyzer
 from logic.interpreter.iomanager.io_manager import IOManager
@@ -54,10 +55,11 @@ class VirtualMachine:
             LexicalExceptionInvalidOperator, LexicalException, 
             SyntacticException, SyntacticExceptionNoMatch, 
             SimpleSyntacticException, InvalidOperatorException,
-            Exception) as e:  # TODO ver estas excepciones catcheadas
+            InvalidMemoryAccessOperandException, Exception) as e:  # TODO ver estas excepciones catcheadas
             if self._io_manager:
                 self._io_manager.close()
             self._error = e
+            self._memory_manager.erase_code_memory()
             self.notify_error()
             return
         

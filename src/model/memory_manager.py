@@ -83,13 +83,16 @@ class MemoryManager:
         value = self._heap_memory.get_cell(address).value
         return value
       
+    def erase_code_memory(self):
+        self._code_memory = None
+      
     def get_code_memory(self, new_memory = False):
         if new_memory:
             self._code_memory = CodeMemory()
         return self._code_memory
     
     def there_is_code_memory(self):
-        return self._code_memory is not None and not self._code_memory.is_empty()
+        return self._code_memory is not None
     
     def get_data_memory(self):
         return self._data_memory

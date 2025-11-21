@@ -94,8 +94,7 @@ class SyntacticAnalyzer:
         elif self._nexts_map.contains_entry("Annotation", self.current_token.token_name):
             return None
         else:
-            return None
-            #raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("Annotation"))
+            raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("Annotation"))
 
     def signature(self):
         instruction_token = self.current_token
@@ -188,13 +187,13 @@ class SyntacticAnalyzer:
             if self._nexts_map.contains_entry("UnaryOp", self.current_token.token_name):
                 operand_node = self.operand()
                 unary_op_node.set_operand_node(operand_node)
-                return self.expression_remainder_2(unary_op_node)
+                return self.expression_remainder(unary_op_node)
             else:
                 unaryop_list = self.get_list_with_no_word_id(self._nexts_map.get_value("UnaryOp"))
                 raise SyntacticException(self.current_token, unaryop_list)
         elif self._firsts_map.contains_entry("Operand", self.current_token.token_name):
             operand_node = self.operand()
-            return self.expression_remainder_2(operand_node)
+            return self.expression_remainder(operand_node)
         else:
             unaryop_or_operand_list = self.get_list_with_no_word_id(self._firsts_map.get_value("UnaryOp"))
             unaryop_or_operand_list.extend(self.get_list_with_no_word_id(self._firsts_map.get_value("Operand")))
@@ -234,20 +233,7 @@ class SyntacticAnalyzer:
             case _:
                 raise SyntacticException(self.current_token, self.get_list_with_no_word_id(self._firsts_map.get_value("UnaryOp")))
 
-
         return unary_op_node
-
-    def expression_remainder(self, unary_op_or_operand):
-        if self._firsts_map.contains_entry("ExpressionRemainder", self.current_token.token_name):
-            binary_op_node = self.binary_op()    
-            binary_op_node.set_left_side(unary_op_or_operand)        
-            sub_expression = self.expression()
-            binary_op_node.set_right_side(sub_expression)                
-            return binary_op_node
-        elif self._nexts_map.contains_entry("ExpressionRemainder", self.current_token.token_name):
-            return unary_op_or_operand
-        else:
-            raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("ExpressionRemainder"))
 
     def operand(self):
         operand_node = None
@@ -297,14 +283,13 @@ class SyntacticAnalyzer:
 
         return operand_node
             
-    def expression_remainder_2(self, unary_op_or_operand):
+    def expression_remainder(self, unary_op_or_operand):
         if self._firsts_map.contains_entry("ExpressionRemainder", self.current_token.token_name):
             return self.parse_binary_operation(-1, unary_op_or_operand)
         elif self._nexts_map.contains_entry("ExpressionRemainder", self.current_token.token_name):
             return unary_op_or_operand
         else:
-            return unary_op_or_operand
-            #raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("ExpressionRemainder"))
+            raise SyntacticException(self.current_token, self.concatenated_first_and_next_lists("ExpressionRemainder"))
           
     def parse_binary_operation(self, former_operator_precedence, left_side):
         while True:
