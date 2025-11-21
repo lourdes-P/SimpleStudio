@@ -2,25 +2,9 @@
   "name": "simplestudio",
   "version": "1.0.0",
   "scripts": {
-    "install-deps": "npm install && pip install -r requirements.txt",
-    "build": "npm run build:css && npm run build:ts",
-    "build:css": "tailwindcss -i ./src/gui/static/css/input.css -o ./src/gui/static/css/output.css",
-    "build:ts": "tsc",
-    "watch": "concurrently \"npm run watch:css\" \"npm run watch:ts\"",
-    "watch:css": "tailwindcss -i ./src/gui/static/css/input.css -o ./src/gui/static/css/output.css --watch",
-    "watch:ts": "tsc --watch",
-    "start": "concurrently \"npm run watch\" \"npm run start:python\"",
+    "install-deps": "pip install -e .",
+    "start": "concurrently \"npm run start:python\"",
     "start:python": "python src/main.py",
-    "dev": "concurrently \"npm run watch\" \"npm run start:python\""
-  },
-  "devDependencies": {
-    "autoprefixer": "^10.4.16",
-    "concurrently": "^8.2.1",
-    "postcss": "^8.4.31",
-    "tailwindcss": "^3.3.5",
-    "typescript": "^5.2.2"
-  },
-  "dependencies": {
-    "npx": "^10.2.2"
+    "dev": "concurrently \"npm run start:python\""
   }
 }

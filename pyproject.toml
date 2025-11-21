@@ -1,7 +1,10 @@
 [project]
 name = "simplestudio"
 version = "0.1"
-dependencies = []
+dependencies = [
+    "customtkinter",
+    "CTkMessagebox"
+]
 
 [build-system]
 requires = ["setuptools"]
