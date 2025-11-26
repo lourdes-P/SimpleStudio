@@ -1,5 +1,6 @@
 import customtkinter as ctk
 import re
+from view.utils.icon_manager import IconManager
 
 class InfoWindow(ctk.CTkToplevel):
     def __init__(self, master=None, font_family = 'Consolas', font_size = 15, **kwargs):
@@ -16,6 +17,12 @@ class InfoWindow(ctk.CTkToplevel):
         self._create_widgets()
         self._setup_layout()
         self.after(100, lambda: self.focus())
+        self._set_window_icon()
+        
+    def _set_window_icon(self):
+        icon = IconManager.SIMPLESTUDIO_ICON_PATH
+        self.wm_iconbitmap()   
+        self.after(201, lambda: self.iconbitmap(icon))
         
     def _create_widgets(self):
         self._tabview = ctk.CTkTabview(self)
@@ -23,10 +30,12 @@ class InfoWindow(ctk.CTkToplevel):
         self._tab_1_grammar = self._tabview.add("Grammar")
         self._tab_2_functionalities = self._tabview.add("Functionalities")
         self._tab_3_shortcuts = self._tabview.add("Shortcuts")
+        self._tab_4_about = self._tabview.add("About")
         
         self._create_grammar_text_area()
         self._create_functionalities_text_area()
         self._create_shortcuts_text_area()
+        self._create_about_text_area()
         
         self._author_label = ctk.CTkLabel(self, text='Author: Lourdes María Panzone. Assoc. Universidad Nacional del Sur, Argentina.')
     
@@ -37,6 +46,7 @@ class InfoWindow(ctk.CTkToplevel):
         self._tab_1_text_box.pack(fill="both", expand=True, padx=10, pady=10)
         self._tab_2_text_box.pack(fill="both", expand=True, padx=10, pady=10)
         self._tab_3_text_box.pack(fill="both", expand=True, padx=10, pady=10)
+        self._tab_4_text_box.pack(fill="both", expand=True, padx=10, pady=10)
     
     def _create_grammar_text_area(self):
         """Create grammar tab text area with formatted content"""
@@ -218,6 +228,30 @@ The information displayed on this window is meant to be a quick summary on the k
         self._insert_formatted_text(self._tab_3_text_box, tab_3_text)
         self._tab_3_text_box.configure(state="disabled")
     
+    def _create_about_text_area(self):
+        """Create shortcuts tab text area with formatted content"""
+        self._tab_4_text_box = ctk.CTkTextbox(
+            self._tab_4_about,
+            wrap="word",
+            font=self._font,
+            scrollbar_button_color="#3b3b3b",
+            scrollbar_button_hover_color="#4b4b4b",
+            tabs=("4c",)
+        )
+        
+        self._set_tags(self._tab_4_text_box)
+        
+        tab_4_text = """This project was developed by
+        _*Lourdes María Panzone*_        
+with the guidance of
+        _*Dr. María Laura Cobo*_
+        _*Dr. Federico Martin Schmidt*_
+as the final project of my Bachelor's degree in Computer Science.
+
+Special thanks to my friend María Paz Berterreix who fixed me the logo"""
+        
+        self._insert_formatted_text(self._tab_4_text_box, tab_4_text)
+        self._tab_4_text_box.configure(state="disabled")
     
     def _set_tags(self, text_box : ctk.CTkTextbox):
         text_box._textbox.tag_configure(tagName="bold", font=ctk.CTkFont(family=self._font_family, size= self._font_size, weight="bold"))

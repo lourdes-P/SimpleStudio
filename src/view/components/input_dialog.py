@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from typing import Callable, Union
 from view.components.dialogs import CustomDialog
+from view.utils.icon_manager import IconManager
 
 class InputDialog(ctk.CTkInputDialog):
     def __init__(
@@ -23,6 +24,12 @@ class InputDialog(ctk.CTkInputDialog):
         self.callback = callback
         self.input_value = None
         self.top_level = None
+        self._set_window_icon()
+        
+    def _set_window_icon(self):
+        icon = IconManager.SIMPLESTUDIO_ICON_PATH
+        self.wm_iconbitmap()   
+        self.after(201, lambda: self.iconbitmap(icon))
         
     def _ok_event(self, event=None):
         """Override the ok event to handle input validation and callback"""

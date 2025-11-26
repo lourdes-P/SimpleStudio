@@ -1,12 +1,8 @@
 from pathlib import Path
 from CTkMessagebox.ctkmessagebox import Image
 import customtkinter as ctk
-import tkinter as tk
-from view.components.info_window import InfoWindow
 from view.components.numeral_spinner import NumeralSpinbox
-
-current_dir = Path(__file__).parent
-root = current_dir.parent.parent.parent
+from view.utils.icon_manager import IconManager
 
 class ControlPanel(ctk.CTkFrame):
     """Component for execution controls"""
@@ -98,9 +94,7 @@ class ControlPanel(ctk.CTkFrame):
             width=self._calculate_button_width("Open Code Editor", 5)
         )
         
-        light_image_path = root/'resources'/'info_light.png'
-        dark_image_path = root/'resources'/'info_dark.png'
-        icon = ctk.CTkImage(Image.open(light_image_path), Image.open(dark_image_path), size=(22,22))
+        icon = ctk.CTkImage(Image.open(IconManager.INFO_ICON_LIGHT), Image.open(IconManager.INFO_ICON_DARK), size=(22,22))
         self._about_button = ctk.CTkButton(
             self, 
             text='',

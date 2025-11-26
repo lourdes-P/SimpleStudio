@@ -1,3 +1,4 @@
+import os
 import customtkinter as ctk
 from view.components.controlpanel import ControlPanel
 from view.components.dialogs import CustomDialog
@@ -7,22 +8,26 @@ from view.components.labelpanel import LabelPanel
 from view.components.memorypanel import MemoryPanel
 from view.components.output_panel import OutputPanel
 from view.file_system_manager import FileSystemManager
-from CTkMessagebox.ctkmessagebox import ImageTk
+from ctypes import windll
+from view.utils.icon_manager import IconManager
 
 # Set appearance mode and color theme
 ctk.set_appearance_mode("System")  # "System", "Dark", "Light"
-ctk.set_default_color_theme("dark-blue")  # "blue", "green", "dark-blue"
+ctk.set_default_color_theme('dark-blue')  # "blue", "green", "dark-blue"
 
 class SimpleStudioView(ctk.CTk):
         
-    def __init__(self, presenter, window_icon_path = None):
+    def __init__(self, presenter):
         super().__init__()
-        
+        try:
+            windll.shcore.SetProcessDpiAwareness(True)
+        except AttributeError:
+            pass # not target Windows OS
         self.title("SimpleStudio")
         self.geometry("1200x800")
         self.minsize(800,600)
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
-        self._set_window_icon(window_icon_path)
+        self._set_window_icon()
         
         self._control_panel = None
         self._memory_panel = None
@@ -42,11 +47,10 @@ class SimpleStudioView(ctk.CTk):
         
         self._setup_bindings()
         
-    def _set_window_icon(self, image_path):
-        """
-        icon_bitmap = ImageTk.PhotoImage(file=image_path)
-        self.iconbitmap(icon_bitmap)
-        """
+    def _set_window_icon(self):
+        icon_path = IconManager.SIMPLESTUDIO_ICON_PATH
+        
+        self.iconbitmap(icon_path, default=icon_path)
         
     def _create_widgets(self):
         self._control_panel = ControlPanel(self, step_callback= self._presenter.on_single_step_execution,

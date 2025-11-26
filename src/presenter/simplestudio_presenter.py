@@ -1,3 +1,4 @@
+import os
 from model.virtual_machine import VirtualMachine
 from presenter.utils.presenter_file_manager import PresenterFileManager
 from view.main_view import SimpleStudioView

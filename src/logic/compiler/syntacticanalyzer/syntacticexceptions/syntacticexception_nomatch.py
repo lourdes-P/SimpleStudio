@@ -1,4 +1,4 @@
-from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception import SyntacticException
+from logic.compiler.syntacticanalyzer.syntacticexceptions.syntacticexception import SyntacticException
 
 class SyntacticExceptionNoMatch(SyntacticException):
 

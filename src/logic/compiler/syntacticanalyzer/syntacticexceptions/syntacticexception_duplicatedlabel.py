@@ -1,4 +1,4 @@
-from logic.interpreter.syntacticanalyzer.syntacticexceptions.syntacticexception_simple import SimpleSyntacticException
+from logic.compiler.syntacticanalyzer.syntacticexceptions.syntacticexception_simple import SimpleSyntacticException
 
 class DuplicatedLabelSyntacticException(SimpleSyntacticException):
     DEBUG= False

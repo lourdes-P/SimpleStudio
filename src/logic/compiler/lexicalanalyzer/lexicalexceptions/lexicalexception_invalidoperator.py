@@ -1,4 +1,4 @@
-from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception import LexicalException
+from logic.compiler.lexicalanalyzer.lexicalexceptions.lexicalexception import LexicalException
 
 class LexicalExceptionInvalidOperator(LexicalException):
     

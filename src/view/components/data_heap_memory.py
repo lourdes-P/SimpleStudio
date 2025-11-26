@@ -140,6 +140,8 @@ class DataHeapMemoryView(ctk.CTkFrame):
                                 ('pressed', bg_color_master)],
                       relief=[('pressed', 'flat')])
         
+        
+        
         self._define_tree_tag_configurations()
 
         self.tree.update_idletasks()
@@ -191,8 +193,8 @@ class DataHeapMemoryView(ctk.CTkFrame):
         self.h_scrollbar.grid_remove()
         
     def _define_tree_tag_configurations(self):
-        self.tree.tag_configure('modified', background=ColorManager.TERTIARY_COLOR, foreground='black')
-        self.tree.tag_configure('register', background=ColorManager.SECONDARY_COLOR, foreground='white')
+        self.tree.tag_configure('modified', background=ColorManager.get_tertiary_color(), foreground='black')
+        self.tree.tag_configure('register', background=ColorManager.get_secondary_color(), foreground='white')
         self.tree.tag_configure('even', background=ColorManager.get_alternating_colors(self, 0))
         self.tree.tag_configure('odd', background=ColorManager.get_alternating_colors(self, 1))
         

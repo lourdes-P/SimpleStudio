@@ -1,4 +1,4 @@
-from logic.interpreter.utils.mapmanager import MapManager
+from logic.compiler.utils.mapmanager import MapManager
 import csv
 from pathlib import Path
 

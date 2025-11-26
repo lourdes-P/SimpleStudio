@@ -1,6 +1,6 @@
 [project]
 name = "simplestudio"
-version = "0.1"
+version = "1.0"
 dependencies = [
     "customtkinter",
     "CTkMessagebox"

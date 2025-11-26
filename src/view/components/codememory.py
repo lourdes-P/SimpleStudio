@@ -160,8 +160,8 @@ class CodeMemoryView(ctk.CTkFrame):
         self.tree.update_idletasks()
         
     def _define_tree_tag_configurations(self):
-        self.tree.tag_configure('current_pc', background=ColorManager.SECONDARY_COLOR, foreground='white')
-        self.tree.tag_configure('last_executed', background=ColorManager.TERTIARY_COLOR, foreground='black')
+        self.tree.tag_configure('current_pc', background=ColorManager.get_secondary_color(), foreground='white')
+        self.tree.tag_configure('last_executed', background=ColorManager.get_tertiary_color(), foreground='black')
         self.tree.tag_configure('even', background=ColorManager.get_alternating_colors(self, 0))
         self.tree.tag_configure('odd', background=ColorManager.get_alternating_colors(self, 1))
         self.tree.tag_configure('has_annotation', font=ctk.CTkFont(weight="bold"))
@@ -392,7 +392,7 @@ class CodeMemoryView(ctk.CTkFrame):
                 tooltip.wm_attributes("-topmost", True)
                 tooltip.wm_geometry(f"+{x}+{y}")
                 
-                tooltip_frame = ctk.CTkFrame(tooltip, corner_radius=5, fg_color=ColorManager.SECONDARY_COLOR)
+                tooltip_frame = ctk.CTkFrame(tooltip, corner_radius=5, fg_color=ColorManager.get_secondary_color())
                 tooltip_frame.pack(padx=0, pady=0, fill="both", expand=True)
                 
                 tooltip_label = ctk.CTkLabel(
@@ -401,7 +401,7 @@ class CodeMemoryView(ctk.CTkFrame):
                     height=tooltip_height,
                     wraplength=280,
                     justify="left",
-                    fg_color=ColorManager.SECONDARY_COLOR,
+                    fg_color=ColorManager.get_secondary_color(),
                     text_color="white",
                     padx=2,
                     pady=2

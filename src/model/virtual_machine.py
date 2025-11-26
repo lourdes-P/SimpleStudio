@@ -1,14 +1,14 @@
 from logic.expression_ast.exceptions.invalid_memory_access_operand_exception import InvalidMemoryAccessOperandException
 from logic.expression_ast.exceptions.invalid_operator_exception import InvalidOperatorException
-from logic.interpreter.lexicalanalyzer.lexicalanalyzer import LexicalAnalyzer
-from logic.interpreter.iomanager.io_manager import IOManager
-from logic.interpreter.lexicalanalyzer.reserved_word_manager.reserved_word_map import ReservedWordMap
-from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception import LexicalException
-from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidoperator import LexicalExceptionInvalidOperator
-from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidsymbol import LexicalExceptionInvalidSymbol
-from logic.interpreter.syntacticanalyzer.syntacticanalyzer import SyntacticAnalyzer
-from logic.interpreter.syntacticanalyzer.syntacticexceptions import *
-from logic.interpreter.utils import MapManager, OperatorPrecedenceManager
+from logic.compiler.lexicalanalyzer.lexicalanalyzer import LexicalAnalyzer
+from logic.compiler.iomanager.io_manager import IOManager
+from logic.compiler.lexicalanalyzer.reserved_word_manager.reserved_word_map import ReservedWordMap
+from logic.compiler.lexicalanalyzer.lexicalexceptions.lexicalexception import LexicalException
+from logic.compiler.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidoperator import LexicalExceptionInvalidOperator
+from logic.compiler.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidsymbol import LexicalExceptionInvalidSymbol
+from logic.compiler.syntacticanalyzer.syntacticanalyzer import SyntacticAnalyzer
+from logic.compiler.syntacticanalyzer.syntacticexceptions import *
+from logic.compiler.utils import MapManager, OperatorPrecedenceManager
 from logic.processor.exceptions.instruction_amalgam_exception import InstructionAmalgamException
 from logic.processor.processor import Processor
 from model.cache.cache import Cache

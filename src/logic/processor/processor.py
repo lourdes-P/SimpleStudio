@@ -36,7 +36,7 @@ class Processor:
         self.enable()
     
     def execute_next_instruction(self):
-        self._next_instruction = self._get_next_instruction()
+        self._next_instruction = self._fetch_next_instruction()
         if self._next_instruction and self._enabled:
             try:
                 self._after_execution_state = self._next_instruction.execute(self)
@@ -68,7 +68,7 @@ class Processor:
     def _add_triggering_instruction_address_and_line_number(self, error):        
         return f"{error}\nTriggering instruction at address {self._next_instruction.address} in code memory, line {self._next_instruction.line} at source."
         
-    def _get_next_instruction(self):
+    def _fetch_next_instruction(self):
         return self._virtual_machine.get_instruction(self._pc)
     
     def get_label_address(self, label_name):

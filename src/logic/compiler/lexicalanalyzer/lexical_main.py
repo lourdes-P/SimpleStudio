@@ -1,11 +1,11 @@
-from logic.interpreter.lexicalanalyzer.lexicalanalyzer import LexicalAnalyzer
-from logic.interpreter.iomanager.io_manager import IOManager
-from logic.interpreter.lexicalanalyzer.reserved_word_manager.reserved_word_map import ReservedWordMap
-from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception import LexicalException
-from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidoperator import LexicalExceptionInvalidOperator
-from logic.interpreter.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidsymbol import LexicalExceptionInvalidSymbol
-from logic.interpreter.syntacticanalyzer.syntacticanalyzer import SyntacticAnalyzer
-from logic.interpreter.syntacticanalyzer.syntacticexceptions import *
+from logic.compiler.lexicalanalyzer.lexicalanalyzer import LexicalAnalyzer
+from logic.compiler.iomanager.io_manager import IOManager
+from logic.compiler.lexicalanalyzer.reserved_word_manager.reserved_word_map import ReservedWordMap
+from logic.compiler.lexicalanalyzer.lexicalexceptions.lexicalexception import LexicalException
+from logic.compiler.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidoperator import LexicalExceptionInvalidOperator
+from logic.compiler.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidsymbol import LexicalExceptionInvalidSymbol
+from logic.compiler.syntacticanalyzer.syntacticanalyzer import SyntacticAnalyzer
+from logic.compiler.syntacticanalyzer.syntacticexceptions import *
 from logic.memories.codememory.codememory import CodeMemory
 
 # lexical analizer (self, io_manager, reserved_word_map)

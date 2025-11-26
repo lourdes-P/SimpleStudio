@@ -1,9 +1,10 @@
+import os
 from customtkinter import ThemeManager
 import customtkinter as ctk
 
 class ColorManager:
-    SECONDARY_COLOR = '#2c3e50'
-    TERTIARY_COLOR = '#4b8bab'
+    SECONDARY_COLOR = ("#325b83",'#2c3e50')
+    TERTIARY_COLOR = ("#86a7c7", "#86a7c7")
     BREAKPOINT_COLOR = '#c4160a'
     HOVER_BREAKPOINT_COLOR = ("#c49292","#680b05")
     CODE_EDITOR_COLORS = {  
@@ -28,6 +29,14 @@ class ColorManager:
                                 'highlight_text_color': 'black',
                               }
                          }
+    
+    @staticmethod
+    def get_secondary_color():
+        return ColorManager.get_single_color(ColorManager.SECONDARY_COLOR)
+        
+    @staticmethod
+    def get_tertiary_color():
+        return ColorManager.get_single_color(ColorManager.TERTIARY_COLOR)
     
     @staticmethod
     def get_alternating_colors(widget, index: int):

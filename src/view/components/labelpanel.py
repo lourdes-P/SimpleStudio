@@ -66,23 +66,25 @@ class LabelPanel(ctk.CTkFrame):
     def add_label(self, label: dict, color = None):
         self._create_line_widget(label, self.line_widget_index, color)
         
-    def add_label_list(self, label_list, color = ColorManager.SECONDARY_COLOR):
+    def add_label_list(self, label_list, color = None):
         for i, label in enumerate(label_list):
             widget_index = self.label_index.get(label['name'])
             if widget_index is None:
-                self.add_label(label, color)
+                self.add_label(label, color if color is not None else ColorManager.get_secondary_color())
             else:
-                self._update_line_widget_address(label, widget_index)
+                self._update_line_widget_address(label, widget_index, color)
             
     def delete_label(self, label_name):
         index = self.label_index[label_name]
         line_frame = self.line_widgets[index].get('line_frame')
         line_frame.destroy()
     
-    def _update_line_widget_address(self, label : dict, index : int):
+    def _update_line_widget_address(self, label : dict, index : int, color = None):
         label_address = label['address']
         address_label = self.line_widgets[index].get('address_label')
         address_label.configure(text=str(label_address))
+        line_frame = self.line_widgets[index].get('line_frame')
+        line_frame.configure(fg_color=color if color is not None else ColorManager.get_secondary_color())
         
     def _create_line_widget(self, label: dict, index: int, color = None):
         label_name = label['name']
@@ -114,4 +116,3 @@ class LabelPanel(ctk.CTkFrame):
         self.label_index[label_name] = index
         
         self.line_widget_index = index + 1
-        
