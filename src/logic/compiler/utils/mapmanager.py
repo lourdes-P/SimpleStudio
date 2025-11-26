@@ -1,10 +1,5 @@
 import csv
-from pathlib import Path
-
-current_dir = Path(__file__).parent
-root = current_dir.parent.parent.parent.parent
-# se toma la raíz de este proyecto
-# los archivos estarán en la carpeta resources, por fuera de src
+import os
 
 class MapManager:
 
@@ -15,7 +10,7 @@ class MapManager:
 
 
     def initialize_map(self, file_path):
-        with open(root / file_path, "r", encoding="utf-8") as file:
+        with open(os.path.join(".", file_path), "r", encoding="utf-8") as file:
             reader = csv.reader(file)
             for row in reader:
                 if len(row) >= 2:

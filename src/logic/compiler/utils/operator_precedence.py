@@ -1,19 +1,15 @@
-from logic.compiler.utils.mapmanager import MapManager
 import csv
-from pathlib import Path
-
-current_dir = Path(__file__).parent
-root = current_dir.parent.parent.parent.parent
+import os
 
 class OperatorPrecedenceManager:
     
-    def __init__(self):
+    def __init__(self, file_path= os.path.join('resources', 'operatorprecedence.csv')):
         self.operator_precedence_map = {}
 
-        self.initialize_map('resources/operatorprecedence.csv')      
+        self.initialize_map(file_path)      
 
     def initialize_map(self, file_path):
-        with open(root / file_path, "r", encoding="utf-8") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             reader = csv.reader(file)
             for row in reader:
                 if len(row) >= 2:                

@@ -1,18 +1,15 @@
 import csv
-from pathlib import Path
-
-current_dir = Path(__file__).parent
-root = current_dir.parent.parent.parent.parent.parent
+import os
 
 class ReservedWordMap:
     
-    def __init__(self):
+    def __init__(self, file_path = os.path.join("resources", "reservedwords.csv")):
         self.reserved_word_map = {}
         self.name_word_map = {}
-        self.initialize_map()
+        self.initialize_map(file_path)
 
-    def initialize_map(self):
-        with open(root / "resources/reservedwords.csv", "r", encoding="utf-8") as file:
+    def initialize_map(self, file_path):
+        with open(file_path, "r", encoding="utf-8") as file:
             reader = csv.reader(file)
             for row in reader:
                 if len(row) >= 2:
