@@ -1,7 +1,5 @@
 class Token:
 
-#json_data = json.dumps(token.__dict__) # para convertirlo fácil a json
-
     def __init__(self, token_name, lexeme, line_number, first_char_index):
         self._token_name = token_name
         self._lexeme = lexeme

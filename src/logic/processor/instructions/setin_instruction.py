@@ -17,5 +17,3 @@ class SetInInstruction(InstructionSimpleArg):
             
         processor.set_in_data_memory(target_address, processor.get_user_input())
         return processor.SUCCESS
-        
-        

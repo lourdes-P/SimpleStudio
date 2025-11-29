@@ -45,7 +45,7 @@ class InputDialog(ctk.CTkInputDialog):
             self._show_error(str(e))
         finally:
             self.grab_release()
-            self.destroy()
+            self.after(100, self.destroy)
     
     def _cancel_event(self):
         """Override cancel event so that it shows an error"""

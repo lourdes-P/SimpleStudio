@@ -25,7 +25,7 @@ class MemoryManager:
         self._all_time_modified_data_cells_addresses.clear()
         self._all_time_modified_heap_cells_addresses.clear()
     
-    def set_data_memory(self, cache: Cache, address, data = None, source_instruction_address = None):
+    def set_data_memory_cell(self, cache: Cache, address, data = None, source_instruction_address = None):
         annotation = None
         if source_instruction_address is not None:
             annotation = self._code_memory.get_codecell(source_instruction_address).annotation
@@ -35,7 +35,7 @@ class MemoryManager:
         self._modified_cell_manager.add_to_memory_modified_data_cells(modified_cell)
         self._all_time_modified_data_cells_addresses.append(address)
     
-    def set_heap_memory(self, cache: Cache, address, data = None, source_instruction_address = None):
+    def set_heap_memory_cell(self, cache: Cache, address, data = None, source_instruction_address = None):
         annotation = None
         if source_instruction_address is not None:
             annotation = self._code_memory.get_codecell(source_instruction_address).annotation
@@ -172,3 +172,17 @@ class MemoryManager:
                 self._heap_memory.place_po(address)
         
         self._modified_cell_manager.extend_register_modified_heap_cells(register_modified_heap_cells)
+        
+    # dependency injection setters
+    
+    def set_data_memory(self, data_memory):
+        self._data_memory = data_memory
+        
+    def set_heap_memory(self, heap_memory):
+        self._heap_memory = heap_memory
+        
+    def set_code_memory(self, code_memory):
+        self._code_memory = code_memory
+        
+    def set_modified_cell_manager(self, modified_cell_manager):
+        self._modified_cell_manager = modified_cell_manager

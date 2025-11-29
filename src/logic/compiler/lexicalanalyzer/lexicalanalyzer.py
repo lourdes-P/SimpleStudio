@@ -10,8 +10,7 @@ class LexicalAnalyzer:
         self.reserved_word_map = reserved_word_map
         self.current_char = ''
         self._no_errors = True
-        self._recover_from_error = False    # esto es por si se buscan varios errores léxicos
-        # en una misma ejecución del léxico ( de una sola corrida; sigue el análisis)
+        self._recover_from_error = False
         self.lexeme = ""
         self.first_char_index = 0
         self.token_line_list = []

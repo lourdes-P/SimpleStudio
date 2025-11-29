@@ -13,7 +13,7 @@ class IdentifierNode(OperandNode):
         return self._token.lexeme
 
     def evaluate(self, processor=None):
-        return processor.get_label_address(self.get_name())    # processor consulta a vm. devuelve la direccion (de la instruccion; memoria c) a la que apunta la label
+        return processor.get_label_address(self.get_name())
 
     def generate_string(self):
         return str(self.get_name())

@@ -148,14 +148,12 @@ class DataHeapMemoryView(ctk.CTkFrame):
         
     def _create_widgets(self):
         """Create all the widgets for the memory view"""
-        
-        # Create Treeview for memory cells
         self.tree_frame = ctk.CTkFrame(self)
         self.tree = ttk.Treeview(
             self.tree_frame,
             columns=('register', 'address', 'value', 'annotation'),
-            show='tree headings',  # Hide the first empty column
-            height=25,# Show 25 rows by default
+            show='tree headings',
+            height=25,
             padding=0,
             selectmode="none",
             style='Treeview'

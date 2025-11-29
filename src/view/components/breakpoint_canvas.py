@@ -23,7 +23,7 @@ class BreakpointCanvas(tk.Canvas):
     def __init__(self, master=None, width=300, height=200, on_breakpoint_click_callback=None, **kwargs):
         super().__init__(master, width=width, height=height, highlightthickness=0, **kwargs)
         self.breakpoints: list[Breakpoint] = []
-        self._address_to_id_map = {}  # breakpoint address -> item id
+        self._breakpoint_address_to_item_id_map = {}
         self._on_breakpoint_click_callback = on_breakpoint_click_callback
         self.bind("<Button-1>", self._on_click)
         self.bind("<Motion>", self._on_motion)
@@ -49,22 +49,22 @@ class BreakpointCanvas(tk.Canvas):
 
         circle = self.create_oval(x - r, y - r, x + r, y + r, fill=fill_color, outline='',)
         
-        self._address_to_id_map[breakpoint.address] = circle
+        self._breakpoint_address_to_item_id_map[breakpoint.address] = circle
 
     def redraw(self):
         self.delete("all")
-        self._address_to_id_map.clear()
+        self._breakpoint_address_to_item_id_map.clear()
         for breakpoint in self.breakpoints:
             self._draw_one(breakpoint)
             
     def _single_redraw(self, breakpoint : Breakpoint):
-        self.delete(self._address_to_id_map[breakpoint.address])
-        self._address_to_id_map.pop(breakpoint.address)
+        self.delete(self._breakpoint_address_to_item_id_map[breakpoint.address])
+        self._breakpoint_address_to_item_id_map.pop(breakpoint.address)
         self._draw_one(breakpoint)
 
     def clear(self):
         self.delete("all")
-        self._address_to_id_map.clear()
+        self._breakpoint_address_to_item_id_map.clear()
         self.breakpoints.clear()
 
     def _on_click(self, event):

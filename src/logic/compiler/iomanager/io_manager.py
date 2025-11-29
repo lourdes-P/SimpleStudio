@@ -5,13 +5,26 @@ class IOManager:
     EOF = ''
     END_OF_LINE = '\n'
 
-    def __init__(self, file_path):
+    def __init__(self, file_path = None):
         self.current_char =' '
         self.line_number= 1
         self.line_char_index= 0
         self.line = ""
-        self.relative_path = os.path.join(os.path.dirname(__file__), file_path)
+        self.relative_path = None
+        self.file_reader = None
+        
+        if file_path is not None:
+            self.load_code(file_path)
 
+    def reset(self):
+        self.current_char =' '
+        self.line_number= 1
+        self.line_char_index= 0
+        self.line = ""
+        
+    def load_code(self, file_path):
+        self.reset()
+        self.relative_path = os.path.join(os.path.dirname(__file__), file_path)
         self.file_reader = open(self.relative_path, "r", encoding="utf-8")
 
     def get_next_char(self):

@@ -91,9 +91,16 @@ class Processor:
         self._virtual_machine.trigger_user_input()
         
     def deliver_user_input(self):
-        state = self._next_instruction.on_user_input(self)
-        if state == self.SUCCESS:
-            self.enable()
+        try:
+            self._after_execution_state = self._next_instruction.on_user_input(self)
+            if self._after_execution_state == self.SUCCESS:
+                self.enable()
+        except MemoryAddressOutOfRangeException as error:
+            self._after_execution_state = self.FAILURE
+            self._error = self._add_triggering_instruction_address_and_line_number(error)
+            self._enabled = False
+            
+        return self._after_execution_state
         
     def get_user_input(self):
         return self._virtual_machine.get_user_input()

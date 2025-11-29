@@ -4,7 +4,7 @@ from model.exceptions.empty_cache_exception import EmptyCacheException
 
 class Cache:
     
-    def __init__(self, capacity):
+    def __init__(self, capacity : int):
         self._capacity = capacity
         self._cache_stack = []
         self._last_modified_data_cell_stack = Stack()

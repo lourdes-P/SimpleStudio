@@ -1,7 +1,8 @@
+from abc import abstractmethod,ABC
 from logic.expression_ast.exceptions.invalid_memory_access_operand_exception import InvalidMemoryAccessOperandException
 from logic.expression_ast.operand_nodes.operand_node import OperandNode
 
-class MemoryAccessNode(OperandNode):
+class MemoryAccessNode(OperandNode, ABC):
 
     def __init__(self, token, sub_expression_node=None):
         self._token = token
@@ -15,6 +16,7 @@ class MemoryAccessNode(OperandNode):
     def generate_string(self):
         return f"{self._token.lexeme}[{self._sub_expression_node.generate_string()}]"
 
+    @abstractmethod
     def evaluate(self, processor=None):
         pass
     

@@ -1,4 +1,3 @@
-import os
 import customtkinter as ctk
 from view.components.controlpanel import ControlPanel
 from view.components.dialogs import CustomDialog
@@ -9,13 +8,13 @@ from view.components.memorypanel import MemoryPanel
 from view.components.output_panel import OutputPanel
 from view.file_system_manager import FileSystemManager
 from ctypes import windll
+from view.simplestudio_view_interface import SimpleStudioViewInterface
 from view.utils.icon_manager import IconManager
 
-# Set appearance mode and color theme
 ctk.set_appearance_mode("System")  # "System", "Dark", "Light"
 ctk.set_default_color_theme('dark-blue')  # "blue", "green", "dark-blue"
 
-class SimpleStudioView(ctk.CTk):
+class SimpleStudioViewInterface(ctk.CTk, SimpleStudioViewInterface):
         
     def __init__(self, presenter):
         super().__init__()
@@ -46,6 +45,9 @@ class SimpleStudioView(ctk.CTk):
         self._memory_panel.initialize(self._presenter.on_breakpoint_change)
         
         self._setup_bindings()
+        
+    def start(self):
+        self.mainloop()
         
     def _set_window_icon(self):
         icon_path = IconManager.SIMPLESTUDIO_ICON_PATH
@@ -104,9 +106,6 @@ class SimpleStudioView(ctk.CTk):
         
     def set_pc(self, pc, last_executed_instruction_address):
         self._memory_panel.set_pc(pc, last_executed_instruction_address)
-
-    def get_code_memory_view(self):
-        return self._memory_panel.get_code_memory_view()
     
     def get_breakpoints(self):
         return self._memory_panel.get_breakpoints()
@@ -135,7 +134,7 @@ class SimpleStudioView(ctk.CTk):
     def add_labels(self, added_labels_list):
         self._label_panel.add_label_list(added_labels_list) 
       
-    def delete_label(self, label_name) :
+    def delete_label(self, label_name):
         self._label_panel.delete_label(label_name)
         
     def update_data_memory(self, modified_data_cells):

@@ -63,7 +63,6 @@ class SyntacticAnalyzer:
     def instruction(self):
         if self.current_token.token_name == "identifier":
             codecell = CodeCell(address= self._current_parsing_address)
-            # address is increased after         
             label = self.current_token
             self.add_label_to_dictionary(label, self._current_parsing_address)
             codecell.set_label_token(label)
@@ -75,7 +74,6 @@ class SyntacticAnalyzer:
             self._code_memory.add_codecell(codecell)
         elif self._firsts_map.contains_entry("Signature", self.current_token.token_name):
             codecell = CodeCell(address= self._current_parsing_address)   
-            # address is increased after         
             instruction = self.signature()
             codecell.set_instruction(instruction)
             annotation = self.annotation()
@@ -302,7 +300,7 @@ class SyntacticAnalyzer:
             if (current_operator_precedence < former_operator_precedence):
                 return left_side            
             
-            binary_operator_node = self.binary_op() # le asigno el operador en el medio, me falta izquierda y derecha
+            binary_operator_node = self.binary_op() 
             
             right_side = self.unary_op_or_operand()
             

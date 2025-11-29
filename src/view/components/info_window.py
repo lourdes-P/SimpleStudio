@@ -245,10 +245,10 @@ The information displayed on this window is meant to be a quick summary on the k
         _*Lourdes María Panzone*_        
 with the guidance of
         _*Dr. María Laura Cobo*_
-        _*Dr. Federico Martin Schmidt*_
+        _*Dr. Federico Martín Schmidt*_
 as the final project of my Bachelor's degree in Computer Science.
 
-Special thanks to my friend María Paz Berterreix who fixed me the logo"""
+Special thanks to my friend María Paz Berterreix who fixed me the logo."""
         
         self._insert_formatted_text(self._tab_4_text_box, tab_4_text)
         self._tab_4_text_box.configure(state="disabled")

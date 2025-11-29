@@ -1,6 +1,5 @@
 from logic.expression_ast.operand_nodes.operand_node import OperandNode
 
-# registro Libre
 class LibreNode(OperandNode):
     
     def __init__(self, token):
