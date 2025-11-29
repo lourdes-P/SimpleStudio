@@ -10,7 +10,7 @@ class IOManager:
         self.line_number= 1
         self.line_char_index= 0
         self.line = ""
-        self.relative_path = None
+        self.file_path = None
         self.file_reader = None
         
         if file_path is not None:
@@ -24,8 +24,8 @@ class IOManager:
         
     def load_code(self, file_path):
         self.reset()
-        self.relative_path = os.path.join(os.path.dirname(__file__), file_path)
-        self.file_reader = open(self.relative_path, "r", encoding="utf-8")
+        self.file_path = file_path
+        self.file_reader = open(self.file_path, "r", encoding="utf-8")
 
     def get_next_char(self):
         if self.current_char == self.END_OF_LINE:
@@ -60,8 +60,8 @@ class IOManager:
         return self.line
     
     def get_whole_current_line(self):
-        return linecache.getline(self.relative_path, self.line_number).removesuffix(self.END_OF_LINE)
+        return linecache.getline(self.file_path, self.line_number).removesuffix(self.END_OF_LINE)
     
     def get_whole_line(self, line_number):  # line number from 1 to n
-        return linecache.getline(self.relative_path, line_number).removesuffix(self.END_OF_LINE)
+        return linecache.getline(self.file_path, line_number).removesuffix(self.END_OF_LINE)
     

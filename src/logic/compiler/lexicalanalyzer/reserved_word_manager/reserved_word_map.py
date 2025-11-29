@@ -1,12 +1,13 @@
 import csv
 import os
+from utils.path_normalizer import PathNormalizer
 
 class ReservedWordMap:
     
-    def __init__(self, file_path = os.path.join("resources", "reservedwords.csv")):
+    def __init__(self, file_path = os.path.join("resources","reservedwords.csv")):
         self.reserved_word_map = {}
         self.name_word_map = {}
-        self.initialize_map(file_path)
+        self.initialize_map(PathNormalizer.resource_path(file_path))
 
     def initialize_map(self, file_path):
         with open(file_path, "r", encoding="utf-8") as file:

@@ -1,12 +1,13 @@
 import csv
 import os
+from utils.path_normalizer import PathNormalizer
 
 class OperatorPrecedenceManager:
     
     def __init__(self, file_path= os.path.join('resources', 'operatorprecedence.csv')):
         self.operator_precedence_map = {}
 
-        self.initialize_map(file_path)      
+        self.initialize_map(PathNormalizer.resource_path(file_path))
 
     def initialize_map(self, file_path):
         with open(file_path, "r", encoding="utf-8") as file:

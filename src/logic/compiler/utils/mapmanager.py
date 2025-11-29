@@ -1,12 +1,13 @@
 import csv
 import os
+from utils.path_normalizer import PathNormalizer
 
 class MapManager:
 
     def __init__(self, file_path):
         self.map = {}
 
-        self.initialize_map(file_path)
+        self.initialize_map(PathNormalizer.resource_path(file_path))
 
 
     def initialize_map(self, file_path):
