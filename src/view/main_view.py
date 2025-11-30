@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from CTkMessagebox.ctkmessagebox import Image, ImageTk
 from view.components.controlpanel import ControlPanel
 from view.components.dialogs import CustomDialog
 from view.components.info_window import InfoWindow
@@ -7,7 +8,9 @@ from view.components.labelpanel import LabelPanel
 from view.components.memorypanel import MemoryPanel
 from view.components.output_panel import OutputPanel
 from view.file_system_manager import FileSystemManager
-from ctypes import windll
+import sys
+if sys.platform == "win32":
+    from ctypes import windll
 from view.simplestudio_view_interface import SimpleStudioViewInterface
 from view.utils.icon_manager import IconManager
 
@@ -19,7 +22,8 @@ class SimpleStudioViewInterface(ctk.CTk, SimpleStudioViewInterface):
     def __init__(self, presenter):
         super().__init__()
         try:
-            windll.shcore.SetProcessDpiAwareness(True)
+            if sys.platform == "win32":
+                windll.shcore.SetProcessDpiAwareness(True)
         except AttributeError:
             pass # not target Windows OS
         self.title("SimpleStudio")
@@ -50,9 +54,13 @@ class SimpleStudioViewInterface(ctk.CTk, SimpleStudioViewInterface):
         self.mainloop()
         
     def _set_window_icon(self):
-        icon_path = IconManager.SIMPLESTUDIO_ICON_PATH
-        
-        self.iconbitmap(icon_path, default=icon_path)
+        if sys.platform == "win32":
+            icon_path = IconManager.SIMPLESTUDIO_ICON_PATH_WIN32
+            self.iconbitmap(icon_path, default=icon_path)
+        else:
+            image= Image.open(IconManager.SIMPLESTUDIO_ICON_PATH_DARWIN_LINUX)
+            self.icon_image = ImageTk.PhotoImage(image)
+            self.iconphoto(True, self.icon_image)
         
     def _create_widgets(self):
         self._control_panel = ControlPanel(self, step_callback= self._presenter.on_single_step_execution,

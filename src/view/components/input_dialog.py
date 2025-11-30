@@ -1,4 +1,6 @@
+import sys
 import customtkinter as ctk
+from CTkMessagebox.ctkmessagebox import Image, ImageTk
 from typing import Callable, Union
 from view.components.dialogs import CustomDialog
 from view.utils.icon_manager import IconManager
@@ -27,9 +29,14 @@ class InputDialog(ctk.CTkInputDialog):
         self._set_window_icon()
         
     def _set_window_icon(self):
-        icon = IconManager.SIMPLESTUDIO_ICON_PATH
-        self.wm_iconbitmap()   
-        self.after(201, lambda: self.iconbitmap(icon))
+        if sys.platform == "win32":
+            icon_path = IconManager.SIMPLESTUDIO_ICON_PATH_WIN32
+            self.wm_iconbitmap()   
+            self.after(201, lambda: self.iconbitmap(icon_path)) 
+        else:
+            icon_image= Image.open(IconManager.SIMPLESTUDIO_ICON_PATH_DARWIN_LINUX)
+            self.icon_image = ImageTk.PhotoImage(icon_image)
+            self.iconphoto(True, self.icon_image)
         
     def _ok_event(self, event=None):
         """Override the ok event to handle input validation and callback"""

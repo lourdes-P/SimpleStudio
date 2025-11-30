@@ -1,5 +1,7 @@
+import sys
 import customtkinter as ctk
 import re
+from CTkMessagebox.ctkmessagebox import Image, ImageTk
 from view.utils.icon_manager import IconManager
 
 class InfoWindow(ctk.CTkToplevel):
@@ -20,9 +22,14 @@ class InfoWindow(ctk.CTkToplevel):
         self._set_window_icon()
         
     def _set_window_icon(self):
-        icon = IconManager.SIMPLESTUDIO_ICON_PATH
-        self.wm_iconbitmap()   
-        self.after(201, lambda: self.iconbitmap(icon))
+        if sys.platform == "win32":
+            icon_path = IconManager.SIMPLESTUDIO_ICON_PATH_WIN
+            self.wm_iconbitmap()   
+            self.after(201, lambda: self.iconbitmap(icon_path)) 
+        else:
+            icon_image= Image.open(IconManager.SIMPLESTUDIO_ICON_PATH_DARWIN)
+            self.icon_image = ImageTk.PhotoImage(icon_image)
+            self.iconphoto(True, self.icon_image)
         
     def _create_widgets(self):
         self._tabview = ctk.CTkTabview(self)
