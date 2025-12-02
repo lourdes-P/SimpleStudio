@@ -173,3 +173,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# nuitka
+*.build/
+*.dist/
+*.onefile-build/
+*.exe
