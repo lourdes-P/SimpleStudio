@@ -23,11 +23,11 @@ class InfoWindow(ctk.CTkToplevel):
         
     def _set_window_icon(self):
         if sys.platform == "win32":
-            icon_path = IconManager.SIMPLESTUDIO_ICON_PATH_WIN
+            icon_path = IconManager.SIMPLESTUDIO_ICON_PATH_WIN32
             self.wm_iconbitmap()   
             self.after(201, lambda: self.iconbitmap(icon_path)) 
         else:
-            icon_image= Image.open(IconManager.SIMPLESTUDIO_ICON_PATH_DARWIN)
+            icon_image= Image.open(IconManager.SIMPLESTUDIO_ICON_PATH_DARWIN_LINUX)
             self.icon_image = ImageTk.PhotoImage(icon_image)
             self.iconphoto(True, self.icon_image)
         
