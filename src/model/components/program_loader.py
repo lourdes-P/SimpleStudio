@@ -1,10 +1,9 @@
+from logic.compiler.compiler import Compiler
 from logic.expression_ast.exceptions.invalid_memory_access_operand_exception import InvalidMemoryAccessOperandException
 from logic.expression_ast.exceptions.invalid_operator_exception import InvalidOperatorException
-from logic.compiler.lexicalanalyzer.lexicalanalyzer import LexicalAnalyzer
 from logic.compiler.lexicalanalyzer.lexicalexceptions.lexicalexception import LexicalException
 from logic.compiler.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidoperator import LexicalExceptionInvalidOperator
 from logic.compiler.lexicalanalyzer.lexicalexceptions.lexicalexception_invalidsymbol import LexicalExceptionInvalidSymbol
-from logic.compiler.syntacticanalyzer.syntacticanalyzer import SyntacticAnalyzer
 from logic.compiler.syntacticanalyzer.syntacticexceptions import *
 from logic.compiler.iomanager.io_manager import IOManager
 from logic.compiler.lexicalanalyzer.reserved_word_manager.reserved_word_map import ReservedWordMap
@@ -29,10 +28,8 @@ class ProgramLoader:
         code_memory = self._memory_manager.get_code_memory(new_memory=True)
         try:
             self._io_manager.load_code(file_path)
-            lexical_analyzer = LexicalAnalyzer(self._io_manager, self._reserved_word_map)
-            syntactic_analyzer = SyntacticAnalyzer(lexical_analyzer, code_memory, self._firsts_map, self._nexts_map, self._operator_precedence_manager)
-            syntactic_analyzer.start()
-            self._label_manager.set_label_dictionary(syntactic_analyzer.get_label_dictionary())
+            code_label_dictionary = Compiler.compile(code_memory, self._io_manager, self._reserved_word_map, self._firsts_map, self._nexts_map, self._operator_precedence_manager)
+            self._label_manager.set_label_dictionary(code_label_dictionary)
             return self.LOAD_SUCCESS
         except (LexicalExceptionInvalidSymbol, 
             LexicalExceptionInvalidOperator, LexicalException, 
