@@ -80,6 +80,9 @@ class VirtualMachine(PresenterVMInterface, ProcessorVMInterface):
         self._execution_engine.execute_program(self._cache, mode, steps)
         self.notify_execution_finished()
     
+    def update_breakpoint_list(self, breakpoint_list):
+        self._breakpoint_manager.update_breakpoint_list(breakpoint_list)
+    
     def _initialize_processor(self):
         if self._processor:
             self._processor.reset()
@@ -111,10 +114,14 @@ class VirtualMachine(PresenterVMInterface, ProcessorVMInterface):
         self._memory_manager.set_po(self._cache.peek(), former_po, po)
         
     def define_label(self, label_token, address):
-        if address >= 0:
-            response = self._label_manager.define_label(label_token, address, cache=self._cache)
-        else:
-            response = "Label address value can only be a positive Integer."
+        try:
+            if address >= 0:
+                response = self._label_manager.define_label(label_token, address, cache=self._cache)
+            else:
+                response = "Label address value can only be a positive Integer."
+        except TypeError:
+            response = "Label address cannot be a string."
+            
         if response == Processor.SUCCESS:
             return response
         else:

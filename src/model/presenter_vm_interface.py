@@ -44,6 +44,13 @@ class PresenterVMInterface(ABC):
         """
         pass
     
+    @abstractmethod
+    def update_breakpoint_list(self, breakpoint_list):
+        """
+        Update breakpoint address list.
+        """
+        pass
+    
     # getters 
     @abstractmethod
     def get_instruction(self, address: int):

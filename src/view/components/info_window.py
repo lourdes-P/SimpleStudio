@@ -72,7 +72,7 @@ class InfoWindow(ctk.CTkToplevel):
 Grammar that characterizes syntactically valid programs, written in extended BNF notation:
 
 <Program>       ::=     <Instruction>^+ 
-<Instruction>   ::=     Identifier^? <Signatura> annotation^? 
+<Instruction>   ::=     Identifier^? <Signature> annotation^? 
 <Signature>     ::=     SetD <Expression>, <Expression> 
                         | SetH <Expression>, <Expression> 
                         | SetActual <Expression> 
@@ -93,15 +93,16 @@ Grammar that characterizes syntactically valid programs, written in extended BNF
 
 <UnaryOp>      ::=      + | - | ! 
 
-<Operand>      ::=      D[<Expression>] 
-                        | H[<Expression>] 
-                        | Actual 
-                        | Libre 
-                        | Number 
-                        | Identifier 
-                        | pc 
-                        | String
-                        | (<Expression>) 
+<Operand>      ::=      D[<Expression>]
+                        | H[<Expression>]
+                        | Actual
+                        | Libre
+                        | _Number_
+                        | _Identifier_
+                        | pc
+                        | po
+                        | '_string_'
+                        | (<Expression>)
 						
 Superscript + indicates repetition of a symbol once or more times. Superscript ? indicates symbol is optional.
 
