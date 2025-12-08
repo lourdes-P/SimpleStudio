@@ -1,3 +1,4 @@
+import sys
 import tkinter as tk
 import customtkinter as ctk
 from view.utils.color_manager import ColorManager
@@ -8,8 +9,10 @@ class CodeEditor(ctk.CTkFrame):
     END_MINUS_ONE_CHAR = "end-1c"
     START = "1.0"
     
-    def __init__(self, parent, font_name = 'Consolas', font_size = 15, **kwargs):
+    def __init__(self, parent, font_name = None, font_size = 14, **kwargs):
         super().__init__(parent, **kwargs)
+        if font_name is None:
+            font_name = ColorManager.EDITOR_FONT[sys.platform]
         self._appearance_mode = ctk.get_appearance_mode()
         self._font = ctk.CTkFont(font_name, font_size)
         self._last_line_count = 0
@@ -91,7 +94,8 @@ class CodeEditor(ctk.CTkFrame):
             state="disabled",
             wrap="none",
             font=(self._font),
-            blockcursor=True
+            blockcursor=True,
+            highlightthickness=0
         )
         self.line_numbers.grid(column=0, row=1, sticky="ns")
         self._excess_frame = tk.Frame(
@@ -115,7 +119,8 @@ class CodeEditor(ctk.CTkFrame):
             font=(self._font),
             insertbackground=self._get_colors('cursor_color'),
             selectbackground=self._get_colors('highlight_color'),
-            selectforeground=self._get_colors('highlight_text_color')
+            selectforeground=self._get_colors('highlight_text_color'),
+            highlightthickness=0
         )
         self.text_area.grid(row=1, column=1, sticky="nsew")
         

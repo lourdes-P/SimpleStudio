@@ -2,15 +2,19 @@ import sys
 import customtkinter as ctk
 import re
 from CTkMessagebox.ctkmessagebox import Image, ImageTk
+from view.utils.color_manager import ColorManager
 from view.utils.icon_manager import IconManager
 
 class InfoWindow(ctk.CTkToplevel):
-    def __init__(self, master=None, font_family = 'Consolas', font_size = 15, **kwargs):
+    def __init__(self, master=None, font_family = 'Consolas', font_size = 14, **kwargs):
         super().__init__(master, takefocus= True, **kwargs)
         
         self.title("Info")
         self.geometry("600x600")
         self.minsize(400,400)
+        
+        if font_family is None:
+            font_family = ColorManager.EDITOR_FONT[sys.platform]
         
         self._font_family = font_family
         self._font_size = font_size

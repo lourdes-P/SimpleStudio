@@ -7,6 +7,11 @@ class ColorManager:
     TERTIARY_COLOR = ("#86a7c7", "#86a7c7")
     BREAKPOINT_COLOR = '#c4160a'
     HOVER_BREAKPOINT_COLOR = ("#c49292","#680b05")
+    EDITOR_FONT = {
+                    'win32': 'Consolas',
+                    'linux': 'Consolas',
+                    'darwin': 'Menlo'
+                }
     CODE_EDITOR_COLORS = {  
                           'Dark':
                               {
