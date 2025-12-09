@@ -105,6 +105,7 @@ class CodeEditor(ctk.CTkFrame):
         )
         self._excess_frame.grid(column=0,row=2, sticky="nsew")
         self._excess_frame.grid_remove()
+        tabsize = self._calculate_char_metric(self._font, '    ')
         
         self.text_area = tk.Text(
             self.main_container,
@@ -120,7 +121,8 @@ class CodeEditor(ctk.CTkFrame):
             insertbackground=self._get_colors('cursor_color'),
             selectbackground=self._get_colors('highlight_color'),
             selectforeground=self._get_colors('highlight_text_color'),
-            highlightthickness=0
+            highlightthickness=0,
+            tabs=tabsize
         )
         self.text_area.grid(row=1, column=1, sticky="nsew")
         
@@ -146,6 +148,9 @@ class CodeEditor(ctk.CTkFrame):
         self.line_numbers.configure(yscrollcommand=self._on_line_scroll)
         
         self._update_line_numbers()
+        
+    def _calculate_char_metric(self, font, char_string):
+        return font.measure(char_string)
     
     def _setup_bindings(self):
         self.text_area.bind("<KeyRelease>", self._on_text_change)
