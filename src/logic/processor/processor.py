@@ -4,6 +4,7 @@ from logic.expression_ast.exceptions.runtime_invalid_operand_exception import Ru
 from logic.memories.exceptions.address_out_of_range import MemoryAddressOutOfRangeException
 from logic.memories.exceptions.address_value_invalid_exception import AddressValueInvalidException
 from logic.memories.exceptions.register_value_error import RegisterValueError
+from logic.processor.exceptions.runtime_jump_address_invalid_exception import RuntimeJumpAddressInvalidException
 
 class Processor:
     COMPLETED = 0
@@ -42,7 +43,8 @@ class Processor:
                 self._after_execution_state = self._next_instruction.execute(self)
             except (HeapcellValueNotSetException, DatacellValueNotSetException, 
                     MemoryAddressOutOfRangeException, RegisterValueError, 
-                    AddressValueInvalidException, RuntimeInvalidOperandException) as error:
+                    AddressValueInvalidException, RuntimeInvalidOperandException,
+                    RuntimeJumpAddressInvalidException) as error:
                 self._after_execution_state = self.FAILURE
                 self._error = self._add_triggering_instruction_address_and_line_number(error)
                 self._enabled = False
@@ -127,7 +129,7 @@ class Processor:
         self._virtual_machine.set_po(former, self._po)
         
     def set_pc(self, address):
-        self._pc = address
+        self._pc = int(address)
         
     def increase_pc(self):
         self._pc += 1

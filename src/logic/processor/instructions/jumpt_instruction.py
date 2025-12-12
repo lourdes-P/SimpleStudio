@@ -1,3 +1,4 @@
+from logic.processor.exceptions.runtime_jump_address_invalid_exception import RuntimeJumpAddressInvalidException
 from logic.processor.instructions.instruction_double_arg import InstructionDoubleArg
 
 class JumpTInstruction(InstructionDoubleArg):
@@ -10,6 +11,9 @@ class JumpTInstruction(InstructionDoubleArg):
         conditional = self.argument2.evaluate(processor)
         
         if conditional:
-            processor.set_pc(address)
+            try:
+                processor.set_pc(address)
+            except ValueError:
+                raise RuntimeJumpAddressInvalidException(address) 
         
         return processor.SUCCESS
