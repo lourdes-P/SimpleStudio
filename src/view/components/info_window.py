@@ -111,7 +111,7 @@ Grammar that characterizes syntactically valid programs, written in extended BNF
 Superscript + indicates repetition of a symbol once or more times. Superscript ? indicates symbol is optional.
 
 
-_*Semantic*_
+_*Semantics*_
 
 *SetD Destination, Source*
 Instruction used to change the values stored in the D memory. This instruction evaluates the Source expression and stores its result in the D memory, specifically at the address resulting from evaluating the Destination expression.
