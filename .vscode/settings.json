@@ -1,7 +1,0 @@
-{
-    "python.analysis.extraPaths": [
-        "./src/logic/interpreter",
-        "./src"
-    ],
-    "python.REPL.enableREPLSmartSend": false
-}
